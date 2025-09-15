@@ -1,0 +1,130 @@
+"use server"
+
+import { User, withAuth } from "../helpers/auth";
+import Group from "../models/group.models";
+import { connectToDB } from "../mongoose";
+
+
+async function _createGroup(user: User, values: { name: string }) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const existingGroup = await Group.findOne({ name: values.name });
+
+        if (existingGroup) throw new Error("Group already exists");
+
+        const newGroup = new Group({
+            name: values.name,
+            createdBy: user._id,
+        });
+
+        await newGroup.save();
+
+    } catch (error) {
+        console.log("error happened while creating group", error);
+        throw error
+    }
+}
+
+async function _fetchAllGroups(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const groups = await Group.find({})
+            .populate("createdBy")
+            .exec();
+
+        if (!groups || groups.length === 0) return []
+
+        const data = groups.map((doc) => ({
+            ...doc.toObject(),
+            createdBy: doc.createdBy.fullName
+        }))
+
+        return JSON.parse(JSON.stringify(data));
+    } catch (error) {
+        console.log("error happened while fetching groups", error);
+        throw error
+    }
+}
+
+
+async function _getUserGroup(user: User) {
+    try {
+        if (!user) {
+            throw new Error("User not authenticated");
+        }
+
+        const value = user.groupId
+
+        console.log(value,"testing id")
+
+        await connectToDB();
+
+        const group = await Group.findById(value);
+
+        if (!group) {
+            throw new Error("group not found");
+        }
+
+        return JSON.parse(JSON.stringify(group));
+
+    } catch (error) {
+        console.log('Error fetching group', error);
+        throw error;
+    }
+
+}
+
+
+async function _fetchGroupById(user: User, id: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const group = await Group.findById(id);
+
+        if (!group) throw new Error("Group not found");
+
+        return JSON.parse(JSON.stringify(group));
+    } catch (error) {
+        console.log("error happened while fetching group", error);
+        throw error
+    }
+}
+
+
+
+async function _updateGroup(user: User, id: string, values: { name: string }) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const group = await Group.findById(id);
+
+        if (!group) throw new Error("Group not found");
+
+        group.name = values.name;
+
+        await group.save();
+
+    } catch (error) {
+        console.log("error happened while updating group", error);
+        throw error
+    }
+}
+
+
+
+
+export const createGroup = await withAuth(_createGroup);
+export const fetchAllGroups = await withAuth(_fetchAllGroups);
+export const getUserGroup = await withAuth(_getUserGroup);
+export const fetchGroupById = await withAuth(_fetchGroupById);
+export const updateGroup = await withAuth(_updateGroup);
