@@ -24,7 +24,7 @@ const RoleGrid = () => {
     const fetchData = useCallback(async () => {
         setLoading(true)
         setError(null)
-        
+
         try {
             const data = await getAllRoles()
             setRolesData(data)
@@ -83,7 +83,7 @@ const RoleGrid = () => {
 
     // Calculate statistics
     const totalRoles = rolesData.length
-    const adminRoles = rolesData.filter(role => 
+    const adminRoles = rolesData.filter(role =>
         role.permissions.manageAllMembers || role.permissions.manageUser
     ).length
     const basicRoles = totalRoles - adminRoles
@@ -103,7 +103,7 @@ const RoleGrid = () => {
                         </div>
                     </CardContent>
                 </Card>
-                
+
                 <Card>
                     <CardContent className="p-4">
                         <div className="flex items-center space-x-2">
@@ -115,7 +115,7 @@ const RoleGrid = () => {
                         </div>
                     </CardContent>
                 </Card>
-                
+
                 <Card>
                     <CardContent className="p-4">
                         <div className="flex items-center space-x-2">
@@ -178,7 +178,8 @@ const RoleGrid = () => {
                     </CardHeader>
                     <CardContent>
                         <DataTable
-                            columns={createColumns({ 
+                            searchKey='name'
+                            columns={createColumns({
                                 onEdit: handleEdit,
                                 onDelete: handleDelete
                             })}

@@ -131,6 +131,39 @@ async function _fetchMembersWithReportStatus(user: User, month: string) {
     }
 }
 
+async function _fetchMembersWithGroupStatus(user: User, month: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const groupId = user.groupId;
+
+        const members = await Member.find({ groupId })
+            .select('fullName privileges')
+            .populate('privileges', 'name')
+            .sort({ fullName: 1 });
+
+        const reports = await FieldServiceReport.find({ month })
+            .select('publisher _id')
+            .lean();
+
+        const reportMap = new Map(reports.map(r => [r.publisher.toString(), r._id.toString()]));
+
+        const membersWithStatus = members.map(member => ({
+            ...member.toObject(),
+            hasReported: reportMap.has(member._id.toString()),
+            reportId: reportMap.get(member._id.toString()) || null,
+            month
+        }));
+
+        return JSON.parse(JSON.stringify(membersWithStatus));
+    } catch (error) {
+        console.log("Error fetching members with report status:", error);
+        throw error;
+    }
+}
+
 async function _fetchReportById(user: User, id: string) {
     try {
         if (!user) throw new Error("User not authorized");
@@ -183,4 +216,5 @@ export const fetchAllReports = await withAuth(_fetchAllReports);
 export const fetchAllMembers = await withAuth(_fetchAllMembers);
 export const updateFieldServiceReport = await withAuth(_updateFieldServiceReport);
 export const fetchMembersWithReportStatus = await withAuth(_fetchMembersWithReportStatus);
+export const fetchMembersWithGroupStatus = await withAuth(_fetchMembersWithGroupStatus);
 export const fetchReportById = await withAuth(_fetchReportById);

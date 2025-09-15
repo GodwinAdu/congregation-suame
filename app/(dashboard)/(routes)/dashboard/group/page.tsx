@@ -25,7 +25,7 @@ const page = async () => {
             </div>
             <Separator />
             <div className="">
-                <DataTable searchKey='fullName' data={members} columns={columns} />
+                <DataTable searchKey='name' data={members} columns={columns} />
             </div>
         </>
     )

@@ -103,7 +103,7 @@ const historySchema = new Schema(
         },
         performedBy: {
             type: Schema.Types.ObjectId,
-            ref: 'Member', // Reference to the user who performed the action
+            ref: 'User', // Reference to the user who performed the action
             required: true,
         },
         timestamp: {

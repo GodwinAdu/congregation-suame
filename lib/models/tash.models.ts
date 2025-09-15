@@ -13,7 +13,7 @@ const trashSchema: Schema<ITrash> = new Schema({
     originalCollection: { type: String, required: true },
     document: { type: Schema.Types.Mixed, required: true },
     message: { type: String },
-    deletedBy: { type: Schema.Types.ObjectId, ref: 'Member' },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     deletedAt: { type: Date, default: Date.now },
     autoDelete: { type: Boolean, default: false }, // Defaults will be set dynamically
 }, {
