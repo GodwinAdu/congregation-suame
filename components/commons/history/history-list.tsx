@@ -17,15 +17,15 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Search, Filter, ChevronDown, X, Eye, Calendar, User, FileText, Clock, Trash2 } from "lucide-react"
-import { deleteHistory, fetchAllHistories } from "@/lib/actions/history.actions"
+import { deleteHistory, fetchAllHistories, bulkDeleteHistory, clearAllHistory } from "@/lib/actions/history.actions"
 
 interface HistoryItem {
     _id: string
-    storeId: string
     actionType: string
     details: {
-        itemId: string
-        deletedAt?: string
+        entityId?: string
+        entityType?: string
+        metadata?: any
     }
     performedBy: {
         fullName: string
@@ -38,155 +38,36 @@ interface HistoryItem {
     updatedAt: string
 }
 
-// Added mock data and functions directly in component to resolve import issues
-// const mockHistories: HistoryItem[] = [
-//   {
-//     _id: "1",
-//     storeId: "store1",
-//     actionType: "CREATED",
-//     details: { itemId: "item1" },
-//     performedBy: { fullName: "John Doe" },
-//     entityId: "entity1",
-//     message: "Created new product 'Wireless Headphones' with SKU WH-001 in Electronics category",
-//     entityType: "Product",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-//   },
-//   {
-//     _id: "2",
-//     storeId: "store1",
-//     actionType: "UPDATED",
-//     details: { itemId: "item2" },
-//     performedBy: { fullName: "Jane Smith" },
-//     entityId: "entity2",
-//     message: "Updated inventory quantity for 'Gaming Mouse' from 50 to 75 units",
-//     entityType: "Inventory",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-//   },
-//   {
-//     _id: "3",
-//     storeId: "store1",
-//     actionType: "DELETED",
-//     details: { itemId: "item3", deletedAt: new Date().toISOString() },
-//     performedBy: { fullName: "Mike Johnson" },
-//     entityId: "entity3",
-//     message: "Deleted discontinued product 'Old Smartphone Model XYZ' from catalog",
-//     entityType: "Product",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-//   },
-//   {
-//     _id: "4",
-//     storeId: "store1",
-//     actionType: "RESTORED",
-//     details: { itemId: "item4" },
-//     performedBy: { fullName: "Sarah Wilson" },
-//     entityId: "entity4",
-//     message: "Restored accidentally deleted customer order #12345 for premium subscription",
-//     entityType: "Order",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-//   },
-//   {
-//     _id: "5",
-//     storeId: "store1",
-//     actionType: "CREATED",
-//     details: { itemId: "item5" },
-//     performedBy: { fullName: "Alex Brown" },
-//     entityId: "entity5",
-//     message: "Created new customer account for 'Premium Electronics Store' with business tier access",
-//     entityType: "Customer",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
-//   },
-//   {
-//     _id: "6",
-//     storeId: "store1",
-//     actionType: "UPDATED",
-//     details: { itemId: "item6" },
-//     performedBy: { fullName: "Emma Davis" },
-//     entityId: "entity6",
-//     message: "Updated shipping policy to include free delivery for orders over $100",
-//     entityType: "Policy",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-//   },
-//   {
-//     _id: "7",
-//     storeId: "store1",
-//     actionType: "DELETED",
-//     details: { itemId: "item7", deletedAt: new Date().toISOString() },
-//     performedBy: { fullName: "Chris Lee" },
-//     entityId: "entity7",
-//     message: "Deleted expired promotional campaign 'Summer Sale 2024' and associated discount codes",
-//     entityType: "Campaign",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
-//   },
-//   {
-//     _id: "8",
-//     storeId: "store1",
-//     actionType: "CREATED",
-//     details: { itemId: "item8" },
-//     performedBy: { fullName: "Lisa Garcia" },
-//     entityId: "entity8",
-//     message: "Created new category 'Smart Home Devices' with automated product tagging rules",
-//     entityType: "Category",
-//     timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-//     createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-//     updatedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-//   },
-// ]
 
-// // Mock functions embedded directly in component
-// const fetchAllHistories = async (lastId: string | null = null, limit = 10): Promise<HistoryItem[]> => {
-//   await new Promise((resolve) => setTimeout(resolve, 500))
 
-//   let startIndex = 0
-//   if (lastId) {
-//     const lastIndex = mockHistories.findIndex((h) => h._id === lastId)
-//     startIndex = lastIndex + 1
-//   }
-
-//   return mockHistories.slice(startIndex, startIndex + limit)
-// }
-
-// const deleteHistory = async (id: string): Promise<void> => {
-//   await new Promise((resolve) => setTimeout(resolve, 300))
-
-//   const index = mockHistories.findIndex((h) => h._id === id)
-//   if (index > -1) {
-//     mockHistories.splice(index, 1)
-//   }
-// }
-
-const actionTypes = ["CREATED", "UPDATED", "DELETED", "RESTORED"]
+const actionTypes = ["LOGIN", "LOGOUT", "MEMBER_CREATE", "MEMBER_UPDATE", "ROLE_UPDATE", "GROUP_UPDATE", "PRIVILEGES_UPDATE", "PASSWORD_CHANGE", "ATTENDANCE_RECORD", "ATTENDANCE_UPDATE", "REPORT_SUBMIT", "REPORT_UPDATE", "TRANSPORT_STATUS", "TRANSPORT_PAYMENT", "TRANSPORT_CONFIG", "TRANSPORT_RESET", "ROLE_CREATE", "ROLE_DELETE", "HISTORY_DELETE"]
 
 const getActionTypeColor = (actionType: string) => {
-    if (actionType.includes("DELETED"))
+    if (actionType.includes("DELETE") || actionType.includes("LOGOUT"))
         return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800"
-    if (actionType.includes("CREATED"))
+    if (actionType.includes("CREATE") || actionType.includes("LOGIN"))
         return "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
-    if (actionType.includes("UPDATED"))
+    if (actionType.includes("UPDATE") || actionType.includes("RECORD") || actionType.includes("SUBMIT"))
         return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
-    if (actionType.includes("RESTORED"))
+    if (actionType.includes("PAYMENT") || actionType.includes("CONFIG"))
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
+    if (actionType.includes("PASSWORD"))
+        return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800"
     return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
 }
 
 const getActionIcon = (actionType: string) => {
-    if (actionType.includes("DELETED")) return "🗑️"
-    if (actionType.includes("CREATED")) return "✨"
-    if (actionType.includes("UPDATED")) return "📝"
-    if (actionType.includes("RESTORED")) return "🔄"
+    if (actionType.includes("DELETE")) return "🗑️"
+    if (actionType.includes("CREATE")) return "✨"
+    if (actionType.includes("UPDATE")) return "📝"
+    if (actionType.includes("LOGIN")) return "🔐"
+    if (actionType.includes("LOGOUT")) return "🚪"
+    if (actionType.includes("PASSWORD")) return "🔑"
+    if (actionType.includes("ATTENDANCE")) return "📊"
+    if (actionType.includes("REPORT")) return "📋"
+    if (actionType.includes("TRANSPORT")) return "🚌"
+    if (actionType.includes("ROLE")) return "👤"
+    if (actionType.includes("GROUP")) return "👥"
     return "📋"
 }
 
@@ -206,12 +87,10 @@ export function HistoryList() {
     const [selectedEntityType, setSelectedEntityType] = useState<string>("all")
     const [filtersOpen, setFiltersOpen] = useState(false)
     const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
-    // const [selectedHistory, setSelectedHistory] = useState<HistoryItem | null>(null)
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [bulkDeleting, setBulkDeleting] = useState(false)
+    const [clearingAll, setClearingAll] = useState(false)
     const observerRef = useRef<HTMLDivElement>(null)
-
-    useEffect(() => {
-        loadHistories(true)
-    }, [])
 
     const loadHistories = useCallback(
         async (reset = false) => {
@@ -243,6 +122,32 @@ export function HistoryList() {
         [histories],
     )
 
+    useEffect(() => {
+        loadHistories(true)
+    }, [])
+
+    // Infinite scroll observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore) {
+                    loadHistories(false)
+                }
+            },
+            { threshold: 0.1 }
+        )
+
+        if (observerRef.current) {
+            observer.observe(observerRef.current)
+        }
+
+        return () => {
+            if (observerRef.current) {
+                observer.unobserve(observerRef.current)
+            }
+        }
+    }, [hasMore, loadingMore, loadHistories])
+
     const handleDelete = async (id: string) => {
         setDeletingIds((prev) => new Set([...prev, id]))
         try {
@@ -257,6 +162,52 @@ export function HistoryList() {
                 return newSet
             })
         }
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return
+
+        setBulkDeleting(true)
+        try {
+            await bulkDeleteHistory(Array.from(selectedIds))
+            setHistories((prev) => prev.filter((h) => !selectedIds.has(h._id)))
+            setSelectedIds(new Set())
+        } catch (error) {
+            console.error("Failed to bulk delete history:", error)
+        } finally {
+            setBulkDeleting(false)
+        }
+    }
+
+    const handleClearAll = async () => {
+        setClearingAll(true)
+        try {
+            await clearAllHistory()
+            setHistories([])
+            setSelectedIds(new Set())
+        } catch (error) {
+            console.error("Failed to clear all history:", error)
+        } finally {
+            setClearingAll(false)
+        }
+    }
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredHistories.length) {
+            setSelectedIds(new Set())
+        } else {
+            setSelectedIds(new Set(filteredHistories.map(h => h._id)))
+        }
+    }
+
+    const toggleSelectItem = (id: string) => {
+        const newSelected = new Set(selectedIds)
+        if (newSelected.has(id)) {
+            newSelected.delete(id)
+        } else {
+            newSelected.add(id)
+        }
+        setSelectedIds(newSelected)
     }
 
     const filteredHistories = histories.filter((history) => {
@@ -372,17 +323,13 @@ export function HistoryList() {
                             <p className="text-muted-foreground font-mono">{history.entityId}</p>
                         </div>
                         <div>
-                            <span className="font-medium">Store ID:</span>
-                            <p className="text-muted-foreground font-mono">{history.storeId}</p>
+                            <span className="font-medium">Action Type:</span>
+                            <p className="text-muted-foreground">{history.actionType}</p>
                         </div>
-                        <div>
-                            <span className="font-medium">Item ID:</span>
-                            <p className="text-muted-foreground font-mono">{history.details.itemId}</p>
-                        </div>
-                        {history.details.deletedAt && (
+                        {history.details.metadata && (
                             <div>
-                                <span className="font-medium">Deleted At:</span>
-                                <p className="text-muted-foreground">{formatDate(history.details.deletedAt)}</p>
+                                <span className="font-medium">Metadata:</span>
+                                <p className="text-muted-foreground font-mono text-xs">{JSON.stringify(history.details.metadata, null, 2)}</p>
                             </div>
                         )}
                     </div>
@@ -412,6 +359,32 @@ export function HistoryList() {
 
     return (
         <div className="w-full space-y-6">
+            {/* Bulk Actions */}
+            {selectedIds.size > 0 && (
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{selectedIds.size} selected</span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedIds(new Set())}
+                        >
+                            Clear selection
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            disabled={bulkDeleting}
+                        >
+                            {bulkDeleting ? "Deleting..." : "Delete Selected"}
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Search and Filters */}
             <div className="space-y-4">
                 <div className="relative">
@@ -439,12 +412,26 @@ export function HistoryList() {
                             </Button>
                         </CollapsibleTrigger>
 
-                        {activeFiltersCount > 0 && (
-                            <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-2">
-                                <X className="h-4 w-4" />
-                                Clear all
-                            </Button>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {activeFiltersCount > 0 && (
+                                <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-2">
+                                    <X className="h-4 w-4" />
+                                    Clear filters
+                                </Button>
+                            )}
+                            {histories.length > 0 && (
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleClearAll}
+                                    disabled={clearingAll}
+                                    className="gap-2"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    {clearingAll ? "Clearing..." : "Clear All History"}
+                                </Button>
+                            )}
+                        </div>
                     </div>
 
                     <CollapsibleContent className="space-y-4 pt-4">
@@ -515,6 +502,14 @@ export function HistoryList() {
                             <table className="w-full">
                                 <thead className="bg-muted/50 border-b">
                                     <tr>
+                                        <th className="text-left p-4 font-medium w-12">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.size === filteredHistories.length && filteredHistories.length > 0}
+                                                onChange={toggleSelectAll}
+                                                className="rounded"
+                                            />
+                                        </th>
                                         <th className="text-left p-4 font-medium">Action</th>
                                         <th className="text-left p-4 font-medium">Entity</th>
                                         <th className="text-left p-4 font-medium">Time</th>
@@ -524,6 +519,14 @@ export function HistoryList() {
                                 <tbody>
                                     {filteredHistories.map((history) => (
                                         <tr key={history._id} className="border-b hover:bg-muted/25 transition-colors">
+                                            <td className="p-4">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.has(history._id)}
+                                                    onChange={() => toggleSelectItem(history._id)}
+                                                    className="rounded"
+                                                />
+                                            </td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-lg">{getActionIcon(history.actionType)}</span>
@@ -638,9 +641,17 @@ export function HistoryList() {
                     {loadingMore ? (
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                            Loading more...
+                            Loading more activities...
                         </div>
-                    ) : null}
+                    ) : (
+                        <div className="text-sm text-muted-foreground">Scroll down to load more</div>
+                    )}
+                </div>
+            )}
+
+            {!hasMore && filteredHistories.length > 0 && (
+                <div className="flex justify-center py-4">
+                    <div className="text-sm text-muted-foreground">No more activities to load</div>
                 </div>
             )}
         </div>

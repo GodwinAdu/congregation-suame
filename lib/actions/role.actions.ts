@@ -4,6 +4,7 @@ import { User, withAuth } from "../helpers/auth";
 import Role from "../models/role.models";
 import { connectToDB } from "../mongoose";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "../utils/activity-logger";
 
 interface RoleData {
     name: string;
@@ -33,6 +34,13 @@ async function _createRole(user: User, roleData: RoleData) {
         }
 
         const role = await Role.create(roleData);
+        
+        await logActivity({
+            userId: user._id,
+            type: 'role_create',
+            action: `${user.fullName} created new role: ${roleData.name}`,
+            details: { entityId: role._id, entityType: 'Role' },
+        });
 
         revalidatePath('/dashboard/config/role');
         return JSON.parse(JSON.stringify(role));
@@ -78,6 +86,13 @@ async function _updateRole(user: User, roleId: string, roleData: RoleData) {
         );
 
         if (!role) throw new Error("Role not found");
+        
+        await logActivity({
+            userId: user._id,
+            type: 'role_update',
+            action: `${user.fullName} updated role: ${roleData.name}`,
+            details: { entityId: roleId, entityType: 'Role' },
+        });
 
         revalidatePath('/dashboard/config/role');
         return JSON.parse(JSON.stringify(role));
@@ -95,6 +110,13 @@ async function _deleteRole(user: User, roleId: string) {
 
         const role = await Role.findByIdAndDelete(roleId);
         if (!role) throw new Error("Role not found");
+        
+        await logActivity({
+            userId: user._id,
+            type: 'role_delete',
+            action: `${user.fullName} deleted role: ${role.name}`,
+            details: { entityId: roleId, entityType: 'Role' },
+        });
 
         revalidatePath('/dashboard/config/role');
         return { success: true, message: "Role deleted successfully" };

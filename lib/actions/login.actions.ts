@@ -3,7 +3,7 @@
 import { compare } from "bcryptjs";
 import User from "../models/user.models";
 import { connectToDB } from "../mongoose";
-import { createActivity } from "./activity.actions";
+import { logActivity } from "../utils/activity-logger";
 import { login } from "../helpers/session";
 
 
@@ -25,10 +25,10 @@ export const loginUser = async (values: { email: string; password: string; remem
         if (!isPasswordValid) throw new Error("Invalid password");
 
         await login(user._id as string, user.role, rememberMe)
-        await createActivity({
+        await logActivity({
             userId: user._id as string,
             type: 'login',
-            action: `User logged in`,
+            action: `${user.fullName} logged into the system`,
             details: { entityId: user._id, entityType: 'User' },
         });
 

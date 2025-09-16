@@ -6,8 +6,8 @@ import Privilege from "../models/privilege.models";
 import Member from "../models/user.models";
 import { connectToDB } from "../mongoose";
 import { hash, compare } from "bcryptjs";
-import { createActivity } from "./activity.actions";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "../utils/activity-logger";
 
 interface MemberProps {
     fullName: string;
@@ -52,6 +52,14 @@ async function _createMember(user: User, values: MemberProps) {
         });
 
         await newMember.save();
+        
+        await logActivity({
+            userId: user._id,
+            type: 'member_create',
+            action: `${user.fullName} created a new member: ${newMember.fullName}`,
+            details: { entityId: newMember._id, entityType: 'Member' },
+        });
+        
         return JSON.parse(JSON.stringify(newMember));
 
     } catch (error) {
@@ -131,6 +139,13 @@ async function _resetPassword(user: User, values: { currentPassword: string; new
         const hashedNewPassword = await hash(values.newPassword, 12);
         userDoc.password = hashedNewPassword;
         await userDoc.save();
+        
+        await logActivity({
+            userId: user._id,
+            type: 'password_change',
+            action: `${user.fullName} changed their password`,
+            details: { entityId: user._id, entityType: 'User' },
+        });
 
     } catch (error) {
         console.log("error happened while resetting password", error);
@@ -262,12 +277,12 @@ async function _updateMember(user: User, id: string, updateData: Partial<MemberP
 
         if (!updatedStaff) throw new Error("Staff not found")
 
-        // Log activity
-        await createActivity({
-            userId: id,
+        await logActivity({
+            userId: user._id,
             type: 'profile_update',
-            action: 'Profile information updated'
-        })
+            action: `${user.fullName} updated member ${updatedStaff.fullName}`,
+            details: { entityId: id, entityType: 'Member' },
+        });
 
         revalidatePath('/dashboard/hr/staffs')
         return { success: true, message: "Staff updated successfully" }
@@ -277,7 +292,48 @@ async function _updateMember(user: User, id: string, updateData: Partial<MemberP
     }
 }
 
-export const updateMember = await withAuth(_updateMember)
+async function _updateProfile(user: User, updateData: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    gender?: string;
+    dob?: Date;
+    address?: string;
+    emergencyContact?: string;
+}) {
+    try {
+        if (!user) throw new Error("User not authenticated");
+        
+        await connectToDB();
+
+        const updatedUser = await Member.findByIdAndUpdate(
+            user._id,
+            {
+                ...updateData,
+                lastModified: new Date(),
+                modifiedBy: user._id
+            },
+            { new: true, runValidators: false }
+        );
+
+        if (!updatedUser) throw new Error("User not found");
+
+        await logActivity({
+            userId: user._id,
+            type: 'profile_update',
+            action: `${user.fullName} updated their profile`,
+            details: { entityId: user._id, entityType: 'User' },
+        });
+
+        return JSON.parse(JSON.stringify(updatedUser));
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        throw error;
+    }
+}
+
+export const updateMember = await withAuth(_updateMember);
+export const updateProfile = await withAuth(_updateProfile);
 
 
 async function _updateMemberRole(user: User, memberId: string, roleId: string) {
@@ -296,10 +352,11 @@ async function _updateMemberRole(user: User, memberId: string, roleId: string) {
             throw new Error("Member not found");
         }
 
-        await createActivity({
-            userId: memberId,
+        await logActivity({
+            userId: user._id,
             type: 'role_update',
-            action: `Role updated to ${roleId}`
+            action: `${user.fullName} updated ${member.fullName}'s role`,
+            details: { entityId: memberId, entityType: 'Member' },
         });
 
         revalidatePath('/dashboard/members');
@@ -326,10 +383,11 @@ async function _updateMemberGroup(user: User, memberId: string, groupId: string)
             throw new Error("Member not found");
         }
 
-        await createActivity({
-            userId: memberId,
+        await logActivity({
+            userId: user._id,
             type: 'group_update',
-            action: `Group updated to ${groupId}`
+            action: `${user.fullName} updated ${member.fullName}'s group`,
+            details: { entityId: memberId, entityType: 'Member' },
         });
 
         revalidatePath('/dashboard/members');
@@ -356,10 +414,11 @@ async function _updateMemberPrivileges(user: User, memberId: string, privileges:
             throw new Error("Member not found");
         }
 
-        await createActivity({
-            userId: memberId,
+        await logActivity({
+            userId: user._id,
             type: 'privileges_update',
-            action: `Privileges updated: ${privileges.length} privileges assigned`
+            action: `${user.fullName} updated ${member.fullName}'s privileges`,
+            details: { entityId: memberId, entityType: 'Member' },
         });
 
         revalidatePath('/dashboard/members');

@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { fetchUserById } from "../actions/user.actions";
-import { createActivity } from "../actions/activity.actions";
+import { logActivity } from "../utils/activity-logger";
 
 
 
@@ -295,21 +295,31 @@ export async function login(userId: string, role: string, rememberMe: boolean = 
  * Logout function - can be called from client components
  */
 export async function logout(redirectTo: string) {
-    const user = await currentUser()
+    const user = await currentUser();
     const cookieStore = await cookies();
+
+    console.log(user,"logout user")
+
+    // Log activity before clearing cookies
+    if (user) {
+        try {
+            await logActivity({
+                userId: user._id as string,
+                type: 'logout',
+                action: `${user.fullName} logged out of the system`,
+                details: { entityId: user._id as string, entityType: 'User' },
+            });
+        } catch (error) {
+            console.error('Failed to log logout activity:', error);
+        }
+    }
+
     cookieStore.delete("token");
     cookieStore.delete("refreshToken");
 
     // Clear the entire session cache on logout
     Object.keys(sessionCache).forEach(key => {
         delete sessionCache[key];
-    });
-
-    await createActivity({
-        userId: user?._id as string,
-        type: 'logout',
-        action: `User logged out`,
-        details: { entityId: user?._id as string, entityType: 'User' },
     });
 
     redirect(redirectTo);

@@ -5,6 +5,7 @@ import Member from "../models/user.models";
 import TransportConfig from "../models/transport-config.models";
 import { connectToDB } from "../mongoose";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "../utils/activity-logger";
 
 async function _fetchAllMembersTransport(user: User) {
     try {
@@ -56,6 +57,13 @@ async function _updateMemberTransportStatus(user: User, memberId: string, carSta
         );
 
         if (!updatedMember) throw new Error("Member not found");
+        
+        await logActivity({
+            userId: user._id,
+            type: 'transport_status',
+            action: `${user.fullName} ${carStatus ? 'enrolled' : 'removed'} ${updatedMember.fullName} in transport`,
+            details: { entityId: memberId, entityType: 'Member' },
+        });
 
         revalidatePath('/dashboard/transport');
         return JSON.parse(JSON.stringify(updatedMember));
@@ -99,6 +107,13 @@ async function _addPayment(user: User, memberId: string, paymentAmount: number) 
             },
             { new: true, runValidators: false }
         );
+        
+        await logActivity({
+            userId: user._id,
+            type: 'transport_payment',
+            action: `${user.fullName} recorded ₵${paymentAmount} transport payment for ${member.fullName}`,
+            details: { entityId: memberId, entityType: 'Member' },
+        });
 
         revalidatePath('/dashboard/transport');
         return JSON.parse(JSON.stringify(updatedMember));
@@ -171,6 +186,13 @@ async function _setGlobalTransportAmount(user: User, totalAmount: number) {
         });
 
         await Promise.all(updatePromises);
+        
+        await logActivity({
+            userId: user._id,
+            type: 'transport_config',
+            action: `${user.fullName} set global transport amount to ₵${totalAmount}`,
+            details: { entityType: 'TransportConfig' },
+        });
 
         revalidatePath('/dashboard/transport');
         return { success: true, updatedCount: participatingMembers.length };
@@ -215,6 +237,13 @@ async function _resetAllTransportData(user: User) {
 
         // Delete transport config
         await TransportConfig.deleteMany({});
+        
+        await logActivity({
+            userId: user._id,
+            type: 'transport_reset',
+            action: `${user.fullName} reset all transport data`,
+            details: { entityType: 'TransportConfig' },
+        });
 
         revalidatePath('/dashboard/transport');
         return { success: true, message: "All transport data has been reset" };

@@ -4,6 +4,7 @@ import { User, withAuth } from "../helpers/auth";
 import Attendance from "../models/attendance.models";
 import { connectToDB } from "../mongoose";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "../utils/activity-logger";
 
 async function _createAttendance(user: User, values: { attendance: number; month: number; date: Date }) {
     try {
@@ -19,6 +20,14 @@ async function _createAttendance(user: User, values: { attendance: number; month
         });
 
         await newAttendance.save();
+        
+        await logActivity({
+            userId: user._id,
+            type: 'attendance_record',
+            action: `${user.fullName} recorded attendance for ${values.date.toDateString()}: ${values.attendance} attendees`,
+            details: { entityId: newAttendance._id, entityType: 'Attendance' },
+        });
+        
         revalidatePath('/dashboard/attendance');
         return JSON.parse(JSON.stringify(newAttendance));
 
@@ -81,6 +90,13 @@ async function _updateAttendance(user: User, id: string, values: { attendance: n
         );
 
         if (!updatedAttendance) throw new Error("Attendance record not found");
+        
+        await logActivity({
+            userId: user._id,
+            type: 'attendance_update',
+            action: `${user.fullName} updated attendance record to ${values.attendance} attendees`,
+            details: { entityId: id, entityType: 'Attendance' },
+        });
 
         revalidatePath('/dashboard/attendance');
         return JSON.parse(JSON.stringify(updatedAttendance));

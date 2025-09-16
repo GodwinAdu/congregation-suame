@@ -85,6 +85,11 @@ interface AnalyticsData {
         privileges: { _id: string; count: number }[]
         ageGroups: { _id: number | string; count: number }[]
     }
+    activities: {
+        recent: { _id: string; userId: { fullName: string }; type: string; action: string; createdAt: string; success: boolean }[]
+        stats: { _id: string; count: number }[]
+        todayCount: number
+    }
 }
 
 export default function UniversalAnalytics() {
@@ -736,6 +741,90 @@ export default function UniversalAnalytics() {
 
                 {/* Activity Tab */}
                 <TabsContent value="activity" className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Activity Stats */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Activity className="h-5 w-5 text-blue-500" />
+                                    Activity Overview
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                    <p className="text-2xl font-bold text-blue-600">{data.activities?.todayCount || 0}</p>
+                                    <p className="text-sm text-muted-foreground">Activities Today</p>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Activity Types (Last 7 days)</h4>
+                                    {data.activities?.stats?.slice(0, 5).map((stat, index) => (
+                                        <div key={stat._id} className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-3 h-3 rounded-full ${
+                                                    index === 0 ? 'bg-blue-500' :
+                                                    index === 1 ? 'bg-green-500' :
+                                                    index === 2 ? 'bg-purple-500' :
+                                                    index === 3 ? 'bg-orange-500' : 'bg-gray-500'
+                                                }`} />
+                                                <span className="text-sm capitalize">{stat._id.replace('_', ' ')}</span>
+                                            </div>
+                                            <Badge variant="outline">{stat.count}</Badge>
+                                        </div>
+                                    )) || <p className="text-sm text-muted-foreground">No activity data</p>}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Recent Activities */}
+                        <Card className="lg:col-span-2">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-green-500" />
+                                    Recent System Activities
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {data.activities?.recent?.length > 0 ? (
+                                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                                        {data.activities.recent.map((activity) => (
+                                            <div key={activity._id} className="flex items-start gap-3 p-3 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                                    activity.success ? 'bg-green-500' : 'bg-red-500'
+                                                }`}>
+                                                    {activity.type === 'login' ? <Users className="h-4 w-4 text-white" /> :
+                                                     activity.type === 'profile_update' ? <UserPlus className="h-4 w-4 text-white" /> :
+                                                     activity.type === 'report_generate' ? <FileText className="h-4 w-4 text-white" /> :
+                                                     activity.type === 'system_access' ? <Shield className="h-4 w-4 text-white" /> :
+                                                     <Activity className="h-4 w-4 text-white" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {activity.userId?.fullName || 'Unknown User'}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600 truncate">
+                                                        {activity.action}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {activity.type.replace('_', ' ')}
+                                                        </Badge>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {format(new Date(activity.createdAt), 'MMM dd, HH:mm')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-muted-foreground py-8">No recent activities</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                    
+                    {/* Legacy Activity Cards */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
                             <CardHeader>
@@ -770,7 +859,7 @@ export default function UniversalAnalytics() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-blue-500" />
+                                    <FileText className="h-5 w-5 text-blue-500" />
                                     Recent Reports
                                 </CardTitle>
                             </CardHeader>

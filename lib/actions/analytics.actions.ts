@@ -6,6 +6,7 @@ import Role from "../models/role.models";
 import Group from "../models/group.models";
 import Attendance from "../models/attendance.models";
 import FieldService from "../models/field-service.models";
+import Activity from "../models/activity.models";
 import { connectToDB } from "../mongoose";
 
 async function _getDashboardAnalytics(user: User) {
@@ -267,6 +268,31 @@ async function _getDashboardAnalytics(user: User) {
             }
         ]);
 
+        // Activity statistics
+        const recentActivities = await Activity.find({})
+            .populate('userId', 'fullName')
+            .sort({ createdAt: -1 })
+            .limit(10);
+
+        const activityStats = await Activity.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: sevenDaysAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: "$type",
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]);
+
+        const todayActivities = await Activity.countDocuments({
+            createdAt: { $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) }
+        });
+
         return JSON.parse(JSON.stringify({
             members: {
                 total: totalMembers,
@@ -283,7 +309,8 @@ async function _getDashboardAnalytics(user: User) {
             transport,
             recentActivity: {
                 newMembers: recentMembers,
-                newReports: recentReports
+                newReports: recentReports,
+                activities: recentActivities
             },
             trends: {
                 monthly: monthlyTrends,
@@ -293,6 +320,11 @@ async function _getDashboardAnalytics(user: User) {
             demographics: {
                 privileges: privilegeStats,
                 ageGroups: ageStats
+            },
+            activities: {
+                recent: recentActivities,
+                stats: activityStats,
+                todayCount: todayActivities
             }
         }));
     } catch (error) {

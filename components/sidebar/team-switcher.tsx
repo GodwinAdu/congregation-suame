@@ -22,7 +22,7 @@ export function TeamSwitcher({ user }: { user: IEmployee }) {
             <SidebarMenuItem className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition team-switcher">
                 <UserCircle className="w-8 h-8 text-gray-500" />
                 <div>
-                    <h2 className="text-xs font-semibold text-gray-800">{user?.fullName}</h2>
+                    <h2 className="text-xs font-semibold text-foreground">{user?.fullName}</h2>
                     <p className="text-xs text-primary">{capitalizeFirstLetter(user?.role)}</p>
                 </div>
             </SidebarMenuItem>
