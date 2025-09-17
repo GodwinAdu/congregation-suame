@@ -26,7 +26,7 @@ export const metadata: Metadata = {
       { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' }
     ],
-    apple: '/icons/apple-touch-icon.png',
+    apple: '/apple-icon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
@@ -62,14 +62,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-         <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-        <Toaster richColors />
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Toaster richColors />
+          {children}
         </ThemeProvider>
       </body>
     </html>
