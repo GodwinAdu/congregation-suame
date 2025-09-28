@@ -18,8 +18,8 @@ const page = async () => {
   // Check user roles
   const isAdmin = user?.role === 'admin' || user?.role === 'coordinator'
   const isAttendant = user?.role === "attendant"
-  const isGroupAssistant = user?.role === "group assistant (attendant)"
-  
+  const isGroupAssistant = user?.role === "group assistant(Attendant)"
+   
   const hasAccess = isAdmin || isAttendant || isGroupAssistant
 
   if (!hasAccess) {
