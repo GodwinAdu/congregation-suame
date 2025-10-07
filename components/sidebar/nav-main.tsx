@@ -11,7 +11,9 @@ import {
   CheckSquare,
   FileText,
   Car,
-  UserCheck
+  UserCheck,
+  BookOpen,
+  Sparkles,
 } from "lucide-react"
 import { IRole } from "@/lib/models/role.models"
 import {
@@ -123,6 +125,20 @@ export function NavMain({ role, user }: NavMainProps) {
       icon: Car,
       isActive: false,
       roleField: "transport"
+    },
+    {
+      title: "Meeting Assignments",
+      url: `/dashboard/assignments`,
+      icon: BookOpen,
+      isActive: false,
+      roleField: "manageAllMembers"
+    },
+    {
+      title: "Kingdom Hall Management",
+      url: `/dashboard/cleaning`,
+      icon: Sparkles,
+      isActive: false,
+      roleField: "manageAllMembers"
     },
     {
       title: "History",

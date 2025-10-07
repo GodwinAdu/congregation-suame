@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 const handleDelete = async (id: string): Promise<void> => {
     try {
-        // await deleteStaff(id)
+        // await deletemember(id)
     } catch (error) {
         console.error("Delete error:", error)
         throw error
@@ -33,40 +33,53 @@ const handleDelete = async (id: string): Promise<void> => {
 
 
 
-const handleResetPassword = async (staff: any) => {
+const handleResetPassword = async (member: any) => {
     try {
-        // const result = await resetUserPassword(staff._id)
+        // const result = await resetUserPassword(member._id)
         // if (result.success) {
-        //     toast.success(`Password reset email sent to ${staff.email}`)
+        //     toast.success(`Password reset email sent to ${member.email}`)
         // }
     } catch (error) {
         toast.error("Failed to send password reset")
     }
 }
 
-const handleSendInvite = async (staff: any) => {
+const handleSendInvite = async (member: any) => {
     try {
-        // const result = await sendInviteEmail(staff._id)
+        // const result = await sendInviteEmail(member._id)
         // if (result.success) {
-        //     toast.success(`Invitation sent to ${staff.email}`)
+        //     toast.success(`Invitation sent to ${member.email}`)
         // }
     } catch (error) {
         toast.error("Failed to send invitation")
     }
 }
 
-const handleViewActivity = (staff: any) => {
-    window.open(`/dashboard/hr/staffs/${staff._id}/activity`, '_blank')
+const handleViewActivity = (member: any) => {
+    window.open(`/dashboard/hr/members/${member._id}/activity`, '_blank')
 }
 
 
 export const columns: ColumnDef<any>[] = [
     {
+        accessorKey: "groupId",
+        header: "Group",
+        cell: ({ row }) => {
+            const group = row.original.groupId;
+            return group?.name || "No Group";
+        },
+        filterFn: (row, id, value) => {
+            if (!value) return true;
+            const groupId = row.original.groupId?._id;
+            return groupId === value;
+        },
+    },
+    {
         accessorKey: "fullName",
-        header: "Staff Member",
+        header: "member Member",
         cell: ({ row }) => {
             const name = row.original.fullName;
-            const role = row.original.role || "Staff";
+            const role = row.original.role || "member";
             const status = row.original.status || "active";
             return (
                 <div className="flex items-center gap-3">
@@ -103,7 +116,7 @@ export const columns: ColumnDef<any>[] = [
             const phone = row.original.phone;
             return (
                 <div className="space-y-1">
-                    <p className="text-sm font-medium">{email}</p>
+                    <p className="text-sm font-medium">{email ? email : "No mail provided"}</p>
                     <p className="text-xs text-slate-500">{phone}</p>
                 </div>
             );
@@ -113,10 +126,10 @@ export const columns: ColumnDef<any>[] = [
         id: "actions",
         header: "Actions",
         cell: ({ row }) => {
-            const staff = row.original
+            const member = row.original
             return (
                 <CellAction
-                    data={staff}
+                    data={member}
                     onDelete={handleDelete}
                     actions={[
                         {
@@ -124,12 +137,12 @@ export const columns: ColumnDef<any>[] = [
                             type: "custom",
                             onClick: () => {},
                             icon: <Eye className="h-4 w-4" />,
-                            customComponent: <MemberDetailsModal member={staff} />
+                            customComponent: <MemberDetailsModal member={member} />
                         },
                         {
                             label: "Edit Profile",
                             type: "edit",
-                            href: `/dashboard/hr/staffs/${staff._id}/edit`,
+                            href: `/dashboard/hr/members/${member._id}/edit`,
                             icon: <Edit className="h-4 w-4" />,
                         },
                         {
@@ -151,6 +164,12 @@ export const columns: ColumnDef<any>[] = [
                             icon: <Shield className="h-4 w-4" />,
                         },
                         {
+                            label: "View S-21",
+                            type: "edit",
+                            href: `/dashboard/members/${member._id}/publisher-tracker`,
+                            icon: <Edit className="h-4 w-4" />,
+                        },
+                        {
                             label: "Assign Role",
                             type: "assignRole",
                             icon: <Shield className="h-4 w-4" />,
@@ -166,7 +185,7 @@ export const columns: ColumnDef<any>[] = [
                             icon: <Key className="h-4 w-4" />,
                         },
                         {
-                            label: "Delete Staff",
+                            label: "Delete member",
                             type: "delete",
                             icon: <Trash2 className="h-4 w-4" />,
                         },

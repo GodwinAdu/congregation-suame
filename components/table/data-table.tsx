@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { File, Printer, Loader2, ChevronDown } from 'lucide-react';
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
@@ -54,6 +55,7 @@ export function DataTable<TData, TValue>({
     columns,
     data,
     searchKey,
+    filterGroups,
     isLoading,
 }: DataTableProps<TData, TValue>) {
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -134,6 +136,30 @@ export function DataTable<TData, TValue>({
                         }
                         className="max-w-sm"
                     />
+                    {filterGroups?.map((filterGroup) => (
+                        <Select
+                            key={filterGroup.id}
+                            value={(table.getColumn(filterGroup.id)?.getFilterValue() as string) ?? ""}
+                            onValueChange={(value) => {
+                                const column = table.getColumn(filterGroup.id)
+                                if (column) {
+                                    column.setFilterValue(value === "all" ? "" : value)
+                                }
+                            }}
+                        >
+                            <SelectTrigger className="w-40">
+                                <SelectValue placeholder={`Filter by ${filterGroup.label}`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All {filterGroup.label}s</SelectItem>
+                                {filterGroup.options.map((option) => (
+                                    <SelectItem key={option._id} value={option._id}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    ))}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">

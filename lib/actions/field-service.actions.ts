@@ -12,6 +12,7 @@ async function _createFieldServiceReport(user: User, values: {
     month: string;
     hours?: number;
     bibleStudents: number;
+    auxiliaryPioneer?: boolean;
     comments?: string;
     check?: boolean;
 }) {
@@ -35,6 +36,7 @@ async function _createFieldServiceReport(user: User, values: {
             month: values.month,
             hours: values.hours || 0,
             bibleStudents: values.bibleStudents,
+            auxiliaryPioneer: values.auxiliaryPioneer || false,
             comments: values.comments,
             check: values.check || false
         });
@@ -195,6 +197,7 @@ async function _fetchReportById(user: User, id: string) {
 async function _updateFieldServiceReport(user: User, id: string, values: {
     hours?: number;
     bibleStudents?: number;
+    auxiliaryPioneer?: boolean;
     comments?: string;
     check?: boolean;
 }) {
@@ -226,6 +229,30 @@ async function _updateFieldServiceReport(user: User, id: string, values: {
     }
 }
 
+async function _fetchMemberReports(user: User, memberId: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const member = await Member.findById(memberId)
+            .select('fullName email phone gender dob address emergencyContact role groupId privileges createdAt')
+            .populate('groupId', 'name')
+            .populate('privileges', 'name');
+
+        if (!member) throw new Error("Member not found");
+
+        const reports = await FieldServiceReport.find({ publisher: memberId })
+            .sort({ month: -1 })
+            .lean();
+
+        return JSON.parse(JSON.stringify({ member, reports }));
+    } catch (error) {
+        console.log("Error fetching member reports:", error);
+        throw error;
+    }
+}
+
 export const createFieldServiceReport = await withAuth(_createFieldServiceReport);
 export const fetchReportsByMonth = await withAuth(_fetchReportsByMonth);
 export const fetchAllReports = await withAuth(_fetchAllReports);
@@ -234,3 +261,4 @@ export const updateFieldServiceReport = await withAuth(_updateFieldServiceReport
 export const fetchMembersWithReportStatus = await withAuth(_fetchMembersWithReportStatus);
 export const fetchMembersWithGroupStatus = await withAuth(_fetchMembersWithGroupStatus);
 export const fetchReportById = await withAuth(_fetchReportById);
+export const fetchMemberReports = await withAuth(_fetchMemberReports);

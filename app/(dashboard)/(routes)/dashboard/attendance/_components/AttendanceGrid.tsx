@@ -2,16 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Calendar, RefreshCw, AlertCircle } from 'lucide-react'
 import { AttendanceStats } from './attendance-stat'
 import { AttendanceTracker } from './attendance-tracker'
-import { fetchAttendanceByMonth, fetchAllAttendance } from '@/lib/actions/attendance.actions'
+import { fetchAttendanceByMonth } from '@/lib/actions/attendance.actions'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import MonthSelection from '@/components/commons/MonthSelection'
+import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 
 
@@ -22,18 +23,15 @@ const AttendanceGrid = () => {
     const [error, setError] = useState<string | null>(null)
 
     const fetchData = useCallback(async (monthDate?: Date) => {
-        setLoading(true)
-        setError(null)
-        
         try {
-            let data
-            if (monthDate) {
-                const month = monthDate.getMonth() + 1
-                const year = monthDate.getFullYear()
-                data = await fetchAttendanceByMonth(month, year)
-            } else {
-                data = await fetchAllAttendance()
-            }
+            if (!monthDate) return null
+            setLoading(true)
+            setError(null)
+
+            const month = monthDate.getMonth() + 1
+            const year = monthDate.getFullYear()
+            const data = await fetchAttendanceByMonth(month, year)
+
             setAttendanceData(data)
         } catch (err) {
             setError('Failed to fetch attendance data. Please try again.')
@@ -111,18 +109,16 @@ const AttendanceGrid = () => {
                             <Label className="font-bold text-sm hidden lg:block">Select Month</Label>
                             <MonthSelection
                                 selectedMonth={handleMonthChange}
-                                // disabled={loading}
+                            // disabled={loading}
                             />
                         </div>
                         <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => fetchData()}
-                                disabled={loading}
-                                className="whitespace-nowrap"
+                            <Link
+                                href="/dashboard/attendance/attendance-tracker"
+                                className={cn(buttonVariants({ variant: "outline" }), "whitespace-nowrap")}
                             >
                                 Show All
-                            </Button>
+                            </Link>
                             <Button
                                 variant="outline"
                                 size="icon"
@@ -151,7 +147,7 @@ const AttendanceGrid = () => {
             ) : (
                 <div className="space-y-6">
                     <AttendanceStats attendanceData={attendanceData} />
-                    <AttendanceTracker 
+                    <AttendanceTracker
                         initialAttendanceData={attendanceData}
                         selectedMonth={selectedMonth.toISOString().slice(0, 7)}
                     />

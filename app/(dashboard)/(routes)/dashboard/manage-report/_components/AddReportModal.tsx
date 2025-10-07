@@ -19,13 +19,7 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -35,6 +29,7 @@ import { createFieldServiceReport } from "@/lib/actions/field-service.actions"
 const formSchema = z.object({
     hours: z.coerce.number().min(0, "Hours must be 0 or greater").optional(),
     bibleStudents: z.coerce.number().min(0, "Bible students must be 0 or greater"),
+    auxiliaryPioneer: z.boolean(),
     comments: z.string().optional(),
     check: z.boolean().optional(),
 })
@@ -48,21 +43,22 @@ interface AddReportModalProps {
 }
 
 export function AddReportModal({ open, onClose, member, selectedMonth, onSuccess }: AddReportModalProps) {
-    const isPioneer = member?.privileges?.some((privilege: any) => 
-        privilege.name === "Regular Pioneer" || privilege.name === "Auxiliary Pioneer"
-    )
-    
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             hours: 0,
             bibleStudents: 0,
+            auxiliaryPioneer: false,
             comments: "",
             check: false,
         },
     })
 
     const { isSubmitting } = form.formState
+    const isAuxiliaryPioneer = form.watch("auxiliaryPioneer")
+    const isPioneer = member?.privileges?.some((privilege: any) =>
+        privilege.name === "Regular Pioneer"
+    )
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
@@ -71,10 +67,11 @@ export function AddReportModal({ open, onClose, member, selectedMonth, onSuccess
                 month: selectedMonth,
                 hours: values.hours || 0,
                 bibleStudents: values.bibleStudents,
+                auxiliaryPioneer: values.auxiliaryPioneer || false,
                 comments: values.comments,
                 check: values.check || false,
             })
-            
+
             toast.success("Field service report added successfully")
             form.reset()
             onClose()
@@ -87,9 +84,9 @@ export function AddReportModal({ open, onClose, member, selectedMonth, onSuccess
 
     const getMonthName = (monthStr: string) => {
         const [year, month] = monthStr.split('-')
-        return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', { 
-            month: 'long', 
-            year: 'numeric' 
+        return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric'
         })
     }
 
@@ -107,8 +104,8 @@ export function AddReportModal({ open, onClose, member, selectedMonth, onSuccess
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
 
-                            <div className={`grid ${isPioneer ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
-                                {isPioneer && (
+                            <div className={`grid ${isPioneer || isAuxiliaryPioneer ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                                {(isPioneer || isAuxiliaryPioneer) && (
                                     <FormField
                                         control={form.control}
                                         name="hours"
@@ -167,6 +164,26 @@ export function AddReportModal({ open, onClose, member, selectedMonth, onSuccess
 
                             <FormField
                                 control={form.control}
+                                name="auxiliaryPioneer"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        <div className="space-y-1 leading-none">
+                                            <FormLabel>
+                                                Auxiliary Pioneer this month
+                                            </FormLabel>
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
                                 name="check"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -178,7 +195,7 @@ export function AddReportModal({ open, onClose, member, selectedMonth, onSuccess
                                         </FormControl>
                                         <div className="space-y-1 leading-none">
                                             <FormLabel>
-                                                Mark as approved
+                                                Check
                                             </FormLabel>
                                         </div>
                                     </FormItem>
@@ -186,16 +203,16 @@ export function AddReportModal({ open, onClose, member, selectedMonth, onSuccess
                             />
 
                             <div className="flex gap-2">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                     onClick={onClose}
                                     className="flex-1"
                                 >
                                     Cancel
                                 </Button>
-                                <Button 
-                                    disabled={isSubmitting} 
+                                <Button
+                                    disabled={isSubmitting}
                                     type="submit"
                                     className="flex-1"
                                 >

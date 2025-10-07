@@ -12,6 +12,7 @@ const ActivitySchema = new Schema(
             enum: [
                 "login",
                 "logout", 
+                "member_create",
                 "profile_update",
                 "password_change",
                 "building_access",
@@ -22,7 +23,15 @@ const ActivitySchema = new Schema(
                 "role_change",
                 "file_upload",
                 "report_generate",
-                "system_access"
+                "system_access",
+                "privileges_update",
+                "assignment_create",
+                "assignment_update",
+                "assignment_sync",
+                "attendance_record",
+                "attendance_update",
+                "report_submit",
+                "report_update"
             ],
             required: true,
         },

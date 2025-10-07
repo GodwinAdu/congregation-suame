@@ -8,6 +8,7 @@ export interface IFieldServiceReport extends Document {
     hours?: number; // optional
     returnVisits?: number;
     bibleStudents: number;
+    auxiliaryPioneer?: boolean;
     check: boolean;
     comments?: string;
     createdAt?: Date;
@@ -20,8 +21,9 @@ const FieldServiceReportSchema: Schema<IFieldServiceReport> = new Schema(
         month: { type: String, required: true }, // YYYY-MM
         hours: { type: Number,default:0 }, // optional
         bibleStudents: { type: Number, required: true, default: 0 },
+        auxiliaryPioneer: { type: Boolean, default: false },
         check: { type: Boolean, default: false },
-        comments: { type: String },
+        comments: { type: String,default:'' },
     },
     { timestamps: true }
 );

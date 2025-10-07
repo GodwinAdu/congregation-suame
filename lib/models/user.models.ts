@@ -21,7 +21,8 @@ const UserSchema = new Schema({
         require: true
     },
     email: {
-        type: String
+        type: String,
+        default:null
     },
     gender: {
         type: String,
@@ -33,12 +34,19 @@ const UserSchema = new Schema({
     },
     emergencyContact: {
         type: String,
+        default:null
     },
     dob: {
-        type: Date
+        type: Date,
+        default:null
+    },
+    baptizedDate:{
+        type:Date,
+        default:null
     },
     address: {
-        type: String
+        type: String,
+        default:null
     },
     password: {
         type: String,
@@ -48,7 +56,7 @@ const UserSchema = new Schema({
         type: String,
         default: "publisher",
     },
-    privileges: [{ type: Schema.Types.ObjectId, ref: "Privilege", default: null }],
+    privileges: [{ type: Schema.Types.ObjectId, ref: "Privilege", default:[] }],
     groupId: { type: Schema.Types.ObjectId, ref: "Group", default: null },
     transport: {
         carStatus: {

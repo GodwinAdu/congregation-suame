@@ -29,7 +29,7 @@ async function _createMember(user: User, values: MemberProps) {
 
         await connectToDB();
 
-        const existingMember = await Member.findOne({ email: values.email });
+        const existingMember = await Member.findOne({ phone: values.phone });
         if (existingMember) {
             throw new Error("Member with this email already exists");
         }
@@ -52,14 +52,14 @@ async function _createMember(user: User, values: MemberProps) {
         });
 
         await newMember.save();
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'member_create',
             action: `${user.fullName} created a new member: ${newMember.fullName}`,
             details: { entityId: newMember._id, entityType: 'Member' },
         });
-        
+
         return JSON.parse(JSON.stringify(newMember));
 
     } catch (error) {
@@ -98,7 +98,7 @@ async function _fetchAllMembersByRole(user: User) {
 
         const value = user.groupId
 
-        console.log(value,"user group id")
+        console.log(value, "user group id")
 
         const members = await Member.find({ groupId: value })
             .populate([
@@ -139,12 +139,12 @@ async function _resetPassword(user: User, values: { currentPassword: string; new
         const hashedNewPassword = await hash(values.newPassword, 12);
         userDoc.password = hashedNewPassword;
         await userDoc.save();
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'password_change',
             action: `${user.fullName} changed their password`,
-            details: { entityId: user._id, entityType: 'User' },
+            details: { entityId: user._id as string, entityType: 'User' },
         });
 
     } catch (error) {
@@ -278,7 +278,7 @@ async function _updateMember(user: User, id: string, updateData: Partial<MemberP
         if (!updatedStaff) throw new Error("Staff not found")
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'profile_update',
             action: `${user.fullName} updated member ${updatedStaff.fullName}`,
             details: { entityId: id, entityType: 'Member' },
@@ -303,7 +303,7 @@ async function _updateProfile(user: User, updateData: {
 }) {
     try {
         if (!user) throw new Error("User not authenticated");
-        
+
         await connectToDB();
 
         const updatedUser = await Member.findByIdAndUpdate(
@@ -319,10 +319,10 @@ async function _updateProfile(user: User, updateData: {
         if (!updatedUser) throw new Error("User not found");
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'profile_update',
             action: `${user.fullName} updated their profile`,
-            details: { entityId: user._id, entityType: 'User' },
+            details: { entityId: user._id as string, entityType: 'User' },
         });
 
         return JSON.parse(JSON.stringify(updatedUser));
@@ -353,7 +353,7 @@ async function _updateMemberRole(user: User, memberId: string, roleId: string) {
         }
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'role_update',
             action: `${user.fullName} updated ${member.fullName}'s role`,
             details: { entityId: memberId, entityType: 'Member' },
@@ -384,7 +384,7 @@ async function _updateMemberGroup(user: User, memberId: string, groupId: string)
         }
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'group_update',
             action: `${user.fullName} updated ${member.fullName}'s group`,
             details: { entityId: memberId, entityType: 'Member' },
@@ -415,7 +415,7 @@ async function _updateMemberPrivileges(user: User, memberId: string, privileges:
         }
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'privileges_update',
             action: `${user.fullName} updated ${member.fullName}'s privileges`,
             details: { entityId: memberId, entityType: 'Member' },

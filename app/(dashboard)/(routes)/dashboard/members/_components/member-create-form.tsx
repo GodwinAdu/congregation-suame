@@ -22,10 +22,11 @@ import { createMember } from "@/lib/actions/user.actions"
 const registrationSchema = z
     .object({
         fullName: z.string().min(2, "Full name must be at least 2 characters"),
-        email: z.email("Please enter a valid email address"),
+        email: z.string().optional(),
         phone: z.string().min(10, "Phone number must be at least 10 digits"),
         gender: z.string().min(2, "Gender is required"),
         dob: z.date().optional(),
+        baptizedDate: z.date().optional(),
         address: z.string().optional(),
         emergencyContact: z.string().optional(),
         password: z.string().min(6, "Password must be at least 6 characters"),
@@ -272,6 +273,50 @@ export default function UserRegistrationForm({ roles, groups, privileges }: { ro
                                                 </Popover>
                                                 <FormDescription>
                                                     Your date of birth is used to calculate your age.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="baptizedDate"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col">
+                                                <FormLabel>Baptized Date</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                            <Button
+                                                                variant={"outline"}
+                                                                className={cn(
+                                                                    "w-[240px] pl-3 text-left font-normal",
+                                                                    !field.value && "text-muted-foreground"
+                                                                )}
+                                                            >
+                                                                {field.value ? (
+                                                                    format(field.value, "PPP")
+                                                                ) : (
+                                                                    <span>Pick a date</span>
+                                                                )}
+                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={field.value}
+                                                            onSelect={field.onChange}
+                                                            disabled={(date) =>
+                                                                date > new Date() || date < new Date("1900-01-01")
+                                                            }
+                                                            captionLayout="dropdown"
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormDescription>
+                                                    Enter the date for baptism.
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>

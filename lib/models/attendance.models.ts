@@ -21,7 +21,8 @@ const AttendanceSchema = new Schema({
     },
     week: {
         type: Number,
-    }
+    },
+    createdBy: { type: Schema.Types.ObjectId, ref: "Member", default: null }
 }, {
     timestamps: true
 });

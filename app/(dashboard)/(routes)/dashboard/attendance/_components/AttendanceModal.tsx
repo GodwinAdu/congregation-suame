@@ -3,6 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -21,21 +23,28 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
+
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+
 import { PlusCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createAttendance } from "@/lib/actions/attendance.actions";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
-    attendance: z.coerce.number().min(1, "Attendance must be at least 1"),
-    date: z.string().min(1, "Date is required")
+    attendance: z.number().min(1, "Attendance must be at least 1"),
+    date: z.date()
 });
 
 export function AttendanceModal() {
-    const router = useRouter();
+
     const [open, setOpen] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -57,12 +66,12 @@ export function AttendanceModal() {
             };
 
             await createAttendance(attendanceData);
-            router.refresh();
             form.reset();
             setOpen(false);
             toast.success("Attendance recorded", {
                 description: "Attendance has been added successfully",
             });
+            window.location.reload()
         } catch (error) {
             console.log("Error creating attendance:", error);
             toast.error("Something went wrong", {
@@ -91,14 +100,39 @@ export function AttendanceModal() {
                                 control={form.control}
                                 name="date"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Meeting Date</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="date"
-                                                {...field}
-                                            />
-                                        </FormControl>
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel>Date of birth</FormLabel>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant={"outline"}
+                                                        className={cn(
+                                                            "w-[240px] pl-3 text-left font-normal",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {field.value ? (
+                                                            format(field.value, "PPP")
+                                                        ) : (
+                                                            <span>Pick a date</span>
+                                                        )}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value}
+                                                    onSelect={field.onChange}
+                                                    disabled={(date) =>
+                                                        date > new Date() || date < new Date("1900-01-01")
+                                                    }
+                                                    captionLayout="dropdown"
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
                                         <FormMessage />
                                     </FormItem>
                                 )}
