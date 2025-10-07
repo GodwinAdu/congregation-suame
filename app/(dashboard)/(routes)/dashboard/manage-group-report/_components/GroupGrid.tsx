@@ -24,6 +24,7 @@ const GroupGrid = () => {
     const [showDetailsModal, setShowDetailsModal] = useState(false)
     const [selectedMember, setSelectedMember] = useState<MemberWithReportStatus | null>(null)
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+    const [editMode, setEditMode] = useState(false)
 
     const fetchData = useCallback(async (monthDate: Date) => {
         setLoading(true)
@@ -57,17 +58,31 @@ const GroupGrid = () => {
 
     const handleAddReport = (member: MemberWithReportStatus) => {
         setSelectedMember(member)
+        setEditMode(false)
+        setSelectedReportId(null)
         setShowAddModal(true)
     }
 
     const handleCloseModal = () => {
         setShowAddModal(false)
         setSelectedMember(null)
+        setEditMode(false)
+        setSelectedReportId(null)
     }
 
     const handleViewReport = (reportId: string) => {
         setSelectedReportId(reportId)
         setShowDetailsModal(true)
+    }
+
+    const handleEditReport = (reportId: string) => {
+        const member = membersData.find(m => m.reportId === reportId)
+        if (member) {
+            setSelectedMember(member)
+            setSelectedReportId(reportId)
+            setEditMode(true)
+            setShowAddModal(true)
+        }
     }
 
     const handleCloseDetailsModal = () => {
@@ -152,7 +167,8 @@ const GroupGrid = () => {
                         <DataTable
                             columns={createColumns({
                                 onAddReport: handleAddReport,
-                                onViewReport: handleViewReport
+                                onViewReport: handleViewReport,
+                                onEditReport: handleEditReport
                             })}
                             data={membersData}
                         />
@@ -167,6 +183,8 @@ const GroupGrid = () => {
                 member={selectedMember}
                 selectedMonth={selectedMonth.toISOString().slice(0, 7)}
                 onSuccess={handleRefresh}
+                editMode={editMode}
+                reportId={selectedReportId}
             />
 
             <GroupDetailsModal

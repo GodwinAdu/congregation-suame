@@ -3,8 +3,6 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IFieldServiceReport extends Document {
     publisher: mongoose.Types.ObjectId; // link to publisher/user
     month: string; // e.g. "2025-09"
-    placements?: number;
-    videos?: number;
     hours?: number; // optional
     returnVisits?: number;
     bibleStudents: number;

@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -24,7 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
-import { createFieldServiceReport } from "@/lib/actions/field-service.actions"
+import { createFieldServiceReport, updateFieldServiceReport, fetchReportById } from "@/lib/actions/field-service.actions"
 
 const formSchema = z.object({
     hours: z.coerce.number().min(0, "Hours must be 0 or greater").optional(),
@@ -40,9 +41,11 @@ interface AddReportModalProps {
     member: any
     selectedMonth: string
     onSuccess: () => void
+    editMode?: boolean
+    reportId?: string | null
 }
 
-export function AddGroupModal({ open, onClose, member, selectedMonth, onSuccess }: AddReportModalProps) {
+export function AddGroupModal({ open, onClose, member, selectedMonth, onSuccess, editMode = false, reportId }: AddReportModalProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -54,6 +57,35 @@ export function AddGroupModal({ open, onClose, member, selectedMonth, onSuccess 
         },
     })
 
+    // Load existing report data when in edit mode
+    React.useEffect(() => {
+        if (editMode && reportId && open) {
+            const loadReport = async () => {
+                try {
+                    const report = await fetchReportById(reportId)
+                    form.reset({
+                        hours: report.hours || 0,
+                        bibleStudents: report.bibleStudents || 0,
+                        auxiliaryPioneer: report.auxiliaryPioneer || false,
+                        comments: report.comments || "",
+                        check: report.check || false,
+                    })
+                } catch (error) {
+                    toast.error("Failed to load report data")
+                }
+            }
+            loadReport()
+        } else if (!editMode) {
+            form.reset({
+                hours: 0,
+                bibleStudents: 0,
+                auxiliaryPioneer: false,
+                comments: "",
+                check: false,
+            })
+        }
+    }, [editMode, reportId, open, form])
+
     const { isSubmitting } = form.formState
     const isAuxiliaryPioneer = form.watch("auxiliaryPioneer")
     const isPioneer = member?.privileges?.some((privilege: any) =>
@@ -62,23 +94,34 @@ export function AddGroupModal({ open, onClose, member, selectedMonth, onSuccess 
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            await createFieldServiceReport({
-                publisher: member?._id,
-                month: selectedMonth,
-                hours: values.hours || 0,
-                bibleStudents: values.bibleStudents,
-                auxiliaryPioneer: values.auxiliaryPioneer || false,
-                comments: values.comments,
-                check: values.check || false,
-            })
-
-            toast.success("Field service report added successfully")
+            if (editMode && reportId) {
+                await updateFieldServiceReport(reportId, {
+                    hours: values.hours || 0,
+                    bibleStudents: values.bibleStudents,
+                    auxiliaryPioneer: values.auxiliaryPioneer || false,
+                    comments: values.comments,
+                    check: values.check || false,
+                })
+                toast.success("Field service report updated successfully")
+            } else {
+                await createFieldServiceReport({
+                    publisher: member?._id,
+                    month: selectedMonth,
+                    hours: values.hours || 0,
+                    bibleStudents: values.bibleStudents,
+                    auxiliaryPioneer: values.auxiliaryPioneer || false,
+                    comments: values.comments,
+                    check: values.check || false,
+                })
+                toast.success("Field service report added successfully")
+            }
+            
             form.reset()
             onClose()
             onSuccess()
         } catch (error: any) {
-            toast.error(error.message || "Failed to add report")
-            console.error("Error adding report:", error)
+            toast.error(error.message || `Failed to ${editMode ? 'update' : 'add'} report`)
+            console.error(`Error ${editMode ? 'updating' : 'adding'} report:`, error)
         }
     }
 
@@ -94,9 +137,9 @@ export function AddGroupModal({ open, onClose, member, selectedMonth, onSuccess 
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[500px] w-[96%]">
                 <DialogHeader>
-                    <DialogTitle>Add Field Service Report</DialogTitle>
+                    <DialogTitle>{editMode ? 'Edit' : 'Add'} Field Service Report</DialogTitle>
                     <DialogDescription>
-                        Add a field service report for {member?.fullName} - {getMonthName(selectedMonth)}
+                        {editMode ? 'Edit' : 'Add'} a field service report for {member?.fullName} - {getMonthName(selectedMonth)}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -216,7 +259,7 @@ export function AddGroupModal({ open, onClose, member, selectedMonth, onSuccess 
                                     type="submit"
                                     className="flex-1"
                                 >
-                                    {isSubmitting ? "Adding..." : "Add Report"}
+                                    {isSubmitting ? (editMode ? "Updating..." : "Adding...") : (editMode ? "Update Report" : "Add Report")}
                                 </Button>
                             </div>
                         </form>

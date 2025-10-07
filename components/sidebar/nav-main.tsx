@@ -100,10 +100,20 @@ export function NavMain({ role, user }: NavMainProps) {
     },
     {
       title: "Field Service Reports",
-      url: `/dashboard/manage-report`,
+      url: "#",
       icon: FileText,
-      isActive: false,
-      roleField: "manageAllReport"
+      roleField: "manageAllReport",
+      items: [
+        {
+          title: "All Reports",
+          url: `/dashboard/manage-report`,
+        },
+        {
+          title: "Monthly Report",
+          url: `/dashboard/monthly-report`,
+          roleField: "monthlyReport"
+        }
+      ],
     },
     {
       title: "Group Management",
@@ -131,14 +141,14 @@ export function NavMain({ role, user }: NavMainProps) {
       url: `/dashboard/assignments`,
       icon: BookOpen,
       isActive: false,
-      roleField: "manageAllMembers"
+      roleField: "assignments"
     },
     {
       title: "Kingdom Hall Management",
       url: `/dashboard/cleaning`,
       icon: Sparkles,
       isActive: false,
-      roleField: "manageAllMembers"
+      roleField: "cleaning"
     },
     {
       title: "History",

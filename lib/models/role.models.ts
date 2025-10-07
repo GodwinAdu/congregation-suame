@@ -1,5 +1,23 @@
 import { model, models, Schema } from "mongoose";
 
+export interface IRole {
+    _id: string;
+    name: string;
+    dashboard: boolean;
+    config: boolean;
+    manageGroupMembers: boolean;
+    manageAllReport: boolean;
+    manageGroupReport: boolean;
+    manageAllMembers: boolean;
+    manageUser: boolean;
+    manageAttendance: boolean;
+    transport: boolean;
+    history: boolean;
+    trash: boolean;
+    monthlyReport: boolean;
+    assignments: boolean;
+    cleaning: boolean;
+}
 
 const RoleSchema = new Schema({
     name: String,
@@ -46,6 +64,18 @@ const RoleSchema = new Schema({
         trash:{
             type:Boolean,
             default:false
+        },
+        monthlyReport: {
+            type: Boolean,
+            default: false
+        },
+        assignments: {
+            type: Boolean,
+            default: false
+        },
+        cleaning: {
+            type: Boolean,
+            default: false
         }
     }
 }, {

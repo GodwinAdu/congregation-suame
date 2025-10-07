@@ -44,6 +44,9 @@ const formSchema = z.object({
         transport: z.boolean().default(false),
         history: z.boolean().default(false),
         trash: z.boolean().default(false),
+        monthlyReport: z.boolean().default(false),
+        assignments: z.boolean().default(false),
+        cleaning: z.boolean().default(false),
     })
 })
 
@@ -78,7 +81,8 @@ const permissionGroups = [
         icon: FileText,
         permissions: [
             { key: "manageAllReport", label: "Manage All Reports", description: "Access and manage all field service reports" },
-            { key: "manageGroupReport", label: "Manage Group Reports", description: "Manage reports within assigned groups" }
+            { key: "manageGroupReport", label: "Manage Group Reports", description: "Manage reports within assigned groups" },
+            { key: "monthlyReport", label: "Monthly Reports", description: "View monthly congregation statistics and reports" }
         ]
     },
     {
@@ -86,7 +90,9 @@ const permissionGroups = [
         icon: Calendar,
         permissions: [
             { key: "manageAttendance", label: "Manage Attendance", description: "Track and manage meeting attendance" },
-            { key: "transport", label: "Transport Management", description: "Manage transportation and payments" }
+            { key: "transport", label: "Transport Management", description: "Manage transportation and payments" },
+            { key: "assignments", label: "Meeting Assignments", description: "Manage meeting assignments and schedules" },
+            { key: "cleaning", label: "Kingdom Hall Management", description: "Manage cleaning tasks and inventory" }
         ]
     },
     {
@@ -140,6 +146,12 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                     transport: false,
                     history: false,
                     trash: false,
+                    monthlyReport: false,
+                    assignments: false,
+                    cleaning: false,
+                    monthlyReport: false,
+                    assignments: false,
+                    cleaning: false,
                 }
             })
         }

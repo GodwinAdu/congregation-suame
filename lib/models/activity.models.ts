@@ -31,7 +31,8 @@ const ActivitySchema = new Schema(
                 "attendance_record",
                 "attendance_update",
                 "report_submit",
-                "report_update"
+                "report_update",
+                "transport_join_status"
             ],
             required: true,
         },

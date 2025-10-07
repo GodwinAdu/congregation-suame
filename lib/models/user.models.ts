@@ -58,28 +58,6 @@ const UserSchema = new Schema({
     },
     privileges: [{ type: Schema.Types.ObjectId, ref: "Privilege", default:[] }],
     groupId: { type: Schema.Types.ObjectId, ref: "Group", default: null },
-    transport: {
-        carStatus: {
-            type: Boolean,
-            default: false
-        },
-        payed: {
-            type: Boolean,
-            default: false
-        },
-        amount: {
-            type: Number,
-            default: 0
-        },
-        balance: {
-            type: Number,
-            default: 0
-        },
-        cardNumber: {
-            type: Number,
-            default: 0
-        },
-    },
     createdBy: { type: Schema.Types.ObjectId, ref: "Member" },
     modifiedBy: { type: Schema.Types.ObjectId, ref: "Member" }
 }, { timestamps: true })

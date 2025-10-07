@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Eye } from "lucide-react"
+import { Plus, Eye, Edit } from "lucide-react"
 
 export type MemberWithReportStatus = {
     _id: string
@@ -17,9 +17,10 @@ export type MemberWithReportStatus = {
 interface ColumnsProps {
     onAddReport: (member: MemberWithReportStatus) => void
     onViewReport: (reportId: string) => void
+    onEditReport: (reportId: string) => void
 }
 
-export const createColumns = ({ onAddReport, onViewReport }: ColumnsProps): ColumnDef<MemberWithReportStatus>[] => [
+export const createColumns = ({ onAddReport, onViewReport, onEditReport }: ColumnsProps): ColumnDef<MemberWithReportStatus>[] => [
     {
         accessorKey: "fullName",
         header: "Full Name",
@@ -56,15 +57,26 @@ export const createColumns = ({ onAddReport, onViewReport }: ColumnsProps): Colu
             return (
                 <div className="flex gap-2">
                     {hasReported && member.reportId ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onViewReport(member.reportId!)}
-                            className="h-8"
-                        >
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Report
-                        </Button>
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onViewReport(member.reportId!)}
+                                className="h-8"
+                            >
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Report
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onEditReport(member.reportId!)}
+                                className="h-8"
+                            >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                            </Button>
+                        </>
                     ) : (
                         <Button
                             variant="outline"
