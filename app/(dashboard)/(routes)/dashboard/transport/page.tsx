@@ -1,7 +1,5 @@
-import Heading from '@/components/commons/Header'
-import { Separator } from '@/components/ui/separator'
-import { TransportFeeManager } from './_components/TransportFeeManager'
 
+import { TransportFeeManager } from './_components/TransportFeeManager'
 const page = () => {
     return (
         <>

@@ -3,6 +3,7 @@
 import { User, withAuth } from "../helpers/auth";
 import FieldServiceReport from "../models/field-service.models";
 import Member from "../models/user.models";
+import Group from "../models/group.models";
 import { connectToDB } from "../mongoose";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "../utils/activity-logger";
@@ -118,8 +119,9 @@ async function _fetchMembersWithReportStatus(user: User, month: string) {
         await connectToDB();
 
         const members = await Member.find({})
-            .select('fullName privileges')
+            .select('fullName privileges groupId')
             .populate('privileges', 'name')
+            .populate('groupId', 'name')
             .sort({ fullName: 1 });
 
         const reports = await FieldServiceReport.find({ month })
@@ -253,6 +255,23 @@ async function _fetchMemberReports(user: User, memberId: string) {
     }
 }
 
+async function _fetchAllGroups(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const groups = await Group.find({})
+            .select('name')
+            .sort({ name: 1 });
+
+        return JSON.parse(JSON.stringify(groups));
+    } catch (error) {
+        console.log("Error fetching groups:", error);
+        throw error;
+    }
+}
+
 export const createFieldServiceReport = await withAuth(_createFieldServiceReport);
 export const fetchReportsByMonth = await withAuth(_fetchReportsByMonth);
 export const fetchAllReports = await withAuth(_fetchAllReports);
@@ -262,3 +281,4 @@ export const fetchMembersWithReportStatus = await withAuth(_fetchMembersWithRepo
 export const fetchMembersWithGroupStatus = await withAuth(_fetchMembersWithGroupStatus);
 export const fetchReportById = await withAuth(_fetchReportById);
 export const fetchMemberReports = await withAuth(_fetchMemberReports);
+export const fetchAllGroups = await withAuth(_fetchAllGroups);

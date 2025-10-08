@@ -157,7 +157,9 @@ export async function fetchUserById(id: string) {
     try {
         await connectToDB();
 
-        const user = await Member.findById(id);
+        const user = await Member.findById(id)
+            .populate('groupId', 'name')
+            .populate('privileges', 'name');
 
         if (!user) {
             throw new Error("User not found");
@@ -429,6 +431,34 @@ async function _updateMemberPrivileges(user: User, memberId: string, privileges:
     }
 }
 
+async function _deleteMember(user: User, memberId: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const member = await Member.findById(memberId);
+        if (!member) {
+            throw new Error("Member not found");
+        }
+
+        await Member.findByIdAndDelete(memberId);
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'member_delete',
+            action: `${user.fullName} deleted member ${member.fullName}`,
+            details: { entityId: memberId, entityType: 'Member' },
+        });
+
+        revalidatePath('/dashboard/members');
+        return { success: true, message: "Member deleted successfully" };
+    } catch (error) {
+        console.log("error happened while deleting member", error);
+        throw error;
+    }
+}
+
 export const createMember = await withAuth(_createMember);
 export const fetchAllMembers = await withAuth(_fetchAllMembers);
 export const fetchAllMembersByRole = await withAuth(_fetchAllMembersByRole);
@@ -436,3 +466,4 @@ export const resetPassword = await withAuth(_resetPassword);
 export const updateMemberRole = await withAuth(_updateMemberRole);
 export const updateMemberGroup = await withAuth(_updateMemberGroup);
 export const updateMemberPrivileges = await withAuth(_updateMemberPrivileges);
+export const deleteMember = await withAuth(_deleteMember);

@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DataTable } from '@/components/table/data-table'
 import { createColumns, MemberTransport } from './column'
 import { PaymentModal } from './PaymentModal'
-import { SetAmountModal } from './SetAmountModal'
 import { GlobalAmountModal } from './GlobalAmountModal'
 import { toast } from 'sonner'
 

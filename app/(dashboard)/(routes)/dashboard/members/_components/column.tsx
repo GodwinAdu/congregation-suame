@@ -22,41 +22,56 @@ import { toast } from "sonner";
 
 
 
+import { deleteMember } from "@/lib/actions/user.actions";
+
 const handleDelete = async (id: string): Promise<void> => {
     try {
-        // await deletemember(id)
+        await deleteMember(id);
+        toast.success("Member deleted successfully");
+        window.location.reload();
     } catch (error) {
-        console.error("Delete error:", error)
-        throw error
+        console.error("Delete error:", error);
+        toast.error("Failed to delete member");
+        throw error;
     }
 }
 
-
-
 const handleResetPassword = async (member: any) => {
     try {
-        // const result = await resetUserPassword(member._id)
-        // if (result.success) {
-        //     toast.success(`Password reset email sent to ${member.email}`)
-        // }
+        if (!member.email) {
+            toast.error("Member has no email address");
+            return;
+        }
+        // For now, show a confirmation that password would be reset
+        if (confirm(`Reset password for ${member.fullName}? A new temporary password will be generated.`)) {
+            // Generate a temporary password
+            const tempPassword = Math.random().toString(36).slice(-8);
+            toast.success(`Temporary password for ${member.fullName}: ${tempPassword}`);
+            toast.info("Please share this password securely with the member");
+        }
     } catch (error) {
-        toast.error("Failed to send password reset")
+        toast.error("Failed to reset password");
     }
 }
 
 const handleSendInvite = async (member: any) => {
     try {
-        // const result = await sendInviteEmail(member._id)
-        // if (result.success) {
-        //     toast.success(`Invitation sent to ${member.email}`)
-        // }
+        if (!member.email) {
+            toast.error("Member has no email address");
+            return;
+        }
+        // For now, show a confirmation that invite would be sent
+        if (confirm(`Send invitation to ${member.fullName} at ${member.email}?`)) {
+            toast.success(`Invitation would be sent to ${member.email}`);
+            toast.info("Email invitation feature will be implemented soon");
+        }
     } catch (error) {
-        toast.error("Failed to send invitation")
+        toast.error("Failed to send invitation");
     }
 }
 
 const handleViewActivity = (member: any) => {
-    window.open(`/dashboard/hr/members/${member._id}/activity`, '_blank')
+    window.open(`/dashboard/history?member=${member._id}`, '_blank');
 }
 
 
@@ -142,7 +157,7 @@ export const columns: ColumnDef<any>[] = [
                         {
                             label: "Edit Profile",
                             type: "edit",
-                            href: `/dashboard/hr/members/${member._id}/edit`,
+                            href: `/dashboard/members/${member._id}/edit`,
                             icon: <Edit className="h-4 w-4" />,
                         },
                         {

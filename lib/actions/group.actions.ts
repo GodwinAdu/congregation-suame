@@ -111,11 +111,29 @@ async function _updateGroup(user: User, id: string, values: { name: string }) {
         if (!group) throw new Error("Group not found");
 
         group.name = values.name;
+        group.modifiedBy = user._id;
 
         await group.save();
 
     } catch (error) {
         console.log("error happened while updating group", error);
+        throw error
+    }
+}
+
+async function _deleteGroup(user: User, id: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const group = await Group.findById(id);
+        if (!group) throw new Error("Group not found");
+
+        await Group.findByIdAndDelete(id);
+
+    } catch (error) {
+        console.log("error happened while deleting group", error);
         throw error
     }
 }
@@ -128,3 +146,4 @@ export const fetchAllGroups = await withAuth(_fetchAllGroups);
 export const getUserGroup = await withAuth(_getUserGroup);
 export const fetchGroupById = await withAuth(_fetchGroupById);
 export const updateGroup = await withAuth(_updateGroup);
+export const deleteGroup = await withAuth(_deleteGroup);

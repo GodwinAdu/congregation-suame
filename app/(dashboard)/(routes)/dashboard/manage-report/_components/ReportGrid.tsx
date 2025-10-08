@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar, RefreshCw, AlertCircle, Plus } from 'lucide-react'
-import { fetchMembersWithReportStatus } from '@/lib/actions/field-service.actions'
+import { fetchMembersWithReportStatus, fetchAllGroups } from '@/lib/actions/field-service.actions'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import MonthSelection from '@/components/commons/MonthSelection'
@@ -24,6 +24,8 @@ const ReportGrid = () => {
     const [showDetailsModal, setShowDetailsModal] = useState(false)
     const [selectedMember, setSelectedMember] = useState<MemberWithReportStatus | null>(null)
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+    const [groups, setGroups] = useState<Array<{ _id: string; name: string }>>([])
+    const [groupsLoading, setGroupsLoading] = useState(true)
 
     const fetchData = useCallback(async (monthDate: Date) => {
         setLoading(true)
@@ -41,11 +43,23 @@ const ReportGrid = () => {
         }
     }, [])
 
+    const fetchGroups = useCallback(async () => {
+        try {
+            const data = await fetchAllGroups()
+            setGroups(data)
+        } catch (err) {
+            console.error('Error fetching groups:', err)
+        } finally {
+            setGroupsLoading(false)
+        }
+    }, [])
+
 
 
     useEffect(() => {
         fetchData(selectedMonth)
-    }, [selectedMonth, fetchData])
+        fetchGroups()
+    }, [selectedMonth, fetchData, fetchGroups])
 
     const handleMonthChange = (date: Date) => {
         setSelectedMonth(date)
@@ -155,6 +169,17 @@ const ReportGrid = () => {
                                 onViewReport: handleViewReport 
                             })}
                             data={membersData}
+                            searchKey="fullName"
+                            filterGroups={[
+                                {
+                                    id: "groupId",
+                                    label: "Group",
+                                    options: groups.map(group => ({
+                                        _id: group._id,
+                                        label: group.name
+                                    }))
+                                }
+                            ]}
                         />
                     </CardContent>
                 </Card>

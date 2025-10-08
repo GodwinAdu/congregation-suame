@@ -6,13 +6,18 @@ import { Edit, Trash2 } from "lucide-react";
 
 
 
+import { deleteGroup } from "@/lib/actions/group.actions";
+import { toast } from "sonner";
+
 const handleDelete = async (id: string): Promise<void> => {
     try {
-        // await deleteBuilding(id)
-        console.log("Item deleted successfully")
+        await deleteGroup(id);
+        toast.success("Group deleted successfully");
+        window.location.reload();
     } catch (error) {
-        console.error("Delete error:", error)
-        throw error // Re-throw to let CellAction handle the error
+        console.error("Delete error:", error);
+        toast.error("Failed to delete group");
+        throw error;
     }
 }
 
