@@ -39,7 +39,8 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
-    attendance: z.number().min(1, "Attendance must be at least 1"),
+    attendance: z.coerce.number({
+    error: "Attendance is required"}).min(0, {message: "Attendance cannot be negative"}),
     date: z.date()
 });
 
@@ -101,7 +102,7 @@ export function AttendanceModal() {
                                 name="date"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Date of birth</FormLabel>
+                                        <FormLabel>Date Of Attendance</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
