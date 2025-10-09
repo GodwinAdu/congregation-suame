@@ -115,7 +115,7 @@ export function AddGroupModal({ open, onClose, member, selectedMonth, onSuccess,
                 })
                 toast.success("Field service report added successfully")
             }
-            
+
             form.reset()
             onClose()
             onSuccess()

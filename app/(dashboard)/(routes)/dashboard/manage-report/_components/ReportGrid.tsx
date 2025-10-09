@@ -26,6 +26,7 @@ const ReportGrid = () => {
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
     const [groups, setGroups] = useState<Array<{ _id: string; name: string }>>([])
     const [groupsLoading, setGroupsLoading] = useState(true)
+     const [editMode, setEditMode] = useState(false)
 
     const fetchData = useCallback(async (monthDate: Date) => {
         setLoading(true)
@@ -77,6 +78,15 @@ const ReportGrid = () => {
     const handleCloseModal = () => {
         setShowAddModal(false)
         setSelectedMember(null)
+    }
+     const handleEditReport = (reportId: string) => {
+        const member = membersData.find(m => m.reportId === reportId)
+        if (member) {
+            setSelectedMember(member)
+            setSelectedReportId(reportId)
+            setEditMode(true)
+            setShowAddModal(true)
+        }
     }
 
     const handleViewReport = (reportId: string) => {
@@ -166,7 +176,8 @@ const ReportGrid = () => {
                         <DataTable
                             columns={createColumns({ 
                                 onAddReport: handleAddReport,
-                                onViewReport: handleViewReport 
+                                onViewReport: handleViewReport ,
+                                onEditReport:handleEditReport
                             })}
                             data={membersData}
                             searchKey="fullName"
@@ -192,6 +203,8 @@ const ReportGrid = () => {
                 member={selectedMember}
                 selectedMonth={selectedMonth.toISOString().slice(0, 7)}
                 onSuccess={handleRefresh}
+                editMode={editMode}
+                reportId={selectedReportId}
             />
 
             <ReportDetailsModal
