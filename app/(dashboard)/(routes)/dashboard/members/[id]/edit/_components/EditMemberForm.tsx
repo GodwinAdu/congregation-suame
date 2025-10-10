@@ -45,8 +45,8 @@ export function EditMemberForm({ member, groups, privileges }: EditMemberFormPro
             })
             toast.success('Member updated successfully')
             router.push('/dashboard/members')
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to update member')
+        } catch (error) {
+            toast.error(error.message ?? 'Failed to update member')
         } finally {
             setLoading(false)
         }
@@ -55,7 +55,7 @@ export function EditMemberForm({ member, groups, privileges }: EditMemberFormPro
     const handlePrivilegeChange = (privilegeId: string, checked: boolean) => {
         setFormData(prev => ({
             ...prev,
-            privileges: checked 
+            privileges: checked
                 ? [...prev.privileges, privilegeId]
                 : prev.privileges.filter(id => id !== privilegeId)
         }))
@@ -176,7 +176,7 @@ export function EditMemberForm({ member, groups, privileges }: EditMemberFormPro
                             </Select>
                         </div>
                     </div>
-                    
+
                     <div>
                         <Label>Privileges</Label>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">

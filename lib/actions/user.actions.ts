@@ -431,6 +431,67 @@ async function _updateMemberPrivileges(user: User, memberId: string, privileges:
     }
 }
 
+async function _resetMemberPassword(user: User, memberId: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const member = await Member.findById(memberId);
+        if (!member) throw new Error("Member not found");
+        if (!member.email) throw new Error("Member has no email address");
+
+        const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+        const hashedPassword = await hash(tempPassword, 12);
+
+        await Member.findByIdAndUpdate(memberId, { password: hashedPassword });
+
+        const { sendPasswordResetEmail } = await import('../services/email.service');
+        await sendPasswordResetEmail(member.email, member.fullName, tempPassword);
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'password_reset',
+            action: `${user.fullName} reset password for ${member.fullName}`,
+            details: { entityId: memberId, entityType: 'Member' },
+        });
+
+        return { success: true, message: "Password reset email sent successfully" };
+    } catch (error) {
+        console.log("error happened while resetting password", error);
+        throw error;
+    }
+}
+
+async function _sendMemberInvite(user: User, memberId: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const member = await Member.findById(memberId);
+        if (!member) throw new Error("Member not found");
+        if (!member.email) throw new Error("Member has no email address");
+
+        const inviteCode = Math.random().toString(36).slice(-6).toUpperCase() + Math.random().toString(36).slice(-6).toUpperCase();
+
+        const { sendInvitationEmail } = await import('../services/email.service');
+        await sendInvitationEmail(member.email, member.fullName, inviteCode);
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'invitation_sent',
+            action: `${user.fullName} sent invitation to ${member.fullName}`,
+            details: { entityId: memberId, entityType: 'Member' },
+        });
+
+        return { success: true, message: "Invitation sent successfully" };
+    } catch (error) {
+        console.log("error happened while sending invite", error);
+        throw error;
+    }
+}
+
 async function _deleteMember(user: User, memberId: string) {
     try {
         if (!user) throw new Error("User not authorized");
@@ -467,3 +528,5 @@ export const updateMemberRole = await withAuth(_updateMemberRole);
 export const updateMemberGroup = await withAuth(_updateMemberGroup);
 export const updateMemberPrivileges = await withAuth(_updateMemberPrivileges);
 export const deleteMember = await withAuth(_deleteMember);
+export const resetMemberPassword = await withAuth(_resetMemberPassword);
+export const sendMemberInvite = await withAuth(_sendMemberInvite);
