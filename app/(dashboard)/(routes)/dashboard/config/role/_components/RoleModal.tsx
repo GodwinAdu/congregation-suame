@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { createRole, updateRole } from "@/lib/actions/role.actions"
 import { RoleType } from "./columns"
-import { Shield, Users, FileText, Calendar, Car, History, Trash, Settings } from "lucide-react"
+import { Shield, Users, FileText, Calendar, Car, History, Trash, Settings, MapPin, DollarSign, MessageSquare, FolderOpen, Bot, Bell } from "lucide-react"
 import React from "react"
 
 const formSchema = z.object({
@@ -47,6 +47,13 @@ const formSchema = z.object({
         monthlyReport: z.boolean().default(false),
         assignments: z.boolean().default(false),
         cleaning: z.boolean().default(false),
+        territory: z.boolean().default(false),
+        financial: z.boolean().default(false),
+        communication: z.boolean().default(false),
+        events: z.boolean().default(false),
+        documents: z.boolean().default(false),
+        aiAssistant: z.boolean().default(false),
+        notifications: z.boolean().default(false),
     })
 })
 
@@ -96,6 +103,37 @@ const permissionGroups = [
         ]
     },
     {
+        title: "Territory & Field Service",
+        icon: MapPin,
+        permissions: [
+            { key: "territory", label: "Territory Management", description: "Manage territories, assignments, and return visits" }
+        ]
+    },
+    {
+        title: "Financial Management",
+        icon: DollarSign,
+        permissions: [
+            { key: "financial", label: "Financial Management", description: "Manage contributions, expenses, and budgets" }
+        ]
+    },
+    {
+        title: "Communication & Events",
+        icon: MessageSquare,
+        permissions: [
+            { key: "communication", label: "Communication Hub", description: "Send messages, announcements, and broadcasts" },
+            { key: "events", label: "Events & Calendar", description: "Manage events and calendar scheduling" },
+            { key: "notifications", label: "Notifications", description: "Manage notification preferences and delivery" }
+        ]
+    },
+    {
+        title: "Documents & AI",
+        icon: FolderOpen,
+        permissions: [
+            { key: "documents", label: "Document Management", description: "Manage documents, forms, and file sharing" },
+            { key: "aiAssistant", label: "AI Assistant", description: "Access AI-powered insights and suggestions" }
+        ]
+    },
+    {
         title: "System & Maintenance",
         icon: Shield,
         permissions: [
@@ -137,6 +175,7 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                 name: "",
                 permissions: {
                     dashboard: false,
+                    config: false,
                     manageGroupMembers: false,
                     manageAllReport: false,
                     manageGroupReport: false,
@@ -149,9 +188,13 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                     monthlyReport: false,
                     assignments: false,
                     cleaning: false,
-                    monthlyReport: false,
-                    assignments: false,
-                    cleaning: false,
+                    territory: false,
+                    financial: false,
+                    communication: false,
+                    events: false,
+                    documents: false,
+                    aiAssistant: false,
+                    notifications: false,
                 }
             })
         }

@@ -71,7 +71,7 @@ interface AnalyticsData {
         monthly: { _id: { year: number; month: number }; count: number }[]
         topPublishers: { publisherName: string; totalHours: number; totalStudies: number; reportCount: number }[]
     }
-    systemHealth: {
+    systemHealth?: {
         totalUsers: number
         activeUsers: number
         inactiveUsers: number
@@ -162,9 +162,9 @@ export default function UniversalAnalytics() {
     }
 
     const healthScore = Math.round((
-        (data.systemHealth.activeUsers / data.systemHealth.totalUsers) * 25 +
-        (data.systemHealth.completionRate) * 0.25 +
-        (data.systemHealth.transportParticipation) * 0.25 +
+        ((data.systemHealth?.activeUsers || 0) / (data.systemHealth?.totalUsers || 1)) * 25 +
+        (data.systemHealth?.completionRate || 0) * 0.25 +
+        (data.systemHealth?.transportParticipation || 0) * 0.25 +
         Math.min((data.attendance.averageAttendance / Math.max(data.members.active, 1)) * 25, 25)
     ))
 
@@ -239,21 +239,21 @@ export default function UniversalAnalytics() {
                             <div className="flex-1 space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span>Active Members</span>
-                                    <span className="font-medium">{data.systemHealth.activeUsers}/{data.systemHealth.totalUsers}</span>
+                                    <span className="font-medium">{data.systemHealth?.activeUsers}/{data.systemHealth?.totalUsers}</span>
                                 </div>
-                                <Progress value={(data.systemHealth.activeUsers / data.systemHealth.totalUsers) * 100} className="h-2" />
+                                <Progress value={((data.systemHealth?.activeUsers || 0) / (data.systemHealth?.totalUsers || 1)) * 100} className="h-2" />
 
                                 <div className="flex justify-between text-sm">
                                     <span>Report Completion</span>
-                                    <span className="font-medium">{data.systemHealth.completionRate}%</span>
+                                    <span className="font-medium">{data.systemHealth?.completionRate}%</span>
                                 </div>
-                                <Progress value={data.systemHealth.completionRate} className="h-2" />
+                                <Progress value={data.systemHealth?.completionRate || 0} className="h-2" />
 
                                 <div className="flex justify-between text-sm">
                                     <span>Transport Participation</span>
-                                    <span className="font-medium">{data.systemHealth.transportParticipation}%</span>
+                                    <span className="font-medium">{data.systemHealth?.transportParticipation}%</span>
                                 </div>
-                                <Progress value={data.systemHealth.transportParticipation} className="h-2" />
+                                <Progress value={data.systemHealth?.transportParticipation || 0} className="h-2" />
                             </div>
                         </div>
                     </CardContent>
@@ -273,11 +273,11 @@ export default function UniversalAnalytics() {
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-green-700">Total Hours</span>
-                            <Badge className="bg-green-600">{data.fieldService.totalHours}</Badge>
+                            <Badge className="bg-green-600">{data.fieldService?.totalHours || 0}</Badge>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-green-700">Bible Studies</span>
-                            <Badge className="bg-green-600">{data.fieldService.totalBibleStudies}</Badge>
+                            <Badge className="bg-green-600">{data.fieldService?.totalBibleStudies || 0}</Badge>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-green-700">Meetings</span>
@@ -338,9 +338,9 @@ export default function UniversalAnalytics() {
                                     <div>
                                         <p className="text-green-100">Service Hours</p>
                                         <div className="flex items-center gap-2">
-                                            <p className="text-3xl font-bold">{data.fieldService.totalHours}</p>
-                                            <span className={`text-sm ${getGrowthColor(data.systemHealth.reportGrowth)}`}>
-                                                {getGrowthIcon(data.systemHealth.reportGrowth)} {Math.abs(data.systemHealth.reportGrowth)}%
+                                            <p className="text-3xl font-bold">{data.fieldService?.totalHours || 0}</p>
+                                            <span className={`text-sm ${getGrowthColor(data.systemHealth?.reportGrowth || 0)}`}>
+                                                {getGrowthIcon(data.systemHealth?.reportGrowth || 0)} {Math.abs(data.systemHealth?.reportGrowth || 0)}%
                                             </span>
                                         </div>
                                         <p className="text-xs text-green-200">this month</p>
@@ -355,7 +355,7 @@ export default function UniversalAnalytics() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-purple-100">Bible Studies</p>
-                                        <p className="text-3xl font-bold">{data.fieldService.totalBibleStudies}</p>
+                                        <p className="text-3xl font-bold">{data.fieldService?.totalBibleStudies || 0}</p>
                                         <p className="text-xs text-purple-200">conducted</p>
                                     </div>
                                     <FileText className="h-10 w-10 text-purple-200" />
@@ -370,8 +370,8 @@ export default function UniversalAnalytics() {
                                         <p className="text-orange-100">Avg Attendance</p>
                                         <div className="flex items-center gap-2">
                                             <p className="text-3xl font-bold">{data.attendance.averageAttendance}</p>
-                                            <span className={`text-sm ${getGrowthColor(data.systemHealth.attendanceGrowth)}`}>
-                                                {getGrowthIcon(data.systemHealth.attendanceGrowth)} {Math.abs(data.systemHealth.attendanceGrowth)}%
+                                            <span className={`text-sm ${getGrowthColor(data.systemHealth?.attendanceGrowth || 0)}`}>
+                                                {getGrowthIcon(data.systemHealth?.attendanceGrowth || 0)} {Math.abs(data.systemHealth?.attendanceGrowth || 0)}%
                                             </span>
                                         </div>
                                         <p className="text-xs text-orange-200">per meeting</p>
@@ -395,25 +395,25 @@ export default function UniversalAnalytics() {
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-3 gap-4 text-center">
                                         <div className="p-3 bg-blue-50 rounded-lg">
-                                            <p className="text-2xl font-bold text-blue-600">{data.transport.participating}</p>
+                                            <p className="text-2xl font-bold text-blue-600">{data.transport?.participating || 0}</p>
                                             <p className="text-xs text-muted-foreground">Participating</p>
                                         </div>
                                         <div className="p-3 bg-green-50 rounded-lg">
-                                            <p className="text-2xl font-bold text-green-600">{data.transport.fullyPaid}</p>
+                                            <p className="text-2xl font-bold text-green-600">{data.transport?.fullyPaid || 0}</p>
                                             <p className="text-xs text-muted-foreground">Fully Paid</p>
                                         </div>
                                         <div className="p-3 bg-purple-50 rounded-lg">
-                                            <p className="text-2xl font-bold text-purple-600">₵{data.transport.totalPaid}</p>
+                                            <p className="text-2xl font-bold text-purple-600">₵{data.transport?.totalPaid || 0}</p>
                                             <p className="text-xs text-muted-foreground">Collected</p>
                                         </div>
                                     </div>
-                                    {data.transport.participating > 0 && (
+                                    {(data.transport?.participating || 0) > 0 && (
                                         <div>
                                             <div className="flex justify-between text-sm mb-2">
                                                 <span>Payment Progress</span>
-                                                <span>{Math.round((data.transport.fullyPaid / data.transport.participating) * 100)}%</span>
+                                                <span>{Math.round(((data.transport?.fullyPaid || 0) / (data.transport?.participating || 1)) * 100)}%</span>
                                             </div>
-                                            <Progress value={(data.transport.fullyPaid / data.transport.participating) * 100} className="h-3" />
+                                            <Progress value={((data.transport?.fullyPaid || 0) / (data.transport?.participating || 1)) * 100} className="h-3" />
                                         </div>
                                     )}
                                 </div>
@@ -429,7 +429,7 @@ export default function UniversalAnalytics() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    {data.groups.memberCounts.slice(0, 4).map((group, index) => (
+                                    {(data.groups?.memberCounts || []).slice(0, 4).map((group, index) => (
                                         <div key={group._id} className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' :
@@ -483,7 +483,7 @@ export default function UniversalAnalytics() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {data.members.roleDistribution.map((role, index) => (
+                                {(data.members?.roleDistribution || []).map((role, index) => (
                                     <div key={role._id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Badge variant="outline" className={
@@ -521,7 +521,7 @@ export default function UniversalAnalytics() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    {data.trends.topPublishers.map((publisher, index) => (
+                                    {(data.trends?.topPublishers || []).map((publisher, index) => (
                                         <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${index === 0 ? 'bg-yellow-500' :
@@ -559,20 +559,20 @@ export default function UniversalAnalytics() {
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="text-center p-4 bg-blue-50 rounded-lg">
-                                        <p className="text-2xl font-bold text-blue-600">{data.fieldService.totalReports}</p>
+                                        <p className="text-2xl font-bold text-blue-600">{data.fieldService?.totalReports || 0}</p>
                                         <p className="text-sm text-muted-foreground">Total Reports</p>
                                     </div>
                                     <div className="text-center p-4 bg-green-50 rounded-lg">
-                                        <p className="text-2xl font-bold text-green-600">{data.fieldService.approvedReports}</p>
+                                        <p className="text-2xl font-bold text-green-600">{data.fieldService?.approvedReports || 0}</p>
                                         <p className="text-sm text-muted-foreground">Approved</p>
                                     </div>
                                 </div>
                                 <div>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span>Approval Rate</span>
-                                        <span>{data.systemHealth.completionRate}%</span>
+                                        <span>{data.systemHealth?.completionRate || 0}%</span>
                                     </div>
-                                    <Progress value={data.systemHealth.completionRate} className="h-3" />
+                                    <Progress value={data.systemHealth?.completionRate || 0} className="h-3" />
                                 </div>
                             </CardContent>
                         </Card>
@@ -652,8 +652,8 @@ export default function UniversalAnalytics() {
                                             <p className="text-sm text-muted-foreground">vs last month</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-2xl font-bold ${getGrowthColor(data.systemHealth.memberGrowth)}`}>
-                                                {getGrowthIcon(data.systemHealth.memberGrowth)} {Math.abs(data.systemHealth.memberGrowth)}%
+                                            <p className={`text-2xl font-bold ${getGrowthColor(data.systemHealth?.memberGrowth || 0)}`}>
+                                                {getGrowthIcon(data.systemHealth?.memberGrowth || 0)} {Math.abs(data.systemHealth?.memberGrowth || 0)}%
                                             </p>
                                         </div>
                                     </div>
@@ -664,8 +664,8 @@ export default function UniversalAnalytics() {
                                             <p className="text-sm text-muted-foreground">vs last month</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-2xl font-bold ${getGrowthColor(data.systemHealth.reportGrowth)}`}>
-                                                {getGrowthIcon(data.systemHealth.reportGrowth)} {Math.abs(data.systemHealth.reportGrowth)}%
+                                            <p className={`text-2xl font-bold ${getGrowthColor(data.systemHealth?.reportGrowth || 0)}`}>
+                                                {getGrowthIcon(data.systemHealth?.reportGrowth || 0)} {Math.abs(data.systemHealth?.reportGrowth || 0)}%
                                             </p>
                                         </div>
                                     </div>
@@ -676,8 +676,8 @@ export default function UniversalAnalytics() {
                                             <p className="text-sm text-muted-foreground">vs last month</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-2xl font-bold ${getGrowthColor(data.systemHealth.attendanceGrowth)}`}>
-                                                {getGrowthIcon(data.systemHealth.attendanceGrowth)} {Math.abs(data.systemHealth.attendanceGrowth)}%
+                                            <p className={`text-2xl font-bold ${getGrowthColor(data.systemHealth?.attendanceGrowth || 0)}`}>
+                                                {getGrowthIcon(data.systemHealth?.attendanceGrowth || 0)} {Math.abs(data.systemHealth?.attendanceGrowth || 0)}%
                                             </p>
                                         </div>
                                     </div>
@@ -696,7 +696,7 @@ export default function UniversalAnalytics() {
                                 <div>
                                     <h4 className="font-medium mb-3">Privilege Distribution</h4>
                                     <div className="space-y-2">
-                                        {data.demographics.privileges.slice(0, 5).map((privilege, index) => (
+                                        {(data.demographics?.privileges || []).slice(0, 5).map((privilege, index) => (
                                             <div key={privilege._id} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' :
@@ -712,11 +712,11 @@ export default function UniversalAnalytics() {
                                     </div>
                                 </div>
 
-                                {data.demographics.ageGroups.length > 0 && (
+                                {(data.demographics?.ageGroups || []).length > 0 && (
                                     <div>
                                         <h4 className="font-medium mb-3">Age Groups</h4>
                                         <div className="space-y-2">
-                                            {data.demographics.ageGroups.map((group, index) => {
+                                            {(data.demographics?.ageGroups || []).map((group, index) => {
                                                 const ageLabel =
                                                     group._id === 0 ? 'Under 18' :
                                                         group._id === 18 ? '18-29' :
@@ -834,9 +834,9 @@ export default function UniversalAnalytics() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {data.recentActivity.newMembers.length > 0 ? (
+                                {(data.recentActivity?.newMembers || []).length > 0 ? (
                                     <div className="space-y-3">
-                                        {data.recentActivity.newMembers.map((member) => (
+                                        {(data.recentActivity?.newMembers || []).map((member) => (
                                             <div key={member._id} className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
@@ -864,9 +864,9 @@ export default function UniversalAnalytics() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {data.recentActivity.newReports.length > 0 ? (
+                                {(data.recentActivity?.newReports || []).length > 0 ? (
                                     <div className="space-y-3">
-                                        {data.recentActivity.newReports.slice(0, 5).map((report) => (
+                                        {(data.recentActivity?.newReports || []).slice(0, 5).map((report) => (
                                             <div key={report._id} className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">

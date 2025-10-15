@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Users, BookOpen, Plus } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Calendar, Users, BookOpen, Plus, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { updateAssignment } from "@/lib/actions/assignment.actions"
+import { updateAssignment, fetchAssignmentsByWeek } from "@/lib/actions/assignment.actions"
 import { AddAssignmentModal } from "./add-assignment-modal"
 
 interface Assignment {
@@ -41,15 +42,36 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
     const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments)
     const [selectedWeek, setSelectedWeek] = useState(currentWeek)
     const [showAddModal, setShowAddModal] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
-    const handleWeekChange = (direction: 'prev' | 'next') => {
+    // Update assignments when currentWeek prop changes
+    useEffect(() => {
+        setAssignments(initialAssignments)
+        setSelectedWeek(currentWeek)
+    }, [initialAssignments, currentWeek])
+
+    const handleWeekChange = async (direction: 'prev' | 'next') => {
         const current = new Date(selectedWeek)
         const newDate = new Date(current)
         newDate.setDate(current.getDate() + (direction === 'next' ? 7 : -7))
         const newWeek = newDate.toISOString().split('T')[0]
+        
+        setIsLoading(true)
         setSelectedWeek(newWeek)
-        router.push(`/dashboard/assignments?week=${newWeek}`)
+        
+        try {
+            // Fetch assignments for the new week
+            const newAssignments = await fetchAssignmentsByWeek(newWeek)
+            setAssignments(newAssignments)
+            
+            // Update URL without full page reload
+            router.push(`/dashboard/assignments?week=${newWeek}`, { scroll: false })
+        } catch (error: any) {
+            toast.error(error.message || "Failed to load assignments")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleAssignMember = async (assignmentId: string, memberId: string, type: 'assignedTo' | 'assistant') => {
@@ -71,8 +93,15 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
         }
     }
 
-    const handleAddSuccess = () => {
-        router.refresh()
+    const handleAddSuccess = async () => {
+        try {
+            // Refresh assignments for current week
+            const newAssignments = await fetchAssignmentsByWeek(selectedWeek)
+            setAssignments(newAssignments)
+            toast.success("Assignment added successfully")
+        } catch (error: any) {
+            toast.error(error.message || "Failed to refresh assignments")
+        }
     }
 
     const formatWeekRange = (weekStart: string) => {
@@ -104,14 +133,24 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
                     {/* Week Navigation */}
                     <div className="flex flex-col items-center gap-4">
                         <div className="flex items-center gap-4">
-                            <Button variant="outline" onClick={() => handleWeekChange('prev')}>
+                            <Button 
+                                variant="outline" 
+                                onClick={() => handleWeekChange('prev')}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                 Previous Week
                             </Button>
                             <div className="text-center">
                                 <p className="text-sm text-muted-foreground">Week of</p>
                                 <p className="font-semibold">{formatWeekRange(selectedWeek)}</p>
                             </div>
-                            <Button variant="outline" onClick={() => handleWeekChange('next')}>
+                            <Button 
+                                variant="outline" 
+                                onClick={() => handleWeekChange('next')}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                 Next Week
                             </Button>
                         </div>
@@ -137,7 +176,24 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {midweekAssignments.length === 0 ? (
+                            {isLoading ? (
+                                <div className="space-y-4">
+                                    {[1, 2].map((i) => (
+                                        <div key={i} className="border rounded-lg p-4 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton className="h-6 w-24" />
+                                                <Skeleton className="h-6 w-16" />
+                                            </div>
+                                            <Skeleton className="h-6 w-3/4" />
+                                            <Skeleton className="h-4 w-full" />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <Skeleton className="h-10 w-full" />
+                                                <Skeleton className="h-10 w-full" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : midweekAssignments.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-8">
                                     No assignments for this week. Add assignments to get started.
                                 </p>
@@ -228,7 +284,21 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {weekendAssignments.length === 0 ? (
+                            {isLoading ? (
+                                <div className="space-y-4">
+                                    {[1, 2].map((i) => (
+                                        <div key={i} className="border rounded-lg p-4 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton className="h-6 w-24" />
+                                                <Skeleton className="h-6 w-16" />
+                                            </div>
+                                            <Skeleton className="h-6 w-3/4" />
+                                            <Skeleton className="h-4 w-full" />
+                                            <Skeleton className="h-10 w-full" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : weekendAssignments.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-8">
                                     No assignments for this week. Add assignments to get started.
                                 </p>

@@ -19,23 +19,23 @@ const CleaningTaskSchema: Schema<ICleaningTask> = new Schema(
     {
         area: { type: String, required: true },
         task: { type: String, required: true },
-        frequency: { 
-            type: String, 
-            enum: ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"], 
-            required: true 
+        frequency: {
+            type: String,
+            enum: ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"],
+            required: true
         },
         assignedTo: { type: Schema.Types.ObjectId, ref: "Member" },
         dueDate: { type: Date, required: true },
         completedDate: { type: Date },
-        status: { 
-            type: String, 
-            enum: ["Pending", "In Progress", "Completed", "Overdue"], 
-            default: "Pending" 
+        status: {
+            type: String,
+            enum: ["Pending", "In Progress", "Completed", "Overdue"],
+            default: "Pending"
         },
-        priority: { 
-            type: String, 
-            enum: ["Low", "Medium", "High"], 
-            default: "Medium" 
+        priority: {
+            type: String,
+            enum: ["Low", "Medium", "High"],
+            default: "Medium"
         },
         notes: { type: String },
         createdBy: { type: Schema.Types.ObjectId, ref: "Member", required: true }
@@ -62,10 +62,10 @@ export interface IInventoryItem extends Document {
 const InventoryItemSchema: Schema<IInventoryItem> = new Schema(
     {
         name: { type: String, required: true },
-        category: { 
-            type: String, 
-            enum: ["Cleaning Supplies", "Audio/Visual", "Literature", "Furniture", "Maintenance", "Other"], 
-            required: true 
+        category: {
+            type: String,
+            enum: ["Cleaning Supplies", "Audio/Visual", "Literature", "Furniture", "Maintenance", "Other"],
+            required: true
         },
         quantity: { type: Number, required: true, default: 0 },
         unit: { type: String, required: true },
@@ -80,8 +80,8 @@ const InventoryItemSchema: Schema<IInventoryItem> = new Schema(
     { timestamps: true }
 );
 
-export const CleaningTask = mongoose.models.CleaningTask || 
+export const CleaningTask = mongoose.models.CleaningTask ||
     mongoose.model<ICleaningTask>("CleaningTask", CleaningTaskSchema);
 
-export const InventoryItem = mongoose.models.InventoryItem || 
+export const InventoryItem = mongoose.models.InventoryItem ||
     mongoose.model<IInventoryItem>("InventoryItem", InventoryItemSchema);

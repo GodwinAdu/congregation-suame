@@ -3,6 +3,7 @@
 import { User, withAuth } from "../helpers/auth";
 import Group from "../models/group.models";
 import { connectToDB } from "../mongoose";
+import { logActivity } from "../utils/activity-logger";
 
 
 async function _createGroup(user: User, values: { name: string }) {
@@ -19,6 +20,14 @@ async function _createGroup(user: User, values: { name: string }) {
             name: values.name,
             createdBy: user._id,
         });
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'group_created',
+            action: `${user.fullName} `,
+            details: { entityId: newReport._id, entityType: 'FieldServiceReport' },
+        });
+
 
         await newGroup.save();
 
@@ -58,10 +67,7 @@ async function _getUserGroup(user: User) {
         if (!user) {
             throw new Error("User not authenticated");
         }
-
         const value = user.groupId
-
-        console.log(value,"testing id")
 
         await connectToDB();
 

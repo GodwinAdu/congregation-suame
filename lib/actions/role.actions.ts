@@ -112,7 +112,7 @@ async function _deleteRole(user: User, roleId: string) {
         if (!role) throw new Error("Role not found");
         
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'role_delete',
             action: `${user.fullName} deleted role: ${role.name}`,
             details: { entityId: roleId, entityType: 'Role' },

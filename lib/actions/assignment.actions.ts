@@ -27,7 +27,7 @@ async function _createAssignment(user: User, values: {
         await newAssignment.save();
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'assignment_create',
             action: `${user.fullName} created assignment: ${values.title}`,
             details: { entityId: newAssignment._id, entityType: 'Assignment' },
@@ -82,7 +82,7 @@ async function _updateAssignment(user: User, id: string, values: {
         if (!updatedAssignment) throw new Error("Assignment not found");
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'assignment_update',
             action: `${user.fullName} updated assignment`,
             details: { entityId: id, entityType: 'Assignment' },

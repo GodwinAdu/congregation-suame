@@ -17,6 +17,13 @@ export interface IRole {
     monthlyReport: boolean;
     assignments: boolean;
     cleaning: boolean;
+    territory: boolean;
+    financial: boolean;
+    communication: boolean;
+    events: boolean;
+    documents: boolean;
+    aiAssistant: boolean;
+    notifications: boolean;
 }
 
 const RoleSchema = new Schema({
@@ -74,6 +81,34 @@ const RoleSchema = new Schema({
             default: false
         },
         cleaning: {
+            type: Boolean,
+            default: false
+        },
+        territory: {
+            type: Boolean,
+            default: false
+        },
+        financial: {
+            type: Boolean,
+            default: false
+        },
+        communication: {
+            type: Boolean,
+            default: false
+        },
+        events: {
+            type: Boolean,
+            default: false
+        },
+        documents: {
+            type: Boolean,
+            default: false
+        },
+        aiAssistant: {
+            type: Boolean,
+            default: false
+        },
+        notifications: {
             type: Boolean,
             default: false
         }

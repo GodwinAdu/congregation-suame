@@ -26,14 +26,14 @@ async function _createCleaningTask(user: User, values: {
         });
 
         await newTask.save();
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'system_access',
             action: `${user.fullName} created cleaning task: ${values.task}`,
             details: { entityId: newTask._id, entityType: 'CleaningTask' },
         });
-        
+
         revalidatePath('/dashboard/cleaning');
         return JSON.parse(JSON.stringify(newTask));
 
@@ -61,9 +61,9 @@ async function _updateCleaningTask(user: User, id: string, values: {
         );
 
         if (!updatedTask) throw new Error("Task not found");
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'system_access',
             action: `${user.fullName} updated cleaning task`,
             details: { entityId: id, entityType: 'CleaningTask' },
@@ -117,14 +117,14 @@ async function _createInventoryItem(user: User, values: {
         });
 
         await newItem.save();
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'system_access',
             action: `${user.fullName} added inventory item: ${values.name}`,
             details: { entityId: newItem._id, entityType: 'InventoryItem' },
         });
-        
+
         revalidatePath('/dashboard/cleaning');
         return JSON.parse(JSON.stringify(newItem));
 
@@ -154,9 +154,9 @@ async function _updateInventoryItem(user: User, id: string, values: {
         );
 
         if (!updatedItem) throw new Error("Item not found");
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'system_access',
             action: `${user.fullName} updated inventory item`,
             details: { entityId: id, entityType: 'InventoryItem' },

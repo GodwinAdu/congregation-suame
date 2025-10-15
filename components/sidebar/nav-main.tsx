@@ -14,6 +14,13 @@ import {
   UserCheck,
   BookOpen,
   Sparkles,
+  MessageSquare,
+  DollarSign,
+  Calendar,
+  FolderOpen,
+  Bot,
+  Bell,
+  TrendingUp
 } from "lucide-react"
 import { IRole } from "@/lib/models/role.models"
 import {
@@ -93,10 +100,19 @@ export function NavMain({ role, user }: NavMainProps) {
     },
     {
       title: "Members",
-      url: `/dashboard/members`,
+      url: "#",
       icon: Users,
-      isActive: false,
-      roleField: "manageAllMembers"
+      roleField: "manageAllMembers",
+      items: [
+        {
+          title: "All Members",
+          url: `/dashboard/members`,
+        },
+        {
+          title: "Analytics",
+          url: `/dashboard/members/analytics`,
+        }
+      ],
     },
     {
       title: "Field Service Reports",
@@ -149,6 +165,121 @@ export function NavMain({ role, user }: NavMainProps) {
       icon: Sparkles,
       isActive: false,
       roleField: "cleaning"
+    },
+    {
+      title: "Territory Management",
+      url: "#",
+      icon: MapPin,
+      roleField: "territory",
+      items: [
+        {
+          title: "Territories",
+          url: `/dashboard/territory`,
+        },
+        {
+          title: "Return Visits",
+          url: `/dashboard/territory/return-visits`,
+        }
+      ],
+    },
+    {
+      title: "Financial Management",
+      url: "#",
+      icon: DollarSign,
+      roleField: "financial",
+      items: [
+        {
+          title: "Contributions",
+          url: `/dashboard/financial/contributions`,
+        },
+        {
+          title: "Expenses",
+          url: `/dashboard/financial/expenses`,
+        },
+        {
+          title: "Budget",
+          url: `/dashboard/financial/budget`,
+        }
+      ],
+    },
+    {
+      title: "Communication Hub",
+      url: "#",
+      icon: MessageSquare,
+      roleField: "communication",
+      items: [
+        {
+          title: "Messages",
+          url: `/dashboard/communication/messages`,
+        },
+        {
+          title: "Announcements",
+          url: `/dashboard/communication/announcements`,
+        },
+        {
+          title: "Broadcasts",
+          url: `/dashboard/communication/broadcasts`,
+        }
+      ],
+    },
+    {
+      title: "Events & Calendar",
+      url: "#",
+      icon: Calendar,
+      roleField: "events",
+      items: [
+        {
+          title: "Events",
+          url: `/dashboard/events`,
+        },
+        {
+          title: "Calendar",
+          url: `/dashboard/calendar`,
+        }
+      ],
+    },
+    {
+      title: "Document Management",
+      url: "#",
+      icon: FolderOpen,
+      roleField: "documents",
+      items: [
+        {
+          title: "Documents",
+          url: `/dashboard/documents`,
+        },
+        {
+          title: "Forms",
+          url: `/dashboard/documents/forms`,
+        }
+      ],
+    },
+    {
+      title: "AI Assistant",
+      url: "#",
+      icon: Bot,
+      roleField: "aiAssistant",
+      items: [
+        {
+          title: "Assignment Suggestions",
+          url: `/dashboard/ai/assignments`,
+        },
+        {
+          title: "Member Insights",
+          url: `/dashboard/ai/insights`,
+        },
+        {
+          title: "Analytics",
+          url: `/dashboard/ai/analytics`,
+        }
+      ],
+    },
+    {
+      title: "Notifications",
+      url: `/dashboard/notifications`,
+      icon: Bell,
+      isActive: false,
+      roleField: "notifications"
     },
     {
       title: "History",

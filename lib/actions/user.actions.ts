@@ -8,6 +8,7 @@ import { connectToDB } from "../mongoose";
 import { hash, compare } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "../utils/activity-logger";
+import { sendInvitationEmail, sendPasswordResetEmail } from "../services/email.service";
 
 interface MemberProps {
     fullName: string;
@@ -445,8 +446,6 @@ async function _resetMemberPassword(user: User, memberId: string) {
         const hashedPassword = await hash(tempPassword, 12);
 
         await Member.findByIdAndUpdate(memberId, { password: hashedPassword });
-
-        const { sendPasswordResetEmail } = await import('../services/email.service');
         await sendPasswordResetEmail(member.email, member.fullName, tempPassword);
 
         await logActivity({
@@ -475,7 +474,7 @@ async function _sendMemberInvite(user: User, memberId: string) {
 
         const inviteCode = Math.random().toString(36).slice(-6).toUpperCase() + Math.random().toString(36).slice(-6).toUpperCase();
 
-        const { sendInvitationEmail } = await import('../services/email.service');
+
         await sendInvitationEmail(member.email, member.fullName, inviteCode);
 
         await logActivity({
@@ -520,6 +519,16 @@ async function _deleteMember(user: User, memberId: string) {
     }
 }
 
+async function _getCurrentUser(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+        return JSON.parse(JSON.stringify(user));
+    } catch (error) {
+        console.log("error happened while getting current user", error);
+        throw error;
+    }
+}
+
 export const createMember = await withAuth(_createMember);
 export const fetchAllMembers = await withAuth(_fetchAllMembers);
 export const fetchAllMembersByRole = await withAuth(_fetchAllMembersByRole);
@@ -530,3 +539,4 @@ export const updateMemberPrivileges = await withAuth(_updateMemberPrivileges);
 export const deleteMember = await withAuth(_deleteMember);
 export const resetMemberPassword = await withAuth(_resetMemberPassword);
 export const sendMemberInvite = await withAuth(_sendMemberInvite);
+export const getCurrentUser = await withAuth(_getCurrentUser);

@@ -2,12 +2,111 @@
 
 import { User, withAuth } from "../helpers/auth";
 import Member from "../models/user.models";
-import Role from "../models/role.models";
+import Privilege from "../models/privilege.models";
 import Group from "../models/group.models";
 import Attendance from "../models/attendance.models";
-import FieldService from "../models/field-service.models";
+import FieldServiceReport from "../models/field-service.models";
+import { TransportFee, MemberFeePayment } from "../models/transport-fee.models";
 import Activity from "../models/activity.models";
 import { connectToDB } from "../mongoose";
+import { subMonths, startOfMonth, endOfMonth } from "date-fns";
+
+async function _fetchMemberAnalytics(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const [members, privileges] = await Promise.all([
+            Member.find({})
+                .populate('privileges', 'name')
+                .populate('groupId', 'name')
+                .lean(),
+            Privilege.find({}).lean()
+        ]);
+
+        // Get privilege counts
+        const privilegeCounts = privileges.map(privilege => {
+            const count = members.filter(member => 
+                member.privileges?.some((p: any) => p._id.toString() === privilege._id.toString())
+            ).length;
+            
+            const membersWithPrivilege = members.filter(member => 
+                member.privileges?.some((p: any) => p._id.toString() === privilege._id.toString())
+            );
+
+            return {
+                _id: privilege._id,
+                name: privilege.name,
+                count,
+                members: membersWithPrivilege.map((m: any) => ({
+                    _id: m._id,
+                    fullName: m.fullName,
+                    email: m.email,
+                    phone: m.phone,
+                    groupId: m.groupId
+                }))
+            };
+        });
+
+        // Get role counts
+        const roleCounts = [
+            {
+                name: 'Publishers',
+                count: members.filter(m => m.role === 'publisher').length,
+                members: members.filter(m => m.role === 'publisher').map((m: any) => ({
+                    _id: m._id,
+                    fullName: m.fullName,
+                    email: m.email,
+                    phone: m.phone,
+                    groupId: m.groupId
+                }))
+            },
+            {
+                name: 'Elders',
+                count: members.filter(m => m.role === 'elder').length,
+                members: members.filter(m => m.role === 'elder').map((m: any) => ({
+                    _id: m._id,
+                    fullName: m.fullName,
+                    email: m.email,
+                    phone: m.phone,
+                    groupId: m.groupId
+                }))
+            },
+            {
+                name: 'Ministerial Servants',
+                count: members.filter(m => m.role === 'ministerial_servant').length,
+                members: members.filter(m => m.role === 'ministerial_servant').map((m: any) => ({
+                    _id: m._id,
+                    fullName: m.fullName,
+                    email: m.email,
+                    phone: m.phone,
+                    groupId: m.groupId
+                }))
+            },
+            {
+                name: 'Pioneers',
+                count: members.filter(m => m.role === 'pioneer').length,
+                members: members.filter(m => m.role === 'pioneer').map((m: any) => ({
+                    _id: m._id,
+                    fullName: m.fullName,
+                    email: m.email,
+                    phone: m.phone,
+                    groupId: m.groupId
+                }))
+            }
+        ];
+
+        return JSON.parse(JSON.stringify({
+            totalMembers: members.length,
+            roles: roleCounts,
+            privileges: privilegeCounts
+        }));
+    } catch (error) {
+        console.log("Error fetching member analytics:", error);
+        throw error;
+    }
+}
 
 async function _getDashboardAnalytics(user: User) {
     try {
@@ -15,283 +114,130 @@ async function _getDashboardAnalytics(user: User) {
 
         await connectToDB();
 
-        // Get current date info
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const startOfMonth = new Date(currentYear, currentMonth, 1);
-        const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
+        const currentDate = new Date();
+        const lastMonth = subMonths(currentDate, 1);
+        const thisMonthStart = startOfMonth(currentDate);
+        const thisMonthEnd = endOfMonth(currentDate);
 
-        // Member statistics
-        const totalMembers = await Member.countDocuments({});
-        const activeMembers = await Member.countDocuments({ isActive: true });
-        const newMembersThisMonth = await Member.countDocuments({
-            createdAt: { $gte: startOfMonth, $lte: endOfMonth }
-        });
-
-        // Role distribution
-        const roleDistribution = await Member.aggregate([
-            { $group: { _id: "$role", count: { $sum: 1 } } },
-            { $sort: { count: -1 } }
+        const [
+            members,
+            attendanceRecords,
+            fieldServiceReports,
+            transportFees,
+            memberFeePayments,
+            groups,
+            privileges,
+            activities
+        ] = await Promise.all([
+            Member.find({}).populate('privileges', 'name').populate('groupId', 'name').lean(),
+            Attendance.find({}).lean(),
+            FieldServiceReport.find({}).populate('publisher', 'fullName').lean(),
+            TransportFee.find({ isActive: true }).lean(),
+            MemberFeePayment.find({}).lean(),
+            Group.find({}).lean(),
+            Privilege.find({}).lean(),
+            Activity.find({}).populate('userId', 'fullName').sort({ createdAt: -1 }).limit(50).lean()
         ]);
 
-        // Group statistics
-        const totalGroups = await Group.countDocuments({});
-        const groupMemberCounts = await Group.aggregate([
-            {
-                $lookup: {
-                    from: "members",
-                    localField: "_id",
-                    foreignField: "groupId",
-                    as: "members"
-                }
-            },
-            {
-                $project: {
-                    name: 1,
-                    memberCount: { $size: "$members" }
-                }
-            },
-            { $sort: { memberCount: -1 } }
-        ]);
+        // Member analytics
+        const totalMembers = members.length;
+        const activeMembers = members.filter(m => m.status === 'active').length;
+        const newMembersThisMonth = members.filter(m => 
+            new Date(m.createdAt) >= thisMonthStart && new Date(m.createdAt) <= thisMonthEnd
+        ).length;
 
-        // Attendance statistics
-        const thisMonthAttendance = await Attendance.find({
-            date: { $gte: startOfMonth, $lte: endOfMonth }
-        });
+        const roleDistribution = [
+            { _id: 'publisher', count: members.filter(m => m.role === 'publisher').length },
+            { _id: 'elder', count: members.filter(m => m.role === 'elder').length },
+            { _id: 'ministerial_servant', count: members.filter(m => m.role === 'ministerial_servant').length },
+            { _id: 'pioneer', count: members.filter(m => m.role === 'pioneer').length }
+        ];
 
-        const attendanceStats = {
-            totalMeetings: thisMonthAttendance.length,
-            averageAttendance: thisMonthAttendance.length > 0 
-                ? Math.round(thisMonthAttendance.reduce((sum, att) => sum + (att.attendance || 0), 0) / thisMonthAttendance.length)
-                : 0,
-            weeklyMeetings: thisMonthAttendance.filter(att => att.meetingType === 'Midweek').length,
-            weekendMeetings: thisMonthAttendance.filter(att => att.meetingType === 'Weekend').length,
-            totalAttendance: thisMonthAttendance.reduce((sum, att) => sum + (att.attendance || 0), 0)
-        };
+        // Group analytics
+        const memberCounts = groups.map(group => ({
+            _id: group._id,
+            name: group.name,
+            memberCount: members.filter(m => m.groupId?._id?.toString() === group._id.toString()).length
+        }));
 
-        // Field service statistics
-        const thisMonthReports = await FieldService.find({
-            month: { $gte: startOfMonth, $lte: endOfMonth }
-        });
+        // Attendance analytics
+        const totalMeetings = attendanceRecords.length;
+        const totalAttendance = attendanceRecords.reduce((sum, record) => sum + (record.attendanceCount || 0), 0);
+        const averageAttendance = totalMeetings > 0 ? Math.round(totalAttendance / totalMeetings) : 0;
+        const weeklyMeetings = attendanceRecords.filter(record => record.meetingType === 'midweek').length;
+        const weekendMeetings = attendanceRecords.filter(record => record.meetingType === 'weekend').length;
 
-        const fieldServiceStats = {
-            totalReports: thisMonthReports.length,
-            totalHours: thisMonthReports.reduce((sum, report) => sum + (report.hours || 0), 0),
-            totalBibleStudies: thisMonthReports.reduce((sum, report) => sum + (report.bibleStudents || 0), 0),
-            approvedReports: thisMonthReports.filter(report => report.check).length
-        };
+        // Field Service analytics
+        const totalReports = fieldServiceReports.length;
+        const totalHours = fieldServiceReports.reduce((sum, report) => sum + (report.hours || 0), 0);
+        const totalBibleStudies = fieldServiceReports.reduce((sum, report) => sum + (report.bibleStudents || 0), 0);
+        const approvedReports = fieldServiceReports.filter(report => report.check).length;
 
-        // Transport statistics
-        const transportStats = await Member.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    participating: { $sum: { $cond: ["$transport.carStatus", 1, 0] } },
-                    totalPaid: { $sum: "$transport.amount" },
-                    fullyPaid: { $sum: { $cond: ["$transport.payed", 1, 0] } }
-                }
+        // Transport analytics
+        const participatingMembers = memberFeePayments.filter(payment => payment.isJoined).length;
+        const totalPaid = memberFeePayments.reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
+        const fullyPaidMembers = memberFeePayments.filter(payment => payment.isPaid && payment.isJoined).length;
+
+        // Recent activity
+        const newMembers = members
+            .filter(m => new Date(m.createdAt) >= subMonths(currentDate, 1))
+            .slice(0, 5)
+            .map(m => ({ _id: m._id, fullName: m.fullName, createdAt: m.createdAt }));
+
+        const newReports = fieldServiceReports
+            .filter(r => new Date(r.createdAt) >= subMonths(currentDate, 1))
+            .slice(0, 5)
+            .map(r => ({ _id: r._id, publisher: { fullName: r.publisher?.fullName || 'Unknown' }, createdAt: r.createdAt }));
+
+        // Top publishers
+        const publisherStats = fieldServiceReports.reduce((acc: any, report) => {
+            const publisherName = report.publisher?.fullName || 'Unknown';
+            if (!acc[publisherName]) {
+                acc[publisherName] = { publisherName, totalHours: 0, totalStudies: 0, reportCount: 0 };
             }
-        ]);
+            acc[publisherName].totalHours += report.hours || 0;
+            acc[publisherName].totalStudies += report.bibleStudents || 0;
+            acc[publisherName].reportCount += 1;
+            return acc;
+        }, {});
 
-        const transport = transportStats[0] || { participating: 0, totalPaid: 0, fullyPaid: 0 };
+        const topPublishers = Object.values(publisherStats)
+            .sort((a: any, b: any) => b.totalHours - a.totalHours)
+            .slice(0, 5);
 
-        // Recent activity (last 7 days)
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const recentMembers = await Member.find({
-            createdAt: { $gte: sevenDaysAgo }
-        }).select('fullName createdAt').sort({ createdAt: -1 }).limit(5);
+        // Demographics
+        const privilegeCounts = privileges.map(privilege => ({
+            _id: privilege.name,
+            count: members.filter(member => 
+                member.privileges?.some((p: any) => p._id.toString() === privilege._id.toString())
+            ).length
+        }));
 
-        const recentReports = await FieldService.find({
-            createdAt: { $gte: sevenDaysAgo }
-        }).populate('publisher', 'fullName').sort({ createdAt: -1 }).limit(5);
+        // Activity analytics
+        const todayActivities = activities.filter(activity => 
+            new Date(activity.createdAt).toDateString() === new Date().toDateString()
+        ).length;
 
-        // Monthly trends (last 6 months)
-        const sixMonthsAgo = new Date(currentYear, currentMonth - 6, 1);
-        const monthlyTrends = await Member.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: sixMonthsAgo }
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        year: { $year: "$createdAt" },
-                        month: { $month: "$createdAt" }
-                    },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { "_id.year": 1, "_id.month": 1 } }
-        ]);
+        const activityStats = activities.reduce((acc: any, activity) => {
+            if (!acc[activity.type]) {
+                acc[activity.type] = { _id: activity.type, count: 0 };
+            }
+            acc[activity.type].count += 1;
+            return acc;
+        }, {});
 
-        // Top performers (field service)
-        const topPublishers = await FieldService.aggregate([
-            {
-                $match: {
-                    month: { $gte: startOfMonth, $lte: endOfMonth }
-                }
-            },
-            {
-                $group: {
-                    _id: "$publisher",
-                    totalHours: { $sum: "$hours" },
-                    totalStudies: { $sum: "$bibleStudents" },
-                    reportCount: { $sum: 1 }
-                }
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "publisherInfo"
-                }
-            },
-            {
-                $project: {
-                    publisherName: { $arrayElemAt: ["$publisherInfo.fullName", 0] },
-                    totalHours: 1,
-                    totalStudies: 1,
-                    reportCount: 1
-                }
-            },
-            { $sort: { totalHours: -1 } },
-            { $limit: 5 }
-        ]);
-
-        // Additional analytics
-        const lastMonth = new Date(currentYear, currentMonth - 1, 1);
-        const lastMonthEnd = new Date(currentYear, currentMonth, 0);
-        
-        const lastMonthMembers = await Member.countDocuments({
-            createdAt: { $gte: lastMonth, $lte: lastMonthEnd }
-        });
-        
-        const lastMonthReports = await FieldService.countDocuments({
-            month: { $gte: lastMonth, $lte: lastMonthEnd }
-        });
-        
-        const lastMonthAttendance = await Attendance.find({
-            date: { $gte: lastMonth, $lte: lastMonthEnd }
-        });
-        
-        const lastMonthAvgAttendance = lastMonthAttendance.length > 0 
-            ? Math.round(lastMonthAttendance.reduce((sum, att) => sum + (att.attendance || 0), 0) / lastMonthAttendance.length)
-            : 0;
-
-        // Growth calculations
-        const memberGrowth = lastMonthMembers > 0 
-            ? Math.round(((newMembersThisMonth - lastMonthMembers) / lastMonthMembers) * 100)
-            : newMembersThisMonth > 0 ? 100 : 0;
-            
-        const reportGrowth = lastMonthReports > 0 
-            ? Math.round(((fieldServiceStats.totalReports - lastMonthReports) / lastMonthReports) * 100)
-            : fieldServiceStats.totalReports > 0 ? 100 : 0;
-            
-        const attendanceGrowth = lastMonthAvgAttendance > 0 
-            ? Math.round(((attendanceStats.averageAttendance - lastMonthAvgAttendance) / lastMonthAvgAttendance) * 100)
-            : attendanceStats.averageAttendance > 0 ? 100 : 0;
+        const recentActivities = activities.slice(0, 10).map(activity => ({
+            _id: activity._id,
+            userId: { fullName: activity.userId?.fullName || 'Unknown User' },
+            type: activity.type,
+            action: activity.action,
+            createdAt: activity.createdAt,
+            success: activity.success
+        }));
 
         // System health metrics
-        const systemHealth = {
-            totalUsers: totalMembers,
-            activeUsers: activeMembers,
-            inactiveUsers: totalMembers - activeMembers,
-            completionRate: fieldServiceStats.totalReports > 0 
-                ? Math.round((fieldServiceStats.approvedReports / fieldServiceStats.totalReports) * 100)
-                : 0,
-            transportParticipation: transport.participating > 0 
-                ? Math.round((transport.fullyPaid / transport.participating) * 100)
-                : 0,
-            memberGrowth,
-            reportGrowth,
-            attendanceGrowth
-        };
-
-        // Privilege distribution
-        const privilegeStats = await Member.aggregate([
-            { $unwind: { path: "$privileges", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "privileges",
-                    localField: "privileges",
-                    foreignField: "_id",
-                    as: "privilegeInfo"
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        $cond: {
-                            if: { $eq: ["$privileges", null] },
-                            then: "No Privilege",
-                            else: { $arrayElemAt: ["$privilegeInfo.name", 0] }
-                        }
-                    },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { count: -1 } },
-            { $limit: 10 }
-        ]);
-
-        // Age demographics (if birthDate exists)
-        const ageStats = await Member.aggregate([
-            {
-                $match: {
-                    birthDate: { $exists: true, $ne: null }
-                }
-            },
-            {
-                $project: {
-                    age: {
-                        $floor: {
-                            $divide: [
-                                { $subtract: [new Date(), "$birthDate"] },
-                                365.25 * 24 * 60 * 60 * 1000
-                            ]
-                        }
-                    }
-                }
-            },
-            {
-                $bucket: {
-                    groupBy: "$age",
-                    boundaries: [0, 18, 30, 45, 60, 100],
-                    default: "Unknown",
-                    output: {
-                        count: { $sum: 1 }
-                    }
-                }
-            }
-        ]);
-
-        // Activity statistics
-        const recentActivities = await Activity.find({})
-            .populate('userId', 'fullName')
-            .sort({ createdAt: -1 })
-            .limit(10);
-
-        const activityStats = await Activity.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: sevenDaysAgo }
-                }
-            },
-            {
-                $group: {
-                    _id: "$type",
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { count: -1 } }
-        ]);
-
-        const todayActivities = await Activity.countDocuments({
-            createdAt: { $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) }
-        });
+        const completionRate = totalReports > 0 ? Math.round((approvedReports / totalReports) * 100) : 0;
+        const transportParticipation = totalMembers > 0 ? Math.round((participatingMembers / totalMembers) * 100) : 0;
 
         return JSON.parse(JSON.stringify({
             members: {
@@ -301,29 +247,52 @@ async function _getDashboardAnalytics(user: User) {
                 roleDistribution
             },
             groups: {
-                total: totalGroups,
-                memberCounts: groupMemberCounts
+                total: groups.length,
+                memberCounts
             },
-            attendance: attendanceStats,
-            fieldService: fieldServiceStats,
-            transport,
+            attendance: {
+                totalMeetings,
+                averageAttendance,
+                weeklyMeetings,
+                weekendMeetings,
+                totalAttendance
+            },
+            fieldService: {
+                totalReports,
+                totalHours,
+                totalBibleStudies,
+                approvedReports
+            },
+            transport: {
+                participating: participatingMembers,
+                totalPaid,
+                fullyPaid: fullyPaidMembers
+            },
             recentActivity: {
-                newMembers: recentMembers,
-                newReports: recentReports,
-                activities: recentActivities
+                newMembers,
+                newReports
             },
             trends: {
-                monthly: monthlyTrends,
+                monthly: [],
                 topPublishers
             },
-            systemHealth,
+            systemHealth: {
+                totalUsers: totalMembers,
+                activeUsers: activeMembers,
+                inactiveUsers: totalMembers - activeMembers,
+                completionRate,
+                transportParticipation,
+                memberGrowth: 0,
+                reportGrowth: 0,
+                attendanceGrowth: 0
+            },
             demographics: {
-                privileges: privilegeStats,
-                ageGroups: ageStats
+                privileges: privilegeCounts,
+                ageGroups: []
             },
             activities: {
                 recent: recentActivities,
-                stats: activityStats,
+                stats: Object.values(activityStats),
                 todayCount: todayActivities
             }
         }));
@@ -333,4 +302,5 @@ async function _getDashboardAnalytics(user: User) {
     }
 }
 
+export const fetchMemberAnalytics = await withAuth(_fetchMemberAnalytics);
 export const getDashboardAnalytics = await withAuth(_getDashboardAnalytics);

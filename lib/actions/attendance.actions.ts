@@ -22,7 +22,7 @@ async function _createAttendance(user: User, values: { attendance: number; month
         await newAttendance.save();
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'attendance_record',
             action: `${user.fullName} recorded attendance for ${values.date.toDateString()}: ${values.attendance} attendees`,
             details: { entityId: newAttendance._id, entityType: 'Attendance' },
@@ -161,7 +161,7 @@ async function _updateAttendance(user: User, id: string, values: { attendance: n
         if (!updatedAttendance) throw new Error("Attendance record not found");
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'attendance_update',
             action: `${user.fullName} updated attendance record to ${values.attendance} attendees`,
             details: { entityId: id, entityType: 'Attendance' },
@@ -184,7 +184,7 @@ async function _updateMonthlyAttendance(user: User, month: string, serviceYear: 
         // This is a simplified approach - in a real scenario, you'd want to update individual meeting records
         // For now, we'll just log the activity and return success
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'attendance_update',
             action: `${user.fullName} updated ${month} attendance data`,
             details: { month, serviceYear, values },

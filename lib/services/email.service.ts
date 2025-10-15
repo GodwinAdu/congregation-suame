@@ -1,15 +1,29 @@
 import nodemailer from 'nodemailer';
+import { SendMailOptions } from 'nodemailer';
 
-const transporter = nodemailer.createTransporter({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+export async function wrappedSendMail(mailOptions: SendMailOptions) {
+    return new Promise((resolve) => {
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: process.env.SMTP_USER!,
+                pass: process.env.SMTP_PASS!,
+            },
+        })
 
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                resolve(false); // or use rejcet(false) but then you will have to handle errors
+            }
+            else {
+                resolve(true);
+            }
+        });
+    })
+}
 export const sendPasswordResetEmail = async (
     email: string,
     fullName: string,
@@ -70,12 +84,19 @@ export const sendPasswordResetEmail = async (
     </html>
     `;
 
-    await transporter.sendMail({
+    const mailOptions = {
         from: `"Suame Congregation" <${process.env.SMTP_USER}>`,
         to: email,
         subject: '🔐 Password Reset - Suame Congregation',
         html: htmlContent,
-    });
+    }
+
+    try {
+        await wrappedSendMail(mailOptions)
+    } catch (error) {
+        console.error('Email send error:', error);
+        throw new Error('Failed to send password reset email');
+    }
 };
 
 export const sendInvitationEmail = async (
@@ -147,10 +168,17 @@ export const sendInvitationEmail = async (
     </html>
     `;
 
-    await transporter.sendMail({
+    const mailOptions = {
         from: `"Suame Congregation" <${process.env.SMTP_USER}>`,
         to: email,
         subject: '🎉 Welcome to Suame Congregation - Your Invitation',
         html: htmlContent,
-    });
+    }
+
+    try {
+        await wrappedSendMail(mailOptions)
+    } catch (error) {
+        console.error('Email send error:', error);
+        throw new Error('Failed to send invitation email');
+    }
 };

@@ -43,14 +43,14 @@ async function _createFieldServiceReport(user: User, values: {
         });
 
         await newReport.save();
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'report_submit',
             action: `${user.fullName} submitted field service report for ${values.month}`,
             details: { entityId: newReport._id, entityType: 'FieldServiceReport' },
         });
-        
+
         revalidatePath('/dashboard/manage-report');
         return JSON.parse(JSON.stringify(newReport));
 
@@ -215,9 +215,9 @@ async function _updateFieldServiceReport(user: User, id: string, values: {
         );
 
         if (!updatedReport) throw new Error("Report not found");
-        
+
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'report_update',
             action: `${user.fullName} updated field service report`,
             details: { entityId: id, entityType: 'FieldServiceReport' },

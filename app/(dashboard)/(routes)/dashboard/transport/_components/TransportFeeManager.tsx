@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, DollarSign, Users, Calendar, FileX, Edit, Trash2, RotateCcw } from "lucide-react";
+import { Plus, DollarSign, Users, Calendar, FileX, Edit, Trash2, RotateCcw, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { fetchAllTransportFees, fetchMembersWithFeeStatus, toggleMemberJoinStatus, deleteTransportFee, resetAllTransportData } from "@/lib/actions/transport-fee.actions";
 import { fetchAllMembers } from "@/lib/actions/user.actions";
@@ -49,6 +50,7 @@ export function TransportFeeManager() {
     const [selectedMember, setSelectedMember] = useState<MemberFeeStatus | null>(null);
     const [editingFee, setEditingFee] = useState<TransportFee | null>(null);
     const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+    const [searchTerm, setSearchTerm] = useState("");
 
     const fetchFees = useCallback(async () => {
         try {
@@ -190,6 +192,10 @@ export function TransportFeeManager() {
 
         return { totalMembers, paidMembers, totalCollected, totalExpected };
     };
+
+    const filteredMembers = members.filter(member => 
+        member.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const stats = getPaymentStats();
 
@@ -400,56 +406,73 @@ export function TransportFeeManager() {
                         {/* Members List */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Member Payments - {fee.name}</CardTitle>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle>Member Payments - {fee.name}</CardTitle>
+                                    <div className="relative w-64">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                        <Input
+                                            placeholder="Search members..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="pl-10"
+                                        />
+                                    </div>
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-2">
-                                    {members.map((member) => (
-                                        <div key={member._id} className="flex items-center justify-between p-3 border rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                <div>
-                                                    <p className="font-medium">{member.fullName}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {member.isJoined ? `Paid: ₵${member.amountPaid} | Balance: ₵${member.balance}` : "Not joined"}
-                                                    </p>
+                                    {filteredMembers.length > 0 ? (
+                                        filteredMembers.map((member) => (
+                                            <div key={member._id} className="flex items-center justify-between p-3 border rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <div>
+                                                        <p className="font-medium">{member.fullName}</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {member.isJoined ? `Paid: ₵${member.amountPaid} | Balance: ₵${member.balance}` : "Not joined"}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {member.isJoined ? (
-                                                    <>
-                                                        <Badge variant={member.isPaid ? "default" : "destructive"}>
-                                                            {member.isPaid ? "Paid" : "Pending"}
-                                                        </Badge>
-                                                        {!member.isPaid && (
+                                                <div className="flex items-center gap-2">
+                                                    {member.isJoined ? (
+                                                        <>
+                                                            <Badge variant={member.isPaid ? "default" : "destructive"}>
+                                                                {member.isPaid ? "Paid" : "Pending"}
+                                                            </Badge>
+                                                            {!member.isPaid && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => handleAddPayment(member)}
+                                                                >
+                                                                    Add Payment
+                                                                </Button>
+                                                            )}
                                                             <Button
                                                                 size="sm"
-                                                                onClick={() => handleAddPayment(member)}
+                                                                variant="outline"
+                                                                onClick={() => handleToggleJoin(member)}
                                                             >
-                                                                Add Payment
+                                                                Leave
                                                             </Button>
-                                                        )}
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => handleToggleJoin(member)}
-                                                        >
-                                                            Leave
-                                                        </Button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Badge variant="secondary">Not Joined</Badge>
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleToggleJoin(member)}
-                                                        >
-                                                            Join
-                                                        </Button>
-                                                    </>
-                                                )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Badge variant="secondary">Not Joined</Badge>
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => handleToggleJoin(member)}
+                                                            >
+                                                                Join
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            {searchTerm ? `No members found matching "${searchTerm}"` : "No members available"}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
