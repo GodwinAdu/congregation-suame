@@ -1,6 +1,6 @@
 
 
-import { getSession } from "./session";
+import { currentUser, } from "./session";
 import { fetchRole } from "../actions/role.actions";
 
 
@@ -8,7 +8,7 @@ import { fetchRole } from "../actions/role.actions";
 export async function currentUserRole() {
     try {
 
-        const user = await getSession();
+        const user = await currentUser();
 
         if (!user) {
             throw new Error('User not found');

@@ -88,19 +88,19 @@ const handleViewActivity = (member: any) => {
 
 
 export const columns: ColumnDef<any>[] = [
-    // {
-    //     accessorKey: "groupId",
-    //     header: "Group",
-    //     cell: ({ row }) => {
-    //         const group = row.original.groupId;
-    //         return group?.name || "No Group";
-    //     },
-    //     filterFn: (row, id, value) => {
-    //         if (!value) return true;
-    //         const groupId = row.original.groupId?._id;
-    //         return groupId === value;
-    //     },
-    // },
+    {
+        accessorKey: "groupId",
+        header: "Group",
+        cell: ({ row }) => {
+            const group = row.original.groupId;
+            return group?.name || "No Group";
+        },
+        filterFn: (row, id, value) => {
+            if (!value) return true;
+            const groupId = row.original.groupId?._id;
+            return groupId === value;
+        },
+    },
     {
         accessorKey: "fullName",
         header: "member Member",
