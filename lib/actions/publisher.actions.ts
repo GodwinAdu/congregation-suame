@@ -98,6 +98,7 @@ async function _submitFieldServiceReport(user: User, data: {
     hours?: number
     bibleStudents: number
     auxiliaryPioneer?: boolean
+    check?: boolean
     comments?: string
 }) {
     try {
@@ -114,14 +115,13 @@ async function _submitFieldServiceReport(user: User, data: {
         if (existingReport) {
             report = await FieldServiceReport.findByIdAndUpdate(
                 existingReport._id,
-                { ...data, check: false },
+                { ...data },
                 { new: true, runValidators: false }
             )
         } else {
             report = new FieldServiceReport({
                 ...data,
-                publisher: user._id,
-                check: false
+                publisher: user._id
             })
             await report.save()
         }

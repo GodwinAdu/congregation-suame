@@ -36,6 +36,7 @@ export function FieldServiceReportModal({
         hours: existingReport?.hours || 0,
         bibleStudents: existingReport?.bibleStudents || 0,
         auxiliaryPioneer: existingReport?.auxiliaryPioneer || false,
+        check: existingReport?.check || false,
         comments: existingReport?.comments || ""
     })
     const [loading, setLoading] = useState(false)
@@ -145,18 +146,34 @@ export function FieldServiceReportModal({
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="auxiliaryPioneer"
-                            checked={formData.auxiliaryPioneer}
-                            onCheckedChange={(checked) => setFormData(prev => ({ 
-                                ...prev, 
-                                auxiliaryPioneer: checked as boolean 
-                            }))}
-                        />
-                        <Label htmlFor="auxiliaryPioneer" className="text-sm font-medium">
-                            I served as an Auxiliary Pioneer this month
-                        </Label>
+                    <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="auxiliaryPioneer"
+                                checked={formData.auxiliaryPioneer}
+                                onCheckedChange={(checked) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    auxiliaryPioneer: checked as boolean 
+                                }))}
+                            />
+                            <Label htmlFor="auxiliaryPioneer" className="text-sm font-medium">
+                                I served as an Auxiliary Pioneer this month
+                            </Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="check"
+                                checked={formData.check}
+                                onCheckedChange={(checked) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    check: checked as boolean 
+                                }))}
+                            />
+                            <Label htmlFor="check" className="text-sm font-medium">
+                                I participated in field service this month
+                            </Label>
+                        </div>
                     </div>
 
                     <div className="space-y-2">
