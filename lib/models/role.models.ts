@@ -4,6 +4,7 @@ export interface IRole {
     _id: string;
     name: string;
     dashboard: boolean;
+    publisherDashboard: boolean;
     config: boolean;
     manageGroupMembers: boolean;
     manageAllReport: boolean;
@@ -24,6 +25,8 @@ export interface IRole {
     documents: boolean;
     aiAssistant: boolean;
     notifications: boolean;
+    overseerReports: boolean;
+    overseerAnalytics: boolean;
 }
 
 const RoleSchema = new Schema({
@@ -33,8 +36,13 @@ const RoleSchema = new Schema({
             type: Boolean,
             default: false,
         },
-        config:{type:Boolean,
-            default:false
+        publisherDashboard: {
+            type: Boolean,
+            default: true,
+        },
+        config: {
+            type: Boolean,
+            default: false
         },
         manageGroupMembers: {
             type: Boolean,
@@ -109,6 +117,14 @@ const RoleSchema = new Schema({
             default: false
         },
         notifications: {
+            type: Boolean,
+            default: false
+        },
+        overseerReports: {
+            type: Boolean,
+            default: false
+        },
+        overseerAnalytics: {
             type: Boolean,
             default: false
         }

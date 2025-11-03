@@ -24,7 +24,7 @@ export default async function RootLayout({
             <SidebarInset >
                 <Navbar user={user} />
                 <div className="relative scrollbar-hide">
-                    <div id="main-content" className="py-4 px-4 overflow-hidden scrollbar-hide">
+                    <div id="main-content" className="py-2 px-2 sm:py-4 sm:px-4 overflow-hidden scrollbar-hide">
                         {children}
                     </div>
                 </div>

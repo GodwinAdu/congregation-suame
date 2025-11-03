@@ -20,7 +20,7 @@ export default async function HomePage() {
                 <span className="text-foreground">Administrator Portal</span>
                 <br />
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Suame JW Congregation
+                  Suame Twi Congregation
                 </span>
               </h1>
 

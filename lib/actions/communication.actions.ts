@@ -258,6 +258,49 @@ async function _fetchBroadcasts(user: User) {
     }
 }
 
+async function _markMessageAsRead(user: User, messageId: string) {
+    try {
+        await connectToDB()
+        
+        const message = await Message.findById(messageId)
+        if (!message) {
+            throw new Error('Message not found')
+        }
+
+        // Check if user is recipient
+        const isRecipient = message.to.some((id: any) => id.toString() === user._id.toString())
+        if (!isRecipient) {
+            throw new Error('Unauthorized to mark this message as read')
+        }
+
+        // Check if already marked as read
+        const alreadyRead = message.readBy.some((read: any) => read.userId.toString() === user._id.toString())
+        if (alreadyRead) {
+            return { success: true, message: 'Already marked as read' }
+        }
+
+        // Add to readBy array
+        message.readBy.push({
+            userId: user._id,
+            readAt: new Date()
+        })
+        await message.save()
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'message_read',
+            action: `${user.fullName} marked a message as read`,
+            details: { entityId: messageId, entityType: 'Message' }
+        })
+
+        revalidatePath('/dashboard/communication')
+        return { success: true }
+    } catch (error) {
+        console.error('Error marking message as read:', error)
+        throw error
+    }
+}
+
 async function _deleteMessage(user: User, messageId: string) {
     try {
         await connectToDB()
@@ -298,4 +341,5 @@ export const createAnnouncement = await withAuth(_createAnnouncement)
 export const fetchMessages = await withAuth(_fetchMessages)
 export const fetchAnnouncements = await withAuth(_fetchAnnouncements)
 export const fetchBroadcasts = await withAuth(_fetchBroadcasts)
+export const markMessageAsRead = await withAuth(_markMessageAsRead)
 export const deleteMessage = await withAuth(_deleteMessage)

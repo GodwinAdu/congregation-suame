@@ -24,23 +24,23 @@ const page = async () => {
 
   if (!hasAccess) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh] p-6">
+      <div className="flex items-center justify-center min-h-[80vh] p-3 sm:p-6">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
+            <div className="mx-auto mb-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-red-100">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
             </div>
-            <CardTitle className="text-xl font-semibold">Access Restricted</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl font-semibold">Access Restricted</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
               You don't have permission to view the dashboard. Only authorized roles can access this page.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Your current role: <span className="font-medium">{user?.role || 'Unknown'}</span>
             </div>
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Shield className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
               Required roles: Admin, Coordinator, Attendant, or Group Assistant
             </div>
             <Button asChild className="w-full">
@@ -75,15 +75,15 @@ const page = async () => {
 
   return (
     <>
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <Heading title={getDashboardTitle()} />
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <BarChart3 className="h-4 w-4" />
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
           {isAdmin ? "Full insights" : isGroupAssistant ? "Group insights" : "Attendance insights"}
         </div>
       </div>
       <Separator />
-      <div className="py-4">
+      <div className="py-2 sm:py-4">
         {getAnalyticsComponent()}
       </div>
     </>

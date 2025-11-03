@@ -20,7 +20,8 @@ import {
   FolderOpen,
   Bot,
   Bell,
-  TrendingUp
+  TrendingUp,
+  BarChart3
 } from "lucide-react"
 import { IRole } from "@/lib/models/role.models"
 import {
@@ -70,6 +71,13 @@ export function NavMain({ role, user }: NavMainProps) {
       icon: LayoutDashboard,
       isActive: false,
       roleField: "dashboard"
+    },
+    {
+      title: "My Publisher Dashboard",
+      url: `/dashboard/publisher`,
+      icon: TrendingUp,
+      isActive: false,
+      roleField: "publisherDashboard"
     },
     {
       title: "Configuration",
@@ -123,6 +131,16 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "All Reports",
           url: `/dashboard/manage-report`,
+        },
+        {
+          title: "Overseer Reports",
+          url: `/dashboard/overseer-report`,
+          roleField: "overseerReports"
+        },
+        {
+          title: "Overseer Analytics",
+          url: `/dashboard/overseer-analytics`,
+          roleField: "overseerAnalytics"
         },
         {
           title: "Monthly Report",

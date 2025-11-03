@@ -34,7 +34,8 @@ const formSchema = z.object({
     name: z.string().min(1, "Role name is required").max(50, "Role name too long"),
     permissions: z.object({
         dashboard: z.boolean().default(false),
-        config:z.boolean().default(false),
+        publisherDashboard: z.boolean().default(true),
+        config: z.boolean().default(false),
         manageGroupMembers: z.boolean().default(false),
         manageAllReport: z.boolean().default(false),
         manageGroupReport: z.boolean().default(false),
@@ -54,6 +55,8 @@ const formSchema = z.object({
         documents: z.boolean().default(false),
         aiAssistant: z.boolean().default(false),
         notifications: z.boolean().default(false),
+        overseerReports: z.boolean().default(false),
+        overseerAnalytics: z.boolean().default(false),
     })
 })
 
@@ -70,7 +73,8 @@ const permissionGroups = [
         title: "Dashboard & Overview",
         icon: Settings,
         permissions: [
-            { key: "dashboard", label: "Dashboard Access", description: "View main dashboard and statistics" }
+            { key: "dashboard", label: "Dashboard Access", description: "View main dashboard and statistics" },
+            { key: "publisherDashboard", label: "Publisher Dashboard", description: "Access personal publisher dashboard and reports" }
         ]
     },
     {
@@ -89,7 +93,9 @@ const permissionGroups = [
         permissions: [
             { key: "manageAllReport", label: "Manage All Reports", description: "Access and manage all field service reports" },
             { key: "manageGroupReport", label: "Manage Group Reports", description: "Manage reports within assigned groups" },
-            { key: "monthlyReport", label: "Monthly Reports", description: "View monthly congregation statistics and reports" }
+            { key: "monthlyReport", label: "Monthly Reports", description: "View monthly congregation statistics and reports" },
+            { key: "overseerReports", label: "Overseer Reports", description: "Create and manage field service overseer reports" },
+            { key: "overseerAnalytics", label: "Overseer Analytics", description: "View analytics and insights for overseer reports" }
         ]
     },
     {
@@ -175,6 +181,7 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                 name: "",
                 permissions: {
                     dashboard: false,
+                    publisherDashboard: true,
                     config: false,
                     manageGroupMembers: false,
                     manageAllReport: false,
@@ -195,6 +202,8 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                     documents: false,
                     aiAssistant: false,
                     notifications: false,
+                    overseerReports: false,
+                    overseerAnalytics: false,
                 }
             })
         }

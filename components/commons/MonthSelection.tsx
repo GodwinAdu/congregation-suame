@@ -20,9 +20,11 @@ const MonthSelection = ({ selectedMonth }: MonthSelectionProps) => {
     const nextMonth = addMonths(today, 0);
     const [month, setMonth] = useState(nextMonth);
 
-    const handleMonthChange = (value: Date) => {
-        setMonth(value);
-        selectedMonth(value);
+    const handleMonthChange = (value: Date | undefined) => {
+        if (value) {
+            setMonth(value);
+            selectedMonth(value);
+        }
     };
 
     return (
@@ -36,6 +38,8 @@ const MonthSelection = ({ selectedMonth }: MonthSelectionProps) => {
             <PopoverContent>
                 <Calendar
                     mode="single"
+                    selected={month}
+                    onSelect={handleMonthChange}
                     month={month}
                     onMonthChange={handleMonthChange}
                     className="rounded-md flex flex-1 justify-center"

@@ -181,10 +181,10 @@ export default function UniversalAnalytics() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header with Refresh */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
                         <span className="text-sm text-muted-foreground">Live Data</span>
@@ -200,7 +200,7 @@ export default function UniversalAnalytics() {
                     size="sm"
                     onClick={handleRefresh}
                     disabled={refreshing}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 w-full sm:w-auto"
                 >
                     <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                     {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -208,18 +208,18 @@ export default function UniversalAnalytics() {
             </div>
 
             {/* System Health Overview */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <Card className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-blue-800">
+                        <CardTitle className="flex items-center gap-2 text-blue-800 text-lg sm:text-xl">
                             <Zap className="h-5 w-5" />
                             System Health Score
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center gap-4">
-                            <div className="relative w-24 h-24">
-                                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
+                                <svg className="w-20 h-20 sm:w-24 sm:h-24 transform -rotate-90" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="40" stroke="#e5e7eb" strokeWidth="8" fill="none" />
                                     <circle
                                         cx="50"
@@ -233,23 +233,23 @@ export default function UniversalAnalytics() {
                                     />
                                 </svg>
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-2xl font-bold text-blue-600">{healthScore}%</span>
+                                    <span className="text-xl sm:text-2xl font-bold text-blue-600">{healthScore}%</span>
                                 </div>
                             </div>
-                            <div className="flex-1 space-y-2">
-                                <div className="flex justify-between text-sm">
+                            <div className="flex-1 space-y-2 w-full">
+                                <div className="flex justify-between text-xs sm:text-sm">
                                     <span>Active Members</span>
                                     <span className="font-medium">{data.systemHealth?.activeUsers}/{data.systemHealth?.totalUsers}</span>
                                 </div>
                                 <Progress value={((data.systemHealth?.activeUsers || 0) / (data.systemHealth?.totalUsers || 1)) * 100} className="h-2" />
 
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs sm:text-sm">
                                     <span>Report Completion</span>
                                     <span className="font-medium">{data.systemHealth?.completionRate}%</span>
                                 </div>
                                 <Progress value={data.systemHealth?.completionRate || 0} className="h-2" />
 
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs sm:text-sm">
                                     <span>Transport Participation</span>
                                     <span className="font-medium">{data.systemHealth?.transportParticipation}%</span>
                                 </div>
@@ -261,122 +261,128 @@ export default function UniversalAnalytics() {
 
                 <Card className="bg-gradient-to-br from-green-50 to-emerald-100 border-green-200">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-green-800">
+                        <CardTitle className="flex items-center gap-2 text-green-800 text-lg sm:text-xl">
                             <Heart className="h-5 w-5" />
                             Quick Stats
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3 sm:space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-green-700">New Members</span>
-                            <Badge className="bg-green-600">{data.members.newThisMonth}</Badge>
+                            <span className="text-xs sm:text-sm text-green-700">New Members</span>
+                            <Badge className="bg-green-600 text-xs">{data.members.newThisMonth}</Badge>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-green-700">Total Hours</span>
-                            <Badge className="bg-green-600">{data.fieldService?.totalHours || 0}</Badge>
+                            <span className="text-xs sm:text-sm text-green-700">Total Hours</span>
+                            <Badge className="bg-green-600 text-xs">{data.fieldService?.totalHours || 0}</Badge>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-green-700">Bible Studies</span>
-                            <Badge className="bg-green-600">{data.fieldService?.totalBibleStudies || 0}</Badge>
+                            <span className="text-xs sm:text-sm text-green-700">Bible Studies</span>
+                            <Badge className="bg-green-600 text-xs">{data.fieldService?.totalBibleStudies || 0}</Badge>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-green-700">Meetings</span>
-                            <Badge className="bg-green-600">{data.attendance.totalMeetings}</Badge>
+                            <span className="text-xs sm:text-sm text-green-700">Meetings</span>
+                            <Badge className="bg-green-600 text-xs">{data.attendance.totalMeetings}</Badge>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Main Analytics Tabs */}
-            <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-6">
-                    <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1">
+                    <TabsTrigger value="overview" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
                         <BarChart3 className="h-4 w-4" />
-                        Overview
+                        <span className="hidden sm:inline">Overview</span>
+                        <span className="sm:hidden">Overview</span>
                     </TabsTrigger>
-                    <TabsTrigger value="members" className="flex items-center gap-2">
+                    <TabsTrigger value="members" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
                         <Users className="h-4 w-4" />
-                        Members
+                        <span className="hidden sm:inline">Members</span>
+                        <span className="sm:hidden">Members</span>
                     </TabsTrigger>
-                    <TabsTrigger value="service" className="flex items-center gap-2">
+                    <TabsTrigger value="service" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
                         <FileText className="h-4 w-4" />
-                        Service
+                        <span className="hidden sm:inline">Service</span>
+                        <span className="sm:hidden">Service</span>
                     </TabsTrigger>
-                    <TabsTrigger value="meetings" className="flex items-center gap-2">
+                    <TabsTrigger value="meetings" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
                         <Calendar className="h-4 w-4" />
-                        Meetings
+                        <span className="hidden sm:inline">Meetings</span>
+                        <span className="sm:hidden">Meetings</span>
                     </TabsTrigger>
-                    <TabsTrigger value="trends" className="flex items-center gap-2">
+                    <TabsTrigger value="trends" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
                         <TrendingUp className="h-4 w-4" />
-                        Trends
+                        <span className="hidden sm:inline">Trends</span>
+                        <span className="sm:hidden">Trends</span>
                     </TabsTrigger>
-                    <TabsTrigger value="activity" className="flex items-center gap-2">
+                    <TabsTrigger value="activity" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
                         <Activity className="h-4 w-4" />
-                        Activity
+                        <span className="hidden sm:inline">Activity</span>
+                        <span className="sm:hidden">Activity</span>
                     </TabsTrigger>
                 </TabsList>
 
                 {/* Overview Tab */}
-                <TabsContent value="overview" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                            <CardContent className="p-6">
+                            <CardContent className="p-3 sm:p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-blue-100">Total Members</p>
-                                        <p className="text-3xl font-bold">{data.members.total}</p>
+                                        <p className="text-blue-100 text-xs sm:text-sm">Total Members</p>
+                                        <p className="text-xl sm:text-3xl font-bold">{data.members.total}</p>
                                         <p className="text-xs text-blue-200">{data.members.active} active</p>
                                     </div>
-                                    <Users className="h-10 w-10 text-blue-200" />
+                                    <Users className="h-6 w-6 sm:h-10 sm:w-10 text-blue-200" />
                                 </div>
                             </CardContent>
                         </Card>
 
                         <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-                            <CardContent className="p-6">
+                            <CardContent className="p-3 sm:p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-green-100">Service Hours</p>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-3xl font-bold">{data.fieldService?.totalHours || 0}</p>
-                                            <span className={`text-sm ${getGrowthColor(data.systemHealth?.reportGrowth || 0)}`}>
+                                        <p className="text-green-100 text-xs sm:text-sm">Service Hours</p>
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                                            <p className="text-xl sm:text-3xl font-bold">{data.fieldService?.totalHours || 0}</p>
+                                            <span className={`text-xs sm:text-sm ${getGrowthColor(data.systemHealth?.reportGrowth || 0)}`}>
                                                 {getGrowthIcon(data.systemHealth?.reportGrowth || 0)} {Math.abs(data.systemHealth?.reportGrowth || 0)}%
                                             </span>
                                         </div>
                                         <p className="text-xs text-green-200">this month</p>
                                     </div>
-                                    <Clock className="h-10 w-10 text-green-200" />
+                                    <Clock className="h-6 w-6 sm:h-10 sm:w-10 text-green-200" />
                                 </div>
                             </CardContent>
                         </Card>
 
                         <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-                            <CardContent className="p-6">
+                            <CardContent className="p-3 sm:p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-purple-100">Bible Studies</p>
-                                        <p className="text-3xl font-bold">{data.fieldService?.totalBibleStudies || 0}</p>
+                                        <p className="text-purple-100 text-xs sm:text-sm">Bible Studies</p>
+                                        <p className="text-xl sm:text-3xl font-bold">{data.fieldService?.totalBibleStudies || 0}</p>
                                         <p className="text-xs text-purple-200">conducted</p>
                                     </div>
-                                    <FileText className="h-10 w-10 text-purple-200" />
+                                    <FileText className="h-6 w-6 sm:h-10 sm:w-10 text-purple-200" />
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-                            <CardContent className="p-6">
+                        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white col-span-2 lg:col-span-1">
+                            <CardContent className="p-3 sm:p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-orange-100">Avg Attendance</p>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-3xl font-bold">{data.attendance.averageAttendance}</p>
-                                            <span className={`text-sm ${getGrowthColor(data.systemHealth?.attendanceGrowth || 0)}`}>
+                                        <p className="text-orange-100 text-xs sm:text-sm">Avg Attendance</p>
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                                            <p className="text-xl sm:text-3xl font-bold">{data.attendance.averageAttendance}</p>
+                                            <span className={`text-xs sm:text-sm ${getGrowthColor(data.systemHealth?.attendanceGrowth || 0)}`}>
                                                 {getGrowthIcon(data.systemHealth?.attendanceGrowth || 0)} {Math.abs(data.systemHealth?.attendanceGrowth || 0)}%
                                             </span>
                                         </div>
                                         <p className="text-xs text-orange-200">per meeting</p>
                                     </div>
-                                    <Calendar className="h-10 w-10 text-orange-200" />
+                                    <Calendar className="h-6 w-6 sm:h-10 sm:w-10 text-orange-200" />
                                 </div>
                             </CardContent>
                         </Card>
