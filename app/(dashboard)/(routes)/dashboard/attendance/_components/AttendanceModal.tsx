@@ -40,8 +40,17 @@ import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
     attendance: z.coerce.number({
-    error: "Attendance is required"}).min(0, {message: "Attendance cannot be negative"}),
-    date: z.date()
+        error: "Attendance is required"
+    }).min(0, {
+        message: "Attendance cannot be negative"
+    }).max(1000, {
+        message: "Attendance seems too high, please verify"
+    }),
+    date: z.date({
+        required_error: "Date is required"
+    }).refine((date) => date <= new Date(), {
+        message: "Cannot record attendance for future dates"
+    })
 });
 
 export function AttendanceModal() {
@@ -73,10 +82,13 @@ export function AttendanceModal() {
                 description: "Attendance has been added successfully",
             });
             window.location.reload()
-        } catch (error) {
+        } catch (error: any) {
             console.log("Error creating attendance:", error);
-            toast.error("Something went wrong", {
-                description: "Please try again later",
+            const errorMessage = error?.message || "Something went wrong";
+            toast.error("Failed to record attendance", {
+                description: errorMessage.includes("already recorded") 
+                    ? "Attendance already exists for this date. Please edit the existing record."
+                    : "Please try again later",
             });
         }
     }

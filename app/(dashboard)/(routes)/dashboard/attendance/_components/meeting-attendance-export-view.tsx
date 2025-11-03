@@ -2,12 +2,24 @@
 
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download, Printer } from "lucide-react"
+import { fetchAttendanceByServiceYearSeparated } from "@/lib/actions/attendance.actions"
+import { useState, useEffect } from "react"
 
 interface MonthlyRecord {
     month: string
     numberOfMeetings: number
     totalAttendance: number
     averageAttendance: number
+    midweek?: {
+        numberOfMeetings: number
+        totalAttendance: number
+        averageAttendance: number
+    }
+    weekend?: {
+        numberOfMeetings: number
+        totalAttendance: number
+        averageAttendance: number
+    }
 }
 
 interface MeetingAttendanceExportViewProps {
@@ -16,6 +28,26 @@ interface MeetingAttendanceExportViewProps {
 }
 
 export function MeetingAttendanceExportView({ records, onClose }: MeetingAttendanceExportViewProps) {
+    const [separatedData, setSeparatedData] = useState<MonthlyRecord[]>(records)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchSeparatedData = async () => {
+            try {
+                const currentYear = new Date().getFullYear()
+                const serviceYear = new Date().getMonth() >= 8 ? currentYear : currentYear - 1
+                const data = await fetchAttendanceByServiceYearSeparated(serviceYear)
+                setSeparatedData(data)
+            } catch (error) {
+                console.error('Failed to fetch separated data:', error)
+                setSeparatedData(records)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchSeparatedData()
+    }, [records])
+
     const handlePrint = () => {
         window.print()
     }
@@ -114,16 +146,26 @@ export function MeetingAttendanceExportView({ records, onClose }: MeetingAttenda
     }
 
     // Split records into two halves for side-by-side layout
-    const firstHalf = records.slice(0, 6)
-    const secondHalf = records.slice(6, 12)
+    const firstHalf = separatedData.slice(0, 6)
+    const secondHalf = separatedData.slice(6, 12)
 
-    const calculateTotal = (recordSet: MonthlyRecord[]) => {
-        return recordSet.reduce((sum, record) => sum + record.totalAttendance, 0)
+    const calculateMidweekTotal = (recordSet: MonthlyRecord[]) => {
+        return recordSet.reduce((sum, record) => sum + (record.midweek?.totalAttendance || 0), 0)
     }
 
-    const calculateAverageAttendance = (recordSet: MonthlyRecord[]) => {
-        const totalAttendance = calculateTotal(recordSet)
-        const totalMeetings = recordSet.reduce((sum, record) => sum + record.numberOfMeetings, 0)
+    const calculateMidweekAverageAttendance = (recordSet: MonthlyRecord[]) => {
+        const totalAttendance = calculateMidweekTotal(recordSet)
+        const totalMeetings = recordSet.reduce((sum, record) => sum + (record.midweek?.numberOfMeetings || 0), 0)
+        return totalMeetings > 0 ? Math.round(totalAttendance / totalMeetings) : 0
+    }
+
+    const calculateWeekendTotal = (recordSet: MonthlyRecord[]) => {
+        return recordSet.reduce((sum, record) => sum + (record.weekend?.totalAttendance || 0), 0)
+    }
+
+    const calculateWeekendAverageAttendance = (recordSet: MonthlyRecord[]) => {
+        const totalAttendance = calculateWeekendTotal(recordSet)
+        const totalMeetings = recordSet.reduce((sum, record) => sum + (record.weekend?.numberOfMeetings || 0), 0)
         return totalMeetings > 0 ? Math.round(totalAttendance / totalMeetings) : 0
     }
 
@@ -161,7 +203,7 @@ export function MeetingAttendanceExportView({ records, onClose }: MeetingAttenda
                     Midweek Meeting
                 </h2>
 
-                <div className="flex gap-0 w-full">
+                <div className="flex gap-0 w-full mb-8">
                     {/* First Table */}
                     <div className="w-1/2">
                         <table
@@ -203,13 +245,13 @@ export function MeetingAttendanceExportView({ records, onClose }: MeetingAttenda
                                             {record.month}
                                         </td>
                                         <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
-                                            {record.numberOfMeetings || ""}
+                                            {record.midweek?.numberOfMeetings || ""}
                                         </td>
                                         <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
-                                            {record.totalAttendance || ""}
+                                            {record.midweek?.totalAttendance || ""}
                                         </td>
                                         <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
-                                            {record.averageAttendance || ""}
+                                            {record.midweek?.averageAttendance || ""}
                                         </td>
                                     </tr>
                                 ))}
@@ -225,13 +267,13 @@ export function MeetingAttendanceExportView({ records, onClose }: MeetingAttenda
                                         className="border border-black p-1 text-center text-sm font-bold bg-white"
                                         style={{ height: "30px" }}
                                     >
-                                        {calculateTotal(firstHalf) || ""}
+                                        {calculateMidweekTotal(firstHalf) || ""}
                                     </td>
                                     <td
                                         className="border border-black p-1 text-center text-sm font-bold bg-white"
                                         style={{ height: "30px" }}
                                     >
-                                        {calculateAverageAttendance(firstHalf) || ""}
+                                        {calculateMidweekAverageAttendance(firstHalf) || ""}
                                     </td>
                                 </tr>
                             </tbody>
@@ -279,13 +321,13 @@ export function MeetingAttendanceExportView({ records, onClose }: MeetingAttenda
                                             {record.month}
                                         </td>
                                         <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
-                                            {record.numberOfMeetings || ""}
+                                            {record.midweek?.numberOfMeetings || ""}
                                         </td>
                                         <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
-                                            {record.totalAttendance || ""}
+                                            {record.midweek?.totalAttendance || ""}
                                         </td>
                                         <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
-                                            {record.averageAttendance || ""}
+                                            {record.midweek?.averageAttendance || ""}
                                         </td>
                                     </tr>
                                 ))}
@@ -301,13 +343,160 @@ export function MeetingAttendanceExportView({ records, onClose }: MeetingAttenda
                                         className="border border-black p-1 text-center text-sm font-bold bg-white"
                                         style={{ height: "30px" }}
                                     >
-                                        {calculateTotal(secondHalf) || ""}
+                                        {calculateMidweekTotal(secondHalf) || ""}
                                     </td>
                                     <td
                                         className="border border-black p-1 text-center text-sm font-bold bg-white"
                                         style={{ height: "30px" }}
                                     >
-                                        {calculateAverageAttendance(secondHalf) || ""}
+                                        {calculateMidweekAverageAttendance(secondHalf) || ""}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Weekend Meeting Section */}
+                <h2 className="text-lg font-bold text-left mb-4 text-black" style={{ fontFamily: "Times New Roman, serif" }}>
+                    Weekend Meeting
+                </h2>
+
+                <div className="flex gap-0 w-full">
+                    {/* First Table - Weekend */}
+                    <div className="w-1/2">
+                        <table
+                            className="w-full border-collapse"
+                            style={{ border: "2px solid #000", fontFamily: "Times New Roman, serif" }}
+                        >
+                            <thead>
+                                <tr>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "90px" }}
+                                    >
+                                        Service Year
+                                    </th>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "70px" }}
+                                    >
+                                        Number of Meetings
+                                    </th>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "70px" }}
+                                    >
+                                        Total Attendance
+                                    </th>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "80px" }}
+                                    >
+                                        Average Attendance Each Week
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {firstHalf.map((record) => (
+                                    <tr key={`weekend-${record.month}`}>
+                                        <td className="border border-black p-1 text-left pl-2 text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.month}
+                                        </td>
+                                        <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.weekend?.numberOfMeetings || ""}
+                                        </td>
+                                        <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.weekend?.totalAttendance || ""}
+                                        </td>
+                                        <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.weekend?.averageAttendance || ""}
+                                        </td>
+                                    </tr>
+                                ))}
+                                <tr className="bg-white">
+                                    <td
+                                        className="border border-black p-1 text-left pl-2 text-xs font-bold bg-white"
+                                        style={{ height: "30px" }}
+                                    >
+                                        Average Attendance Each Month
+                                    </td>
+                                    <td className="border border-black p-1 text-center bg-white" style={{ height: "30px" }}></td>
+                                    <td className="border border-black p-1 text-center text-sm font-bold bg-white" style={{ height: "30px" }}>
+                                        {calculateWeekendTotal(firstHalf) || ""}
+                                    </td>
+                                    <td className="border border-black p-1 text-center text-sm font-bold bg-white" style={{ height: "30px" }}>
+                                        {calculateWeekendAverageAttendance(firstHalf) || ""}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Second Table - Weekend */}
+                    <div className="w-1/2">
+                        <table
+                            className="w-full border-collapse"
+                            style={{ border: "2px solid #000", fontFamily: "Times New Roman, serif" }}
+                        >
+                            <thead>
+                                <tr>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "90px" }}
+                                    >
+                                        Service Year
+                                    </th>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "70px" }}
+                                    >
+                                        Number of Meetings
+                                    </th>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "70px" }}
+                                    >
+                                        Total Attendance
+                                    </th>
+                                    <th
+                                        className="border border-black p-1 bg-white text-center text-xs font-bold"
+                                        style={{ minWidth: "80px" }}
+                                    >
+                                        Average Attendance Each Week
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {secondHalf.map((record) => (
+                                    <tr key={`weekend-${record.month}`}>
+                                        <td className="border border-black p-1 text-left pl-2 text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.month}
+                                        </td>
+                                        <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.weekend?.numberOfMeetings || ""}
+                                        </td>
+                                        <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.weekend?.totalAttendance || ""}
+                                        </td>
+                                        <td className="border border-black p-1 text-center text-sm bg-white" style={{ height: "30px" }}>
+                                            {record.weekend?.averageAttendance || ""}
+                                        </td>
+                                    </tr>
+                                ))}
+                                <tr className="bg-white">
+                                    <td
+                                        className="border border-black p-1 text-left pl-2 text-xs font-bold bg-white"
+                                        style={{ height: "30px" }}
+                                    >
+                                        Average Attendance Each Month
+                                    </td>
+                                    <td className="border border-black p-1 text-center bg-white" style={{ height: "30px" }}></td>
+                                    <td className="border border-black p-1 text-center text-sm font-bold bg-white" style={{ height: "30px" }}>
+                                        {calculateWeekendTotal(secondHalf) || ""}
+                                    </td>
+                                    <td className="border border-black p-1 text-center text-sm font-bold bg-white" style={{ height: "30px" }}>
+                                        {calculateWeekendAverageAttendance(secondHalf) || ""}
                                     </td>
                                 </tr>
                             </tbody>

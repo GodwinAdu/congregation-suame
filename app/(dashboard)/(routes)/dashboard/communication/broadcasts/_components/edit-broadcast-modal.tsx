@@ -121,7 +121,7 @@ export function EditBroadcastModal({
                 title: formData.title,
                 content: formData.content,
                 targetAudience: formData.targetAudience,
-                deliveryMethod: formData.deliveryMethod as ('email' | 'sms' | 'push' | 'in-app')[],
+                deliveryMethod: formData.deliveryMethod as ('email' | 'sms')[],
                 scheduledFor: formData.scheduledFor ? new Date(formData.scheduledFor) : undefined
             })
             
@@ -317,10 +317,8 @@ export function EditBroadcastModal({
                             <CardContent className="p-4">
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
-                                        { id: 'in-app', label: 'In-App Notification' },
                                         { id: 'email', label: 'Email' },
-                                        { id: 'sms', label: 'SMS' },
-                                        { id: 'push', label: 'Push Notification' }
+                                        { id: 'sms', label: 'SMS' }
                                     ].map((method) => (
                                         <div key={method.id} className="flex items-center space-x-2">
                                             <Checkbox

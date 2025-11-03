@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, FileText, Clock, BookOpen } from "lucide-react";
+import { Users, FileText, Clock, BookOpen, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getMonthlyReport } from "@/lib/actions/monthly-report.actions";
 import { useRouter } from "next/navigation";
 
@@ -277,6 +278,29 @@ export function MonthlyReportView({ month, year }: MonthlyReportViewProps) {
                             <p className="text-sm text-muted-foreground">Bible Studies</p>
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Members Needing Help */}
+            <Card className="border-orange-200 bg-orange-50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-orange-700">
+                        <AlertTriangle className="h-5 w-5" />
+                        Members Needing Help
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        View members who didn't report or don't have bible studies this month
+                    </p>
+                    <Button 
+                        onClick={() => router.push(`/dashboard/monthly-report/help-needed?month=${month}&year=${year}`)}
+                        className="w-full"
+                        variant="outline"
+                    >
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        View Members Who Need Help
+                    </Button>
                 </CardContent>
             </Card>
         </div>

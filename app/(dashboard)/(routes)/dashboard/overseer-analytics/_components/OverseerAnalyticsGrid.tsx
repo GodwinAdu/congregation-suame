@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar, TrendingUp, Users, BookOpen, AlertTriangle, Eye, RefreshCw } from 'lucide-react'
 import { format, addMonths } from 'date-fns'
-import { getOverseerAnalytics } from '@/lib/actions/overseer.actions'
+import { getOverseerAnalytics, getOverallMemberAnalytics } from '@/lib/actions/overseer.actions'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface MemberData {
@@ -34,8 +34,19 @@ interface AnalyticsData {
     members: MemberData[]
 }
 
+interface OverallAnalytics {
+    totalMembers: number
+    presentMembers: any[]
+    absentMembers: any[]
+    membersWithStudy: any[]
+    membersWithoutStudy: any[]
+    membersInMinistry: any[]
+    membersNotInMinistry: any[]
+}
+
 const OverseerAnalyticsGrid = () => {
     const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([])
+    const [overallData, setOverallData] = useState<OverallAnalytics | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedReport, setSelectedReport] = useState<AnalyticsData | null>(null)
     const [selectedMonth, setSelectedMonth] = useState(new Date())
@@ -45,8 +56,12 @@ const OverseerAnalyticsGrid = () => {
         setLoading(true)
         try {
             const monthStr = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`
-            const data = await getOverseerAnalytics(monthStr)
-            setAnalyticsData(data)
+            const [monthlyData, overallAnalytics] = await Promise.all([
+                getOverseerAnalytics(monthStr),
+                getOverallMemberAnalytics(monthStr)
+            ])
+            setAnalyticsData(monthlyData)
+            setOverallData(overallAnalytics)
         } catch (error) {
             console.error('Error fetching analytics:', error)
         } finally {
@@ -224,89 +239,175 @@ const OverseerAnalyticsGrid = () => {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {showOverall && (
-                        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Card className="p-4 bg-green-50">
-                                <div className="text-center">
-                                    <div className="text-xl font-bold text-green-600">{excellentAttendance}</div>
-                                    <div className="text-sm text-green-700">Excellent Attendance</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {totalReports > 0 ? Math.round((excellentAttendance / totalReports) * 100) : 0}% of visits
+                    {showOverall && overallData && (
+                        <div className="mb-6 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Card className="p-4 bg-green-50">
+                                    <div className="text-center">
+                                        <div className="text-xl font-bold text-green-600">{overallData.presentMembers.length}</div>
+                                        <div className="text-sm text-green-700">Members Present</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {overallData.totalMembers > 0 ? Math.round((overallData.presentMembers.length / overallData.totalMembers) * 100) : 0}% of all members
+                                        </div>
                                     </div>
-                                </div>
-                            </Card>
+                                </Card>
+                                
+                                <Card className="p-4 bg-blue-50">
+                                    <div className="text-center">
+                                        <div className="text-xl font-bold text-blue-600">{overallData.membersWithStudy.length}</div>
+                                        <div className="text-sm text-blue-700">Have Bible Studies</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {overallData.totalMembers > 0 ? Math.round((overallData.membersWithStudy.length / overallData.totalMembers) * 100) : 0}% of all members
+                                        </div>
+                                    </div>
+                                </Card>
+                                
+                                <Card className="p-4 bg-purple-50">
+                                    <div className="text-center">
+                                        <div className="text-xl font-bold text-purple-600">{overallData.membersInMinistry.length}</div>
+                                        <div className="text-sm text-purple-700">In Ministry</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {overallData.totalMembers > 0 ? Math.round((overallData.membersInMinistry.length / overallData.totalMembers) * 100) : 0}% of all members
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
                             
-                            <Card className="p-4 bg-blue-50">
-                                <div className="text-center">
-                                    <div className="text-xl font-bold text-blue-600">{totalMembers}</div>
-                                    <div className="text-sm text-blue-700">Total Members</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        Across all groups visited
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card className="p-4">
+                                    <h4 className="font-medium mb-3 text-red-600">Members Needing Help</h4>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <h5 className="text-sm font-medium mb-2">Never Present ({overallData.absentMembers.length})</h5>
+                                            <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                                {overallData.absentMembers.map(member => (
+                                                    <div key={member.id} className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                                        <span>{member.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <h5 className="text-sm font-medium mb-2">No Bible Studies ({overallData.membersWithoutStudy.length})</h5>
+                                            <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                                {overallData.membersWithoutStudy.map(member => (
+                                                    <div key={member.id} className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                                                        <span>{member.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <h5 className="text-sm font-medium mb-2">Not in Ministry ({overallData.membersNotInMinistry.length})</h5>
+                                            <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                                {overallData.membersNotInMinistry.map(member => (
+                                                    <div key={member.id} className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                                        <span>{member.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </Card>
-                            
-                            <Card className="p-4 bg-purple-50">
-                                <div className="text-center">
-                                    <div className="text-xl font-bold text-purple-600">
-                                        {totalMembers > 0 ? Math.round((ministryActive / totalMembers) * 100) : 0}%
+                                </Card>
+                                
+                                <Card className="p-4">
+                                    <h4 className="font-medium mb-3 text-green-600">Active Members</h4>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <h5 className="text-sm font-medium mb-2">Present in Visits ({overallData.presentMembers.length})</h5>
+                                            <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                                {overallData.presentMembers.map(member => (
+                                                    <div key={member.id} className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                                        <span>{member.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <h5 className="text-sm font-medium mb-2">Have Bible Studies ({overallData.membersWithStudy.length})</h5>
+                                            <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                                {overallData.membersWithStudy.map(member => (
+                                                    <div key={member.id} className="flex items-center gap-2">
+                                                        <BookOpen className="w-3 h-3 text-blue-500" />
+                                                        <span>{member.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <h5 className="text-sm font-medium mb-2">Active in Ministry ({overallData.membersInMinistry.length})</h5>
+                                            <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                                {overallData.membersInMinistry.map(member => (
+                                                    <div key={member.id} className="flex items-center gap-2">
+                                                        <Users className="w-3 h-3 text-purple-500" />
+                                                        <span>{member.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-sm text-purple-700">Ministry Participation</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {ministryActive} of {totalMembers} members
-                                    </div>
-                                </div>
-                            </Card>
+                                </Card>
+                            </div>
                         </div>
                     )}
                     
-                    <div className="space-y-4">
-                        {analyticsData.map((report) => (
-                            <Card key={report._id} className="p-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div>
-                                            <h3 className="font-medium">{report.groupName}</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {format(new Date(report.month), 'MMMM yyyy')} - {format(new Date(report.visitDate), 'MMM dd')}
-                                            </p>
+                    {!showOverall && (
+                        <div className="space-y-4">
+                            {analyticsData.map((report) => (
+                                <Card key={report._id} className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div>
+                                                <h3 className="font-medium">{report.groupName}</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {format(new Date(report.month), 'MMMM yyyy')} - {format(new Date(report.visitDate), 'MMM dd')}
+                                                </p>
+                                            </div>
+                                            
+                                            <div className="flex gap-2">
+                                                <Badge className={getAttendanceColor(report.meetingAttendance)}>
+                                                    {report.meetingAttendance}
+                                                </Badge>
+                                                
+                                                <div className="flex items-center gap-1 text-sm">
+                                                    <Users className="h-3 w-3" />
+                                                    {report.presentCount}/{report.totalMembers}
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-1 text-sm">
+                                                    {report.studyCount}
+                                                </div>
+                                                
+                                                {report.followUpNeeded && (
+                                                    <Badge variant="outline" className="gap-1">
+                                                        <AlertTriangle className="h-3 w-3" />
+                                                        Follow-up
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
                                         
-                                        <div className="flex gap-2">
-                                            <Badge className={getAttendanceColor(report.meetingAttendance)}>
-                                                {report.meetingAttendance}
-                                            </Badge>
-                                            
-                                            <div className="flex items-center gap-1 text-sm">
-                                                <Users className="h-3 w-3" />
-                                                {report.presentCount}/{report.totalMembers}
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-1 text-sm">
-                                                {report.studyCount}
-                                            </div>
-                                            
-                                            {report.followUpNeeded && (
-                                                <Badge variant="outline" className="gap-1">
-                                                    <AlertTriangle className="h-3 w-3" />
-                                                    Follow-up
-                                                </Badge>
-                                            )}
-                                        </div>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => setSelectedReport(report)}
+                                        >
+                                            <Eye className="h-3 w-3 mr-1" />
+                                            View Details
+                                        </Button>
                                     </div>
-                                    
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => setSelectedReport(report)}
-                                    >
-                                        <Eye className="h-3 w-3 mr-1" />
-                                        View Details
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

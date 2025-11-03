@@ -14,6 +14,7 @@ const AttendanceSchema = new Schema({
     date: {
         type: Date,
         default: Date.now(),
+        required: true
     },
     meetingType: {
         type: String,
@@ -26,6 +27,9 @@ const AttendanceSchema = new Schema({
 }, {
     timestamps: true
 });
+
+// Create unique index to prevent duplicate attendance for same date
+AttendanceSchema.index({ date: 1 }, { unique: true });
 
 // Pre-save middleware to calculate meetingType and week
 AttendanceSchema.pre('save', function (next) {

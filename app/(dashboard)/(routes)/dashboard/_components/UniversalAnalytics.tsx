@@ -413,6 +413,26 @@ export default function UniversalAnalytics() {
                                             <p className="text-xs text-muted-foreground">Collected</p>
                                         </div>
                                     </div>
+                                    
+                                    {/* Fee Breakdown */}
+                                    {data.transport?.byFee && data.transport.byFee.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-sm font-medium text-muted-foreground">By Transport Fee</h4>
+                                            {data.transport.byFee.map((fee: any, index: number) => (
+                                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                    <div>
+                                                        <span className="text-sm font-medium">{fee.feeName}</span>
+                                                        <span className="text-xs text-muted-foreground ml-2">(₵{fee.feeAmount})</span>
+                                                    </div>
+                                                    <div className="flex gap-3 text-xs">
+                                                        <span className="text-blue-600">{fee.participating} joined</span>
+                                                        <span className="text-green-600">{fee.fullyPaid} paid</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    
                                     {(data.transport?.participating || 0) > 0 && (
                                         <div>
                                             <div className="flex justify-between text-sm mb-2">

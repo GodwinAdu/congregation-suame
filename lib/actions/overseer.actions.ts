@@ -531,3 +531,64 @@ export const getOverseerAnalytics = await withAuth(async (user, month?: string) 
         throw new Error("Failed to fetch overseer analytics")
     }
 })
+
+export const getOverallMemberAnalytics = await withAuth(async (user, month?: string) => {
+    try {
+        await connectToDB()
+
+        // Build query
+        const query: any = { overseerUserId: user._id }
+        if (month) {
+            query.month = month
+        }
+
+        // Get all reports
+        const reports = await OverseerReport.find(query).lean()
+        
+        // Combine all members across all reports
+        const memberStats = new Map()
+        
+        reports.forEach(report => {
+            report.members?.forEach(member => {
+                if (!memberStats.has(member.id)) {
+                    memberStats.set(member.id, {
+                        id: member.id,
+                        name: member.name,
+                        wasPresent: false,
+                        hasStudy: false,
+                        participatesInMinistry: false
+                    })
+                }
+                
+                const memberStat = memberStats.get(member.id)
+                if (member.present) memberStat.wasPresent = true
+                if (member.hasStudy) memberStat.hasStudy = true
+                if (member.participatesInMinistry) memberStat.participatesInMinistry = true
+            })
+        })
+
+        // Convert to array and categorize
+        const allMembers = Array.from(memberStats.values())
+        
+        // Categorize members
+        const presentMembers = allMembers.filter(m => m.wasPresent)
+        const absentMembers = allMembers.filter(m => !m.wasPresent)
+        const membersWithStudy = allMembers.filter(m => m.hasStudy)
+        const membersWithoutStudy = allMembers.filter(m => !m.hasStudy)
+        const membersInMinistry = allMembers.filter(m => m.participatesInMinistry)
+        const membersNotInMinistry = allMembers.filter(m => !m.participatesInMinistry)
+
+        return {
+            totalMembers: allMembers.length,
+            presentMembers,
+            absentMembers,
+            membersWithStudy,
+            membersWithoutStudy,
+            membersInMinistry,
+            membersNotInMinistry
+        }
+    } catch (error) {
+        console.error('Error fetching overall member analytics:', error)
+        throw new Error("Failed to fetch overall member analytics")
+    }
+})

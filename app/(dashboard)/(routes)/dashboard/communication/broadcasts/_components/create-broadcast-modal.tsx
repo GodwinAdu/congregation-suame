@@ -42,7 +42,7 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
             roles: [] as string[],
             privileges: [] as string[]
         },
-        deliveryMethod: ["in-app"] as ("email" | "sms" | "push" | "in-app")[],
+        deliveryMethod: ["email"] as ("email" | "sms")[],
         scheduledFor: undefined as Date | undefined
     })
     const [loading, setLoading] = useState(false)
@@ -81,7 +81,7 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
                 title: "",
                 content: "",
                 targetAudience: { type: "all", groups: [], roles: [], privileges: [] },
-                deliveryMethod: ["in-app"],
+                deliveryMethod: ["email"],
                 scheduledFor: undefined
             })
         } catch (error) {
@@ -102,9 +102,7 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
 
     const deliveryOptions = [
         { value: "email", label: "Email", icon: Mail },
-        { value: "sms", label: "SMS", icon: MessageSquare },
-        { value: "push", label: "Push Notification", icon: Bell },
-        { value: "in-app", label: "In-App Notification", icon: Smartphone }
+        { value: "sms", label: "SMS", icon: MessageSquare }
     ]
 
     return (

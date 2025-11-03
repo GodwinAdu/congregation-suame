@@ -200,11 +200,11 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Field Service Overseer Report
+            <DialogContent className="w-[95vw] max-w-4xl h-[95vh] max-h-[95vh] overflow-y-auto p-3 sm:p-6">
+                <DialogHeader className="pb-3">
+                    <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="truncate">Field Service Overseer Report</span>
                     </DialogTitle>
                 </DialogHeader>
 
@@ -217,7 +217,7 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                 Visit Information
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <div>
                                 <Label htmlFor="group">Service Group</Label>
                                 <Select 
@@ -295,18 +295,18 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                 <Users className="h-4 w-4" />
                                 Group Members Assessment
                             </CardTitle>
-                            <div className="flex gap-4 text-sm">
+                            <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
                                 <Badge variant="outline" className="gap-1">
                                     <CheckCircle className="h-3 w-3" />
-                                    Present: {presentCount}/{members.length}
+                                    <span className="hidden sm:inline">Present: </span>{presentCount}/{members.length}
                                 </Badge>
                                 <Badge variant="outline" className="gap-1">
                                     <BookOpen className="h-3 w-3" />
-                                    Bible Studies: {studyCount}
+                                    <span className="hidden sm:inline">Bible Studies: </span>{studyCount}
                                 </Badge>
                                 <Badge variant="outline" className="gap-1">
                                     <Clock className="h-3 w-3" />
-                                    Ministry Active: {ministryCount}
+                                    <span className="hidden sm:inline">Ministry Active: </span>{ministryCount}
                                 </Badge>
                             </div>
                         </CardHeader>
@@ -320,18 +320,18 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                             ) : members.length > 0 ? (
                                 <div className="space-y-3">
                                     {members.map((member) => (
-                                        <Card key={member.id} className="p-4">
-                                            <div className="flex items-center justify-between">
+                                        <Card key={member.id} className="p-3 sm:p-4">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-3 h-3 rounded-full ${member.present ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                    <div>
-                                                        <span className="font-medium">{member.name}</span>
+                                                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${member.present ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="font-medium text-sm sm:text-base truncate block">{member.name}</span>
                                                         {member.submittedReport && (
                                                             <div className="text-xs text-green-600">✓ Report submitted ({member.fieldServiceHours}h)</div>
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
                                                             id={`present-${member.id}`}
@@ -340,7 +340,7 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                                                 handleMemberUpdate(member.id, 'present', checked as boolean)
                                                             }
                                                         />
-                                                        <Label htmlFor={`present-${member.id}`} className="text-sm">Present</Label>
+                                                        <Label htmlFor={`present-${member.id}`} className="text-xs sm:text-sm">Present</Label>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
@@ -350,7 +350,7 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                                                 handleMemberUpdate(member.id, 'hasStudy', checked as boolean)
                                                             }
                                                         />
-                                                        <Label htmlFor={`study-${member.id}`} className="text-sm">Bible Study</Label>
+                                                        <Label htmlFor={`study-${member.id}`} className="text-xs sm:text-sm">Study</Label>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
@@ -360,7 +360,7 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                                                 handleMemberUpdate(member.id, 'participatesInMinistry', checked as boolean)
                                                             }
                                                         />
-                                                        <Label htmlFor={`ministry-${member.id}`} className="text-sm">Ministry</Label>
+                                                        <Label htmlFor={`ministry-${member.id}`} className="text-xs sm:text-sm">Ministry</Label>
                                                     </div>
                                                 </div>
                                             </div>
@@ -463,11 +463,11 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                     </Card>
 
                     {/* Submit Buttons */}
-                    <div className="flex justify-end gap-3">
-                        <Button type="button" variant="outline" onClick={onClose}>
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
+                        <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={loading}>
+                        <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                             {loading ? 'Submitting...' : 'Submit Report'}
                         </Button>
                     </div>

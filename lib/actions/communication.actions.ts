@@ -39,6 +39,8 @@ async function _sendMessage(user: User, data: {
                 priority: data.priority,
                 metadata: { messageId: message._id }
             })
+            
+
         }
 
         await logActivity({
@@ -66,7 +68,7 @@ async function _createBroadcast(user: User, data: {
         privileges?: string[]
     }
     scheduledFor?: Date
-    deliveryMethod: ('email' | 'sms' | 'push' | 'in-app')[]
+    deliveryMethod: ('email' | 'sms')[]
 }) {
     try {
         await connectToDB()
@@ -160,14 +162,7 @@ async function _createAnnouncement(user: User, data: {
             recipients = roleMembers.map(m => m._id.toString())
         }
 
-        // Send notifications
-        await NotificationService.sendBulkNotifications(recipients, {
-            type: 'announcement',
-            title: data.title,
-            message: data.content,
-            priority: data.priority,
-            metadata: { announcementId: announcement._id }
-        })
+        // Notifications removed - focusing on email/SMS only
 
         await logActivity({
             userId: user._id as string,
@@ -186,6 +181,7 @@ async function _createAnnouncement(user: User, data: {
 
 async function _fetchMessages(user: User, type?: 'sent' | 'received') {
     try {
+        if(!user) throw new Error("User not authenticated")
         await connectToDB()
         
         let query: any = {}
@@ -362,7 +358,7 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
         // Email notifications
         if (deliveryMethods.includes('email')) {
             const nodemailer = require('nodemailer')
-            const transporter = nodemailer.createTransporter({
+            const transporter = nodemailer.createTransport({
                 // Configure with your email settings
                 service: 'gmail',
                 auth: {
@@ -450,8 +446,8 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
 
         // SMS notifications
         if (deliveryMethods.includes('sms')) {
-            // TODO: Implement SMS notifications
-            console.log('SMS notifications - TODO: Implement SMS service')
+            console.log('SMS delivery requested for broadcast:', broadcast.title)
+            // TODO: Implement SMS service integration
         }
 
     } catch (error) {
@@ -470,7 +466,7 @@ async function _updateBroadcast(user: User, broadcastId: string, data: {
         privileges?: string[]
     }
     scheduledFor?: Date
-    deliveryMethod: ('email' | 'sms' | 'push' | 'in-app')[]
+    deliveryMethod: ('email' | 'sms')[]
 }) {
     try {
         await connectToDB()

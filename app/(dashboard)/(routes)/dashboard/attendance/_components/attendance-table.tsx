@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Edit, Trash2 } from "lucide-react"
-import { updateAttendance } from "@/lib/actions/attendance.actions"
+import { updateAttendance, deleteAttendance } from "@/lib/actions/attendance.actions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
@@ -33,19 +33,37 @@ export function AttendanceTable({ searchTerm, attendanceData }: AttendanceTableP
     }
 
     const handleSave = async (id: string) => {
+        const newValue = parseInt(editValue);
+        
+        if (isNaN(newValue) || newValue < 0) {
+            toast.error("Please enter a valid attendance number");
+            return;
+        }
+        
+        if (newValue > 1000) {
+            toast.error("Attendance seems too high, please verify");
+            return;
+        }
+        
         setLoading(true)
         try {
-            await updateAttendance(id, { attendance: parseInt(editValue) || 0 })
+            await updateAttendance(id, { attendance: newValue })
             router.refresh()
             setEditingId(null)
             setEditValue("")
             toast.success("Attendance updated successfully")
-        } catch (error) {
-            toast.error("Failed to update attendance")
+        } catch (error: any) {
+            const errorMessage = error?.message || "Failed to update attendance";
+            toast.error(errorMessage)
             console.error(error)
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleCancel = () => {
+        setEditingId(null)
+        setEditValue("")
     }
 
     const handleDelete = async (id: string) => {
@@ -53,7 +71,7 @@ export function AttendanceTable({ searchTerm, attendanceData }: AttendanceTableP
         
         setLoading(true)
         try {
-            // Add delete action when available
+            await deleteAttendance(id)
             toast.success("Attendance record deleted successfully")
             router.refresh()
         } catch (error) {
@@ -119,6 +137,8 @@ export function AttendanceTable({ searchTerm, attendanceData }: AttendanceTableP
                                                     className="w-20 h-8"
                                                     autoFocus
                                                     disabled={loading}
+                                                    min="0"
+                                                    max="1000"
                                                 />
                                                 <Button 
                                                     size="sm" 
@@ -127,6 +147,15 @@ export function AttendanceTable({ searchTerm, attendanceData }: AttendanceTableP
                                                     disabled={loading}
                                                 >
                                                     {loading ? "Saving..." : "Save"}
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline"
+                                                    onClick={handleCancel}
+                                                    className="h-8 px-2"
+                                                    disabled={loading}
+                                                >
+                                                    Cancel
                                                 </Button>
                                             </div>
                                         ) : (

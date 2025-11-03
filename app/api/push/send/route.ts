@@ -27,9 +27,12 @@ export async function POST(request: NextRequest) {
 
     await connectToDB()
 
+    // Handle 'self' userId for testing
+    const targetUserId = userId === 'self' ? user._id : userId
+
     // Get user's push subscription
     const subscription = await PushSubscription.findOne({ 
-      userId, 
+      userId: targetUserId, 
       isActive: true 
     })
 
@@ -46,27 +49,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await webpush.sendNotification(
-      pushSubscription,
-      JSON.stringify(payload)
-    )
+    try {
+      await webpush.sendNotification(
+        pushSubscription,
+        JSON.stringify(payload)
+      )
 
-    // Update last used timestamp
-    subscription.lastUsed = new Date()
-    await subscription.save()
+      // Update last used timestamp
+      subscription.lastUsed = new Date()
+      await subscription.save()
 
-    return NextResponse.json({ success: true })
+      return NextResponse.json({ success: true })
+    } catch (pushError: any) {
+      console.error('Push notification error:', pushError)
+      
+      // Handle expired subscriptions
+      if (pushError.statusCode === 410) {
+        await PushSubscription.findOneAndUpdate(
+          { userId: targetUserId },
+          { isActive: false }
+        )
+      }
+      
+      return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 })
+    }
   } catch (error) {
     console.error('Error sending push notification:', error)
-    
-    // Handle expired subscriptions
-    if (error.statusCode === 410) {
-      await PushSubscription.findOneAndUpdate(
-        { userId: request.body?.userId },
-        { isActive: false }
-      )
-    }
-
     return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 })
   }
 }

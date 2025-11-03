@@ -19,35 +19,45 @@ const page = async () => {
   const isAdmin = user?.role === 'admin' || user?.role === 'coordinator'
   const isAttendant = user?.role === "attendant"
   const isGroupAssistant = user?.role === "group assistant(Attendant)"
-   
+
   const hasAccess = isAdmin || isAttendant || isGroupAssistant
 
   if (!hasAccess) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] p-3 sm:p-6">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-lg border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+            <div className="mx-auto mb-4 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-100 to-amber-100 border-2 border-orange-200">
+              <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
             </div>
-            <CardTitle className="text-lg sm:text-xl font-semibold">Access Restricted</CardTitle>
-            <CardDescription className="text-sm sm:text-base">
-              You don't have permission to view the dashboard. Only authorized roles can access this page.
+            <CardTitle className="text-xl sm:text-2xl font-bold text-orange-800">Dashboard Access</CardTitle>
+            <CardDescription className="text-sm sm:text-base text-orange-700">
+              This section is reserved for congregation leadership and administrative roles.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <div className="text-xs sm:text-sm text-muted-foreground">
-              Your current role: <span className="font-medium">{user?.role || 'Unknown'}</span>
+          <CardContent className="text-center space-y-6">
+            <div className="p-4 bg-white/60 rounded-lg border border-orange-200">
+              <div className="text-sm text-orange-800 mb-2">
+                <span className="font-medium">Your Role:</span> {user?.role?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Publisher'}
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-orange-600">
+                <Shield className="h-4 w-4" />
+                <span>Contact your group overseer for dashboard access</span>
+              </div>
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
-              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-              Required roles: Admin, Coordinator, Attendant, or Group Assistant
+
+            <div className="space-y-3">
+              <p className="text-sm text-orange-700">
+                You can still access your personal features:
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button asChild variant="outline" className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-100">
+                  <Link href="/dashboard/publisher">
+                    My Publisher
+                  </Link>
+                </Button>
+              </div>
             </div>
-            <Button asChild className="w-full">
-              <Link href="/dashboard/todos">
-                Go to My Todos
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       </div>

@@ -3,14 +3,15 @@ import { MeetingAttendanceTracker } from '../_components/meeting-attendane-track
 import { fetchAttendanceByServiceYear } from '@/lib/actions/attendance.actions'
 
 interface PageProps {
-    searchParams: { year?: string }
+    searchParams: Promise<{ year?: string }>
 }
 
 const page = async ({ searchParams }: PageProps) => {
+    const params = await searchParams
     const currentDate = new Date()
     const currentMonth = currentDate.getMonth()
     const defaultServiceYear = currentMonth >= 8 ? currentDate.getFullYear() : currentDate.getFullYear() - 1
-    const serviceYear = searchParams.year ? parseInt(searchParams.year) : defaultServiceYear
+    const serviceYear = params.year ? parseInt(params.year) : defaultServiceYear
 
     const attendanceData = await fetchAttendanceByServiceYear(serviceYear)
 

@@ -141,7 +141,7 @@ async function _getDashboardAnalytics(user: User) {
 
         // Member analytics
         const totalMembers = members.length;
-        const activeMembers = members.filter(m => m.status === 'active').length;
+        const activeMembers = members.filter(m => !m.status || m.status === 'active').length; // Default to active if no status
         const newMembersThisMonth = members.filter(m => 
             new Date(m.createdAt) >= thisMonthStart && new Date(m.createdAt) <= thisMonthEnd
         ).length;
@@ -162,10 +162,10 @@ async function _getDashboardAnalytics(user: User) {
 
         // Attendance analytics
         const totalMeetings = attendanceRecords.length;
-        const totalAttendance = attendanceRecords.reduce((sum, record) => sum + (record.attendanceCount || 0), 0);
+        const totalAttendance = attendanceRecords.reduce((sum, record) => sum + (record.attendance || 0), 0);
         const averageAttendance = totalMeetings > 0 ? Math.round(totalAttendance / totalMeetings) : 0;
-        const weeklyMeetings = attendanceRecords.filter(record => record.meetingType === 'midweek').length;
-        const weekendMeetings = attendanceRecords.filter(record => record.meetingType === 'weekend').length;
+        const weeklyMeetings = attendanceRecords.filter(record => record.meetingType === 'Midweek').length;
+        const weekendMeetings = attendanceRecords.filter(record => record.meetingType === 'Weekend').length;
 
         // Field Service analytics
         const totalReports = fieldServiceReports.length;
@@ -173,10 +173,51 @@ async function _getDashboardAnalytics(user: User) {
         const totalBibleStudies = fieldServiceReports.reduce((sum, report) => sum + (report.bibleStudents || 0), 0);
         const approvedReports = fieldServiceReports.filter(report => report.check).length;
 
-        // Transport analytics
-        const participatingMembers = memberFeePayments.filter(payment => payment.isJoined).length;
-        const totalPaid = memberFeePayments.reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
-        const fullyPaidMembers = memberFeePayments.filter(payment => payment.isPaid && payment.isJoined).length;
+        // Transport analytics - differentiate by transport fee types
+        const transportByFee = {};
+        
+        // Group payments by transport fee
+        memberFeePayments.forEach(payment => {
+            const feeId = payment.transportFeeId?.toString();
+            if (!feeId) return;
+            
+            if (!transportByFee[feeId]) {
+                const fee = transportFees.find(f => f._id.toString() === feeId);
+                transportByFee[feeId] = {
+                    feeName: fee?.name || 'Unknown Fee',
+                    feeAmount: fee?.amount || 0,
+                    participating: new Set(),
+                    fullyPaid: new Set(),
+                    totalPaid: 0
+                };
+            }
+            
+            if (payment.isJoined) {
+                transportByFee[feeId].participating.add(payment.memberId?.toString());
+            }
+            if (payment.isPaid && payment.isJoined) {
+                transportByFee[feeId].fullyPaid.add(payment.memberId?.toString());
+            }
+            transportByFee[feeId].totalPaid += payment.amountPaid || 0;
+        });
+        
+        // Convert sets to counts and create summary
+        const transportSummary = Object.values(transportByFee).map((fee: any) => ({
+            feeName: fee.feeName,
+            feeAmount: fee.feeAmount,
+            participating: fee.participating.size,
+            fullyPaid: fee.fullyPaid.size,
+            totalPaid: fee.totalPaid
+        }));
+        
+        // Overall totals
+        const totalParticipating = new Set(
+            memberFeePayments.filter(p => p.isJoined).map(p => p.memberId?.toString())
+        ).size;
+        const totalFullyPaid = new Set(
+            memberFeePayments.filter(p => p.isPaid && p.isJoined).map(p => p.memberId?.toString())
+        ).size;
+        const totalAmountPaid = memberFeePayments.reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
 
         // Recent activity
         const newMembers = members
@@ -237,7 +278,7 @@ async function _getDashboardAnalytics(user: User) {
 
         // System health metrics
         const completionRate = totalReports > 0 ? Math.round((approvedReports / totalReports) * 100) : 0;
-        const transportParticipation = totalMembers > 0 ? Math.round((participatingMembers / totalMembers) * 100) : 0;
+        const transportParticipation = totalMembers > 0 ? Math.round((totalParticipating / totalMembers) * 100) : 0;
 
         return JSON.parse(JSON.stringify({
             members: {
@@ -264,9 +305,10 @@ async function _getDashboardAnalytics(user: User) {
                 approvedReports
             },
             transport: {
-                participating: participatingMembers,
-                totalPaid,
-                fullyPaid: fullyPaidMembers
+                participating: totalParticipating,
+                totalPaid: totalAmountPaid,
+                fullyPaid: totalFullyPaid,
+                byFee: transportSummary
             },
             recentActivity: {
                 newMembers,

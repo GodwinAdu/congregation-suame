@@ -72,6 +72,28 @@ export function PushNotificationTest() {
     }
   }
 
+  const sendServerTest = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (response.ok) {
+        toast.success('Server test notification sent')
+      } else {
+        const error = await response.json()
+        toast.error(`Server test failed: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error sending server test:', error)
+      toast.error('Failed to send server test')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -103,23 +125,33 @@ export function PushNotificationTest() {
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button
             onClick={sendTestNotification}
             disabled={loading}
-            className="flex-1"
+            size="sm"
           >
-            <Send className="h-4 w-4 mr-2" />
-            Send Test
+            <Send className="h-4 w-4 mr-1" />
+            Client Test
+          </Button>
+          
+          <Button
+            onClick={sendServerTest}
+            disabled={loading}
+            variant="outline"
+            size="sm"
+          >
+            <Bell className="h-4 w-4 mr-1" />
+            Server Test
           </Button>
           
           <Button
             onClick={sendBulkTest}
             disabled={loading}
-            variant="outline"
-            className="flex-1"
+            variant="secondary"
+            size="sm"
           >
-            <Bell className="h-4 w-4 mr-2" />
+            <Bell className="h-4 w-4 mr-1" />
             Bulk Test
           </Button>
         </div>
