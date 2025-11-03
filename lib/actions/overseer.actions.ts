@@ -11,10 +11,10 @@ import Group from "../models/group.models"
 import FieldServiceReport from "../models/field-service.models"
 
 // Get all groups for overseer
-export const getAllGroups =  await withAuth(async (user) => {
+export const getAllGroups = await withAuth(async (user) => {
     try {
         await connectToDB()
-        
+
         const groups = await Group.find({})
             .select('name')
             .sort({ name: 1 })
@@ -34,10 +34,10 @@ export const getAllGroups =  await withAuth(async (user) => {
 })
 
 // Get group members for overseer report
-export const getGroupMembers =  await withAuth(async (user, groupId: string, month: string) => {
+export const getGroupMembers = await withAuth(async (user, groupId: string, month: string) => {
     try {
         await connectToDB()
-        
+
         // Verify group exists
         const group = await Group.findById(groupId)
         if (!group) {
@@ -115,10 +115,11 @@ interface GroupScheduleData {
     status: 'scheduled' | 'completed' | 'pending'
 }
 
-export const submitOverseerReport =  await withAuth(async (user, reportData: OverseerReportData) => {
+export const submitOverseerReport = await withAuth(async (user, reportData: OverseerReportData) => {
+    if (!user) throw new Error('User not authenticated')
     try {
         await connectToDB();
-        
+
         // Validate required fields
         if (!reportData.groupId || !reportData.month || !reportData.visitDate) {
             throw new Error("Group, month, and visit date are required")
@@ -131,14 +132,14 @@ export const submitOverseerReport =  await withAuth(async (user, reportData: Ove
         }
 
         // Check if report already exists for this group and month
-        const existingReport = await OverseerReport.findOne({
-            groupId: reportData.groupId,
-            month: reportData.month
-        })
+        // const existingReport = await OverseerReport.findOne({
+        //     groupId: reportData.groupId,
+        //     month: reportData.month
+        // })
 
-        if (existingReport) {
-            throw new Error("Report already exists for this group and month")
-        }
+        // if (existingReport) {
+        //     throw new Error("Report already exists for this group and month")
+        // }
 
         // Get group members and their field service data
         const groupMembers = await Member.find({ groupId: reportData.groupId })
@@ -177,7 +178,7 @@ export const submitOverseerReport =  await withAuth(async (user, reportData: Ove
         // Update group schedule status to completed
         await GroupSchedule.findOneAndUpdate(
             { groupId: reportData.groupId, month: reportData.month },
-            { 
+            {
                 status: 'completed',
                 completedDate: reportData.visitDate,
                 overseerUserId: user._id,
@@ -191,11 +192,11 @@ export const submitOverseerReport =  await withAuth(async (user, reportData: Ove
             userId: user._id as string,
             type: 'overseer_report',
             action: `Submitted overseer report for ${group.name} - ${reportData.month}`,
-            details: { entityId: result._id, entityType: 'OverseerReport', groupName: group.name },
+            details: { entityId: result._id, entityType: 'OverseerReport', metadata: { groupName: group.name } },
         })
 
         revalidatePath('/dashboard/overseer-report')
-        
+
         return {
             success: true,
             message: "Overseer report submitted successfully",
@@ -203,7 +204,7 @@ export const submitOverseerReport =  await withAuth(async (user, reportData: Ove
         }
     } catch (error) {
         console.error('Error submitting overseer report:', error)
-        
+
         // Log failed activity
         await logActivity({
             userId: user._id as string,
@@ -216,12 +217,12 @@ export const submitOverseerReport =  await withAuth(async (user, reportData: Ove
     }
 })
 
-export const updateGroupSchedule =  await withAuth(async (user, schedules: GroupScheduleData[]) => {
+export const updateGroupSchedule = await withAuth(async (user, schedules: GroupScheduleData[]) => {
     try {
         await connectToDB()
-        
+
         console.log('Received schedules to update:', schedules) // Debug log
-        
+
         // Validate schedules
         if (!schedules || schedules.length === 0) {
             throw new Error("No schedules provided")
@@ -231,7 +232,7 @@ export const updateGroupSchedule =  await withAuth(async (user, schedules: Group
         const groupIds = schedules.map(s => s.groupId)
         const groups = await Group.find({ _id: { $in: groupIds } }).lean()
         const groupMap = new Map(groups.map(g => [g._id.toString(), g.name]))
-        
+
         console.log('Found groups:', groupMap) // Debug log
 
         // Update each schedule
@@ -239,13 +240,13 @@ export const updateGroupSchedule =  await withAuth(async (user, schedules: Group
             if (!groupMap.has(schedule.groupId)) {
                 throw new Error(`Group not found: ${schedule.groupId}`)
             }
-            
+
             console.log('Updating schedule:', schedule) // Debug log
-            
+
             return GroupSchedule.findOneAndUpdate(
-                { 
-                    groupId: schedule.groupId, 
-                    month: schedule.month, 
+                {
+                    groupId: schedule.groupId,
+                    month: schedule.month,
                     scheduledDate: new Date(schedule.scheduledDate)
                 },
                 {
@@ -271,14 +272,14 @@ export const updateGroupSchedule =  await withAuth(async (user, schedules: Group
         })
 
         revalidatePath('/dashboard/overseer-report')
-        
+
         return {
             success: true,
             message: "Group schedules updated successfully"
         }
     } catch (error) {
         console.error('Error updating group schedules:', error)
-        
+
         // Log failed activity
         await logActivity({
             userId: user._id as string,
@@ -291,45 +292,45 @@ export const updateGroupSchedule =  await withAuth(async (user, schedules: Group
     }
 })
 
-export const getOverseerReportsForGrid =  await withAuth(async (user, month?: string) => {
+export const getOverseerReportsForGrid = await withAuth(async (user, month?: string) => {
     try {
-        if(!user) {
+        if (!user) {
             throw new Error("Unauthorized: User is not an overseer")
         }
         await connectToDB()
-        
+
         const currentMonth = month || new Date().toISOString().slice(0, 7)
-        
+
         // Get scheduled groups for the month
-        const schedules = await GroupSchedule.find({ 
+        const schedules = await GroupSchedule.find({
             overseerUserId: user._id,
             month: currentMonth
         }).lean()
-        
+
         // Get group names for scheduled groups
         const groupIds = schedules.map(s => s.groupId)
         const groups = await Group.find({ _id: { $in: groupIds } }).lean()
         const groupMap = new Map(groups.map(g => [g._id.toString(), g.name]))
-        
+
         // Get existing reports for scheduled groups
         const reports = await OverseerReport.find({
             overseerUserId: user._id,
             month: currentMonth,
             groupId: { $in: groupIds }
         }).lean()
-        
+
         const reportMap = new Map(reports.map(r => [r.groupId, r]))
-        
+
         // Create data for scheduled groups only
         const reportsData = schedules.map((schedule, index) => {
             // Check if there's a report for this specific schedule date
-            const report = reports.find(r => 
-                r.groupId === schedule.groupId && 
-                r.visitDate && 
+            const report = reports.find(r =>
+                r.groupId === schedule.groupId &&
+                r.visitDate &&
                 new Date(r.visitDate).toDateString() === new Date(schedule.scheduledDate).toDateString()
             )
             const groupName = groupMap.get(schedule.groupId) || 'Unknown Group'
-            
+
             if (report) {
                 return {
                     _id: report._id.toString(),
@@ -373,29 +374,29 @@ export const getOverseerReportsForGrid =  await withAuth(async (user, month?: st
 const _getGroupSchedulesForModal = async (user: any) => {
     try {
         await connectToDB()
-        
+
         // Get all groups
         const groups = await Group.find({}).lean()
-        
+
         // Get existing schedules only
         const schedules = await GroupSchedule.find({ overseerUserId: user._id }).lean()
-        
+
         // Get group names for existing schedules
         const groupIds = schedules.map(s => s.groupId)
         const groupsWithSchedules = await Group.find({ _id: { $in: groupIds } }).lean()
         const groupMap = new Map(groupsWithSchedules.map(g => [g._id.toString(), g.name]))
-        
+
         // Only return existing schedules
         const scheduleData = schedules.map(schedule => ({
             groupId: schedule.groupId.toString(),
             groupName: groupMap.get(schedule.groupId.toString()) || 'Unknown Group',
             month: schedule.month,
             monthLabel: new Date(schedule.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-            scheduledDate: schedule.scheduledDate ? 
+            scheduledDate: schedule.scheduledDate ?
                 new Date(schedule.scheduledDate).toISOString().slice(0, 10) : '',
             status: schedule.status
         }))
-        
+
         return {
             success: true,
             groups: groups.map(g => ({ _id: g._id.toString(), name: g.name })),
@@ -407,15 +408,15 @@ const _getGroupSchedulesForModal = async (user: any) => {
     }
 }
 
-export const getGroupSchedulesForModal =  await withAuth(_getGroupSchedulesForModal)
+export const getGroupSchedulesForModal = await withAuth(_getGroupSchedulesForModal)
 
-export const getGroupSchedules =  await withAuth(async (user, month?: string) => {
+export const getGroupSchedules = await withAuth(async (user, month?: string) => {
     try {
         await connectToDB()
-        
+
         // Build query
         const query: any = { overseerUserId: user._id }
-        
+
         if (month) {
             query.month = month
         }
@@ -447,14 +448,14 @@ export const getGroupSchedules =  await withAuth(async (user, month?: string) =>
 export const getOverseerReports = await withAuth(async (user, filters?: { month?: string, groupId?: string }) => {
     try {
         await connectToDB()
-        
+
         // Build query
         const query: any = { overseerUserId: user._id }
-        
+
         if (filters?.month) {
             query.month = filters.month
         }
-        
+
         if (filters?.groupId) {
             query.groupId = filters.groupId
         }
@@ -486,13 +487,13 @@ export const getOverseerReports = await withAuth(async (user, filters?: { month?
 export const getOverseerAnalytics = await withAuth(async (user, month?: string) => {
     try {
         await connectToDB()
-        
+
         // Build query
         const query: any = { overseerUserId: user._id }
         if (month) {
             query.month = month
         }
-        
+
         // Get reports for analytics
         const reports = await OverseerReport.find(query)
             .sort({ visitDate: -1 })

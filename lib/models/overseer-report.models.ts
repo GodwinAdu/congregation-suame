@@ -48,7 +48,6 @@ const OverseerReportSchema: Schema = new Schema({
     timestamps: true
 });
 
-OverseerReportSchema.index({ groupId: 1, month: 1 }, { unique: true });
 
 const OverseerReport = mongoose.models.OverseerReport || mongoose.model<IOverseerReport>('OverseerReport', OverseerReportSchema);
 

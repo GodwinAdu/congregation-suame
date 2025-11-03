@@ -111,8 +111,68 @@ export class NotificationService {
 
     // Push notification support
     static async sendPushNotification(userId: string, title: string, body: string, data?: any): Promise<void> {
-        // Implementation would integrate with Firebase Cloud Messaging or similar
-        console.log(`Push notification to ${userId}: ${title} - ${body}`)
+        try {
+            const PushSubscription = (await import('../models/push-subscription.models')).default
+            const webpush = require('web-push')
+            
+            // Configure web-push
+            webpush.setVapidDetails(
+                'mailto:admin@suame.org',
+                process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEuiBIa40HI2BN4EMgAINkDOovHK_Ae2zgCkMLwTKnjSQx4IFgXqJFuwGcqojpXK_11',
+                process.env.VAPID_PRIVATE_KEY || 'tUxbf-Ww-8Q1Q9QFfk3P38S_wIiT6L3RBrSKckrdjbE'
+            )
+
+            // Get user's push subscription
+            const subscription = await PushSubscription.findOne({ 
+                userId, 
+                isActive: true 
+            })
+
+            if (!subscription) {
+                console.log(`No active push subscription found for user ${userId}`)
+                return
+            }
+
+            const pushSubscription = {
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: subscription.keys.p256dh,
+                    auth: subscription.keys.auth
+                }
+            }
+
+            const payload = {
+                title,
+                body,
+                icon: '/icon-192x192.png',
+                badge: '/icon-192x192.png',
+                data: data || {},
+                actions: [
+                    { action: 'view', title: 'View', icon: '/icon-192x192.png' },
+                    { action: 'close', title: 'Close', icon: '/icon-192x192.png' }
+                ]
+            }
+
+            await webpush.sendNotification(
+                pushSubscription,
+                JSON.stringify(payload)
+            )
+
+            // Update last used timestamp
+            subscription.lastUsed = new Date()
+            await subscription.save()
+        } catch (error) {
+            console.error('Push notification error:', error)
+            
+            // Handle expired subscriptions
+            if (error.statusCode === 410) {
+                const PushSubscription = (await import('../models/push-subscription.models')).default
+                await PushSubscription.findOneAndUpdate(
+                    { userId },
+                    { isActive: false }
+                )
+            }
+        }
     }
 
     // SMS notification support

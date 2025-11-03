@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Plus, Radio, Clock, Users, Send, Calendar, Trash2, Edit } from "lucide-react"
 import { CreateBroadcastModal } from "./create-broadcast-modal"
+import { EditBroadcastModal } from "./edit-broadcast-modal"
+import { deleteBroadcast } from "@/lib/actions/communication.actions"
+import { toast } from "sonner"
 
 interface Broadcast {
     _id: string
@@ -44,6 +47,9 @@ interface BroadcastCenterProps {
 export function BroadcastCenter({ members, groups, broadcasts: initialBroadcasts }: BroadcastCenterProps) {
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>(initialBroadcasts)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [editingBroadcast, setEditingBroadcast] = useState<Broadcast | null>(null)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -56,15 +62,58 @@ export function BroadcastCenter({ members, groups, broadcasts: initialBroadcasts
     }
 
     const getInitials = (name: string) => {
+        if (!name) return '??'
         return name.split(' ').map(n => n[0]).join('').toUpperCase()
     }
 
     const getAudienceText = (audience: Broadcast['targetAudience']) => {
         switch (audience.type) {
             case 'all': return 'All Members'
-            case 'group': return 'Specific Groups'
-            case 'role': return 'Specific Roles'
+            case 'group': {
+                if (audience.groups && audience.groups.length > 0) {
+                    const groupNames = audience.groups.map(groupId => {
+                        const group = groups.find(g => g._id === groupId)
+                        return group?.name || 'Unknown Group'
+                    })
+                    return `Groups: ${groupNames.join(', ')}`
+                }
+                return 'Specific Groups'
+            }
+            case 'role': {
+                if (audience.roles && audience.roles.length > 0) {
+                    return `Roles: ${audience.roles.join(', ')}`
+                }
+                return 'Specific Roles'
+            }
+            case 'privilege': {
+                if (audience.privileges && audience.privileges.length > 0) {
+                    return `Privileges: ${audience.privileges.join(', ')}`
+                }
+                return 'Specific Privileges'
+            }
             default: return 'Custom'
+        }
+    }
+
+    const handleEdit = (broadcast: Broadcast) => {
+        setEditingBroadcast(broadcast)
+        setShowEditModal(true)
+    }
+
+    const handleDelete = async (broadcastId: string) => {
+        if (!confirm('Are you sure you want to delete this broadcast?')) {
+            return
+        }
+
+        setDeletingId(broadcastId)
+        try {
+            await deleteBroadcast(broadcastId)
+            setBroadcasts(prev => prev.filter(b => b._id !== broadcastId))
+            toast.success('Broadcast deleted successfully')
+        } catch (error) {
+            toast.error('Failed to delete broadcast')
+        } finally {
+            setDeletingId(null)
         }
     }
 
@@ -107,10 +156,20 @@ export function BroadcastCenter({ members, groups, broadcasts: initialBroadcasts
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Button variant="ghost" size="sm">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleEdit(broadcast)}
+                                                    disabled={broadcast.status === 'sent'}
+                                                >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="sm">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleDelete(broadcast._id)}
+                                                    disabled={deletingId === broadcast._id}
+                                                >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
@@ -157,6 +216,26 @@ export function BroadcastCenter({ members, groups, broadcasts: initialBroadcasts
                     setShowCreateModal(false)
                 }}
             />
+
+            {editingBroadcast && (
+                <EditBroadcastModal
+                    open={showEditModal}
+                    onClose={() => {
+                        setShowEditModal(false)
+                        setEditingBroadcast(null)
+                    }}
+                    broadcast={editingBroadcast}
+                    members={members}
+                    groups={groups}
+                    onSuccess={(updatedBroadcast) => {
+                        setBroadcasts(prev => prev.map(b => 
+                            b._id === updatedBroadcast._id ? updatedBroadcast : b
+                        ))
+                        setShowEditModal(false)
+                        setEditingBroadcast(null)
+                    }}
+                />
+            )}
         </div>
     )
 }

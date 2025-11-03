@@ -20,6 +20,57 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Push Notifications Setup
+
+This application includes a complete push notification system. To set it up:
+
+### 1. Generate VAPID Keys
+
+Run the VAPID key generator:
+
+```bash
+node lib/utils/vapid-keys.js
+```
+
+Copy the generated keys to your `.env` file:
+
+```env
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-public-key
+VAPID_PRIVATE_KEY=your-private-key
+```
+
+### 2. Enable Push Notifications
+
+1. Navigate to `/dashboard/settings/notifications`
+2. Toggle "Enable Push Notifications"
+3. Grant permission when prompted
+4. Test notifications using the test component
+
+### 3. Features
+
+- **Web Push API**: Native browser push notifications
+- **Service Worker**: Background notification handling
+- **VAPID Authentication**: Secure push messaging
+- **Fallback Support**: Local notifications when push fails
+- **Bulk Notifications**: Send to multiple users
+- **Rich Notifications**: Custom icons, actions, and data
+- **Subscription Management**: Auto-cleanup of expired subscriptions
+
+### 4. Usage in Broadcasts
+
+Push notifications are automatically integrated with the broadcast system:
+
+1. Create a broadcast in Communication Hub
+2. Select "Push Notification" as delivery method
+3. Choose target audience
+4. Send or schedule the broadcast
+
+### 5. API Endpoints
+
+- `POST /api/push/subscribe` - Subscribe to push notifications
+- `POST /api/push/send` - Send push notification
+- `POST /api/push/unsubscribe` - Unsubscribe from notifications
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

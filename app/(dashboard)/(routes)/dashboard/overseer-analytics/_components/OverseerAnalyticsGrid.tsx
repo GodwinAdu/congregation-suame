@@ -39,6 +39,7 @@ const OverseerAnalyticsGrid = () => {
     const [loading, setLoading] = useState(true)
     const [selectedReport, setSelectedReport] = useState<AnalyticsData | null>(null)
     const [selectedMonth, setSelectedMonth] = useState(new Date())
+    const [showOverall, setShowOverall] = useState(false)
 
     const fetchAnalytics = useCallback(async (monthDate: Date) => {
         setLoading(true)
@@ -52,6 +53,8 @@ const OverseerAnalyticsGrid = () => {
             setLoading(false)
         }
     }, [])
+
+
 
     useEffect(() => {
         fetchAnalytics(selectedMonth)
@@ -80,6 +83,12 @@ const OverseerAnalyticsGrid = () => {
         analyticsData.reduce((sum, report) => sum + report.presentCount, 0) / analyticsData.length : 0
     const totalStudies = analyticsData.reduce((sum, report) => sum + report.studyCount, 0)
     const followUpNeeded = analyticsData.filter(report => report.followUpNeeded).length
+    
+    // Additional overall statistics for selected month
+    const uniqueGroups = new Set(analyticsData.map(r => r.groupName)).size
+    const totalMembers = analyticsData.reduce((sum, report) => sum + report.totalMembers, 0)
+    const ministryActive = analyticsData.reduce((sum, report) => sum + report.ministryActive, 0)
+    const excellentAttendance = analyticsData.filter(r => r.meetingAttendance === 'excellent').length
 
     if (loading) {
         return (
@@ -104,6 +113,23 @@ const OverseerAnalyticsGrid = () => {
                 <CardContent>
                     <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                         <div className="flex gap-4 items-center">
+                            <div className="flex gap-2">
+                                <Button 
+                                    variant={!showOverall ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setShowOverall(false)}
+                                >
+                                    Monthly View
+                                </Button>
+                                <Button 
+                                    variant={showOverall ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setShowOverall(true)}
+                                >
+                                    Overall Report
+                                </Button>
+                            </div>
+                            
                             <Select 
                                 value={format(selectedMonth, 'yyyy-MM')} 
                                 onValueChange={(value) => {
@@ -142,7 +168,7 @@ const OverseerAnalyticsGrid = () => {
             </Card>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 <Card>
                     <CardContent className="p-4 text-center">
                         <div className="text-2xl font-bold text-blue-600">{totalReports}</div>
@@ -160,7 +186,7 @@ const OverseerAnalyticsGrid = () => {
                 <Card>
                     <CardContent className="p-4 text-center">
                         <div className="text-2xl font-bold text-purple-600">{totalStudies}</div>
-                        <div className="text-sm text-muted-foreground">Total Bible Studies</div>
+                        <div className="text-sm text-muted-foreground">Bible Studies</div>
                     </CardContent>
                 </Card>
                 
@@ -170,16 +196,70 @@ const OverseerAnalyticsGrid = () => {
                         <div className="text-sm text-muted-foreground">Follow-ups Needed</div>
                     </CardContent>
                 </Card>
+                
+                {showOverall && (
+                    <>
+                        <Card>
+                            <CardContent className="p-4 text-center">
+                                <div className="text-2xl font-bold text-indigo-600">{uniqueGroups}</div>
+                                <div className="text-sm text-muted-foreground">Groups Visited</div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card>
+                            <CardContent className="p-4 text-center">
+                                <div className="text-2xl font-bold text-teal-600">{ministryActive}</div>
+                                <div className="text-sm text-muted-foreground">Ministry Active</div>
+                            </CardContent>
+                        </Card>
+                    </>
+                )}
             </div>
 
             {/* Reports List */}
             <Card>
                 <CardHeader>
                     <CardTitle>
-                        Reports for {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        {showOverall ? `Overall Report - ${selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}` : `Reports for ${selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
+                    {showOverall && (
+                        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Card className="p-4 bg-green-50">
+                                <div className="text-center">
+                                    <div className="text-xl font-bold text-green-600">{excellentAttendance}</div>
+                                    <div className="text-sm text-green-700">Excellent Attendance</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {totalReports > 0 ? Math.round((excellentAttendance / totalReports) * 100) : 0}% of visits
+                                    </div>
+                                </div>
+                            </Card>
+                            
+                            <Card className="p-4 bg-blue-50">
+                                <div className="text-center">
+                                    <div className="text-xl font-bold text-blue-600">{totalMembers}</div>
+                                    <div className="text-sm text-blue-700">Total Members</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        Across all groups visited
+                                    </div>
+                                </div>
+                            </Card>
+                            
+                            <Card className="p-4 bg-purple-50">
+                                <div className="text-center">
+                                    <div className="text-xl font-bold text-purple-600">
+                                        {totalMembers > 0 ? Math.round((ministryActive / totalMembers) * 100) : 0}%
+                                    </div>
+                                    <div className="text-sm text-purple-700">Ministry Participation</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {ministryActive} of {totalMembers} members
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+                    
                     <div className="space-y-4">
                         {analyticsData.map((report) => (
                             <Card key={report._id} className="p-4">
@@ -203,7 +283,6 @@ const OverseerAnalyticsGrid = () => {
                                             </div>
                                             
                                             <div className="flex items-center gap-1 text-sm">
-                                                <BookOpen className="h-3 w-3" />
                                                 {report.studyCount}
                                             </div>
                                             

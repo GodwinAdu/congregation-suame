@@ -37,6 +37,7 @@ interface ScheduleItem {
 export function OverseerScheduleModal({ open, onClose }: OverseerScheduleModalProps) {
     const [groups, setGroups] = useState<Group[]>([])
     const [schedules, setSchedules] = useState<ScheduleItem[]>([])
+    const [newSchedules, setNewSchedules] = useState<ScheduleItem[]>([])
     const [loading, setLoading] = useState(false)
     const [loadingData, setLoadingData] = useState(false)
 
@@ -74,8 +75,9 @@ export function OverseerScheduleModal({ open, onClose }: OverseerScheduleModalPr
     const handleSaveSchedule = async () => {
         setLoading(true)
         try {
-            const scheduleData = schedules
-                .filter(schedule => schedule.scheduledDate && schedule.scheduledDate.trim() !== '') // Only save schedules with valid dates
+            // Only save new schedules created in this session
+            const scheduleData = newSchedules
+                .filter(schedule => schedule.scheduledDate && schedule.scheduledDate.trim() !== '')
                 .map(schedule => ({
                     groupId: schedule.groupId,
                     month: schedule.month,
@@ -83,17 +85,18 @@ export function OverseerScheduleModal({ open, onClose }: OverseerScheduleModalPr
                     status: schedule.status as 'scheduled' | 'completed' | 'pending'
                 }))
 
-            console.log('Saving schedules:', scheduleData) // Debug log
+            console.log('Saving new schedules:', scheduleData)
 
             if (scheduleData.length === 0) {
-                toast.error('Please set at least one visit date')
+                toast.error('Please add at least one new visit schedule')
                 return
             }
 
             const result = await updateGroupSchedule(scheduleData)
 
             if (result.success) {
-                toast.success(`${scheduleData.length} group schedule(s) saved successfully`)
+                toast.success(`${scheduleData.length} new group schedule(s) saved successfully`)
+                setNewSchedules([]) // Clear new schedules after saving
                 onClose()
             } else {
                 toast.error('Failed to update schedules')
@@ -134,142 +137,47 @@ export function OverseerScheduleModal({ open, onClose }: OverseerScheduleModalPr
                 </DialogHeader>
 
                 <div className="space-y-6">
-                    {/* Schedule Overview */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Clock className="h-4 w-4" />
-                                Monthly Visit Schedule
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {schedules.map((schedule, index) => (
-                                    <Card key={`${schedule.groupId}-${schedule.month}-${schedule.scheduledDate || index}`} className="p-4">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-medium text-sm">{schedule.groupName}</h4>
-                                                <Badge className={getStatusColor(schedule.status)}>
-                                                    {schedule.status}
-                                                </Badge>
-                                            </div>
+                    {/* New Schedules Overview */}
+                    {newSchedules.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Clock className="h-4 w-4" />
+                                    New Schedules to Save
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {newSchedules.map((schedule, index) => (
+                                        <Card key={`new-${schedule.groupId}-${schedule.month}-${index}`} className="p-4 border-blue-200 bg-blue-50">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="font-medium text-sm">{schedule.groupName}</h4>
+                                                    <Badge className="bg-blue-600 text-white">
+                                                        New
+                                                    </Badge>
+                                                </div>
 
-                                            <div className="text-xs text-muted-foreground">
-                                                {format(new Date(schedule.month), 'MMMM yyyy')}
-                                            </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {format(new Date(schedule.month), 'MMMM yyyy')}
+                                                </div>
 
-                                            {schedule.scheduledDate ? (
                                                 <div className="text-sm font-medium text-blue-600">
                                                     {format(new Date(schedule.scheduledDate), 'MMM dd, yyyy')}
                                                 </div>
-                                            ) : (
-                                                <div className="text-sm text-muted-foreground">
-                                                    Not scheduled
-                                                </div>
-                                            )}
-                                        </div>
-                                    </Card>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Schedule Management */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Users className="h-4 w-4" />
-                                Schedule Group Visits
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {loadingData ? (
-                                <div className="space-y-4">
-                                    {[...Array(4)].map((_, i) => (
-                                        <div key={i} className="h-20 bg-gray-100 rounded animate-pulse" />
-                                    ))}
-                                </div>
-                            ) : (
-                                groups.map((group) => {
-                                    const groupSchedules = schedules.filter(s => s.groupId === group._id)
-                                    return (
-                                        <Card key={group._id} className="p-4">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                        <Users className="h-5 w-5 text-blue-600" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-medium">{group.name}</h4>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {groupSchedules.filter(s => s.status === 'completed').length} completed, {groupSchedules.filter(s => s.status === 'scheduled').length} scheduled
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                    {groupSchedules.slice(0, 6).map((schedule, scheduleIndex) => (
-                                                        <div key={`${schedule.groupId}-${schedule.month}-${schedule.scheduledDate || scheduleIndex}`} className="flex items-center justify-between p-2 border rounded">
-                                                            <div className="flex-1">
-                                                                <div className="text-sm font-medium">{schedule.monthLabel}</div>
-                                                                <Badge className={getStatusColor(schedule.status)} size="sm">
-                                                                    {schedule.status}
-                                                                </Badge>
-                                                            </div>
-                                                            <Input
-                                                                type="date"
-                                                                value={schedule.scheduledDate}
-                                                                onChange={(e) => handleScheduleUpdate(schedule.groupId, schedule.month, e.target.value)}
-                                                                className="w-32 h-8 text-xs"
-                                                            />
-                                                        </div>
-                                                    ))}
-                                                </div>
                                             </div>
                                         </Card>
-                                    )
-                                })
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Quick Stats */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Visit Statistics</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="text-center p-3 bg-green-50 rounded-lg">
-                                    <div className="text-2xl font-bold text-green-600">
-                                        {schedules.filter(s => s.status === 'completed').length}
-                                    </div>
-                                    <div className="text-sm text-green-700">Completed</div>
+                                    ))}
                                 </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
-                                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                                    <div className="text-2xl font-bold text-blue-600">
-                                        {schedules.filter(s => s.status === 'scheduled').length}
-                                    </div>
-                                    <div className="text-sm text-blue-700">Scheduled</div>
-                                </div>
 
-                                <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                                    <div className="text-2xl font-bold text-yellow-600">
-                                        {schedules.filter(s => s.status === 'pending').length}
-                                    </div>
-                                    <div className="text-sm text-yellow-700">Pending</div>
-                                </div>
 
-                                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                                    <div className="text-2xl font-bold text-purple-600">
-                                        {groups.length}
-                                    </div>
-                                    <div className="text-sm text-purple-700">Total Groups</div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+
+
+
 
                     {/* Add New Schedule */}
                     <Card>
@@ -281,7 +189,7 @@ export function OverseerScheduleModal({ open, onClose }: OverseerScheduleModalPr
                         </CardHeader>
                         <CardContent>
                             <NewScheduleForm onScheduleAdd={(newSchedule) => {
-                                setSchedules(prev => [...prev, newSchedule])
+                                setNewSchedules(prev => [...prev, newSchedule])
                             }} groups={groups} />
                         </CardContent>
                     </Card>
@@ -291,8 +199,8 @@ export function OverseerScheduleModal({ open, onClose }: OverseerScheduleModalPr
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button onClick={handleSaveSchedule} disabled={loading}>
-                            {loading ? 'Saving...' : 'Save Schedule'}
+                        <Button onClick={handleSaveSchedule} disabled={loading || newSchedules.length === 0}>
+                            {loading ? 'Saving...' : `Save ${newSchedules.length} New Schedule${newSchedules.length !== 1 ? 's' : ''}`}
                         </Button>
                     </div>
                 </div>
@@ -387,6 +295,8 @@ function NewScheduleForm({ onScheduleAdd, groups }: { onScheduleAdd: (schedule: 
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
+                    min={selectedMonth ? `${selectedMonth}-01` : undefined}
+                    max={selectedMonth ? `${selectedMonth}-${new Date(new Date(selectedMonth + '-01').getFullYear(), new Date(selectedMonth + '-01').getMonth() + 1, 0).getDate().toString().padStart(2, '0')}` : undefined}
                 />
             </div>
 

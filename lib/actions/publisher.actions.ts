@@ -6,6 +6,7 @@ import Attendance from "../models/attendance.models"
 import { MemberFeePayment } from "../models/transport-fee.models"
 import Activity from "../models/activity.models"
 import Assignment from "../models/assignment.models"
+import GroupSchedule from "../models/group-schedule.models"
 import { connectToDB } from "../mongoose"
 import { logActivity } from "../utils/activity-logger"
 import { revalidatePath } from "next/cache"
@@ -25,7 +26,8 @@ async function _fetchPublisherData(user: User) {
             transportPayments,
             recentActivities,
             myAssignments,
-            upcomingAssignments
+            upcomingAssignments,
+            groupSchedules
         ] = await Promise.all([
             FieldServiceReport.find({ publisher: user._id }).sort({ createdAt: -1 }).lean(),
             Attendance.find({}).lean(),
@@ -37,7 +39,8 @@ async function _fetchPublisherData(user: User) {
             Assignment.find({ 
                 $or: [{ assignedTo: user._id }, { assistant: user._id }],
                 week: { $gte: new Date().toISOString().split('T')[0] }
-            }).sort({ week: 1 }).limit(5).lean()
+            }).sort({ week: 1 }).limit(5).lean(),
+            GroupSchedule.find({ groupId: user.groupId }).sort({ createdAt: -1 }).limit(12).lean()
         ])
 
         // Calculate statistics
@@ -85,7 +88,8 @@ async function _fetchPublisherData(user: User) {
                 weeklyMeetings: attendanceRecords.filter(r => r.meetingType === 'midweek').length,
                 weekendMeetings: attendanceRecords.filter(r => r.meetingType === 'weekend').length
             },
-            activities: recentActivities
+            activities: recentActivities,
+            groupSchedules: groupSchedules
         }))
     } catch (error) {
         console.error("Error fetching publisher data:", error)

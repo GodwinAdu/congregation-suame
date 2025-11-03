@@ -111,6 +111,17 @@ interface PublisherData {
         createdAt: string
         success: boolean
     }>
+    groupSchedules: Array<{
+        _id: string
+        groupId: string
+        month: string
+        scheduledDate?: string
+        status: 'scheduled' | 'completed' | 'pending'
+        completedDate?: string
+        overseerUserId: string
+        overseerName: string
+        createdAt: string
+    }>
 }
 
 interface PublisherDashboardProps {
@@ -662,71 +673,245 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
                 {/* Overseer Visit Schedule Tab */}
                 <TabsContent value="overseer" className="space-y-4 sm:space-y-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-                        <h2 className="text-xl sm:text-2xl font-bold">Group Visit Schedule</h2>
+                        <div>
+                            <h2 className="text-xl sm:text-2xl font-bold">Field Service Overseer</h2>
+                            <p className="text-muted-foreground text-sm sm:text-base">Group visit schedule and history</p>
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-800">
+                            Group: {user.groupId?.name}
+                        </Badge>
                     </div>
 
-                    {/* Next Visit Card */}
-                    <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                        <CardContent className="p-4 sm:p-6">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-                                <div>
-                                    <h3 className="text-lg sm:text-xl font-bold mb-2">Next Group Visit</h3>
-                                    <p className="text-blue-100 text-sm sm:text-base">
-                                        Your group is scheduled to be visited by the Field Service Overseer
-                                    </p>
-                                </div>
-                                <div className="text-center sm:text-right">
-                                    <div className="text-2xl sm:text-3xl font-bold">Feb 15</div>
-                                    <div className="text-blue-100 text-sm sm:text-base">2024</div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Visit History */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                <Calendar className="h-5 w-5" />
-                                Visit History
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <Card className="hover:shadow-md transition-shadow">
-                                    <CardContent className="p-4 sm:p-6">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-                                            <div className="flex items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                    {/* Upcoming Visit Card */}
+                    {(() => {
+                        const upcomingVisit = data.groupSchedules?.find(schedule => 
+                            schedule.status === 'scheduled' && 
+                            schedule.scheduledDate && 
+                            new Date(schedule.scheduledDate) > new Date()
+                        )
+                        
+                        if (upcomingVisit) {
+                            const visitDate = new Date(upcomingVisit.scheduledDate!)
+                            const daysUntilVisit = Math.ceil((visitDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                            
+                            return (
+                                <Card className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-0 shadow-lg">
+                                    <CardContent className="p-6">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Calendar className="h-5 w-5 text-blue-200" />
+                                                    <span className="text-blue-200 text-sm font-medium">UPCOMING VISIT</span>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h3 className="font-semibold text-base sm:text-lg">January 2024 Visit</h3>
-                                                    <p className="text-muted-foreground text-sm sm:text-base">
-                                                        Visited on January 15, 2024
-                                                    </p>
-                                                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                                                        Good participation in field service. Continue the excellent work!
-                                                    </p>
+                                                <h3 className="text-2xl font-bold mb-2">
+                                                    {format(visitDate, 'EEEE, MMMM dd, yyyy')}
+                                                </h3>
+                                                <p className="text-blue-100 mb-2">
+                                                    {format(visitDate, 'h:mm a')} • {getMonthName(upcomingVisit.month)} Visit
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <User className="h-4 w-4 text-blue-200" />
+                                                    <span className="text-blue-200 text-sm">
+                                                        Overseer: {upcomingVisit.overseerName}
+                                                    </span>
                                                 </div>
                                             </div>
-                                            <div className="text-left sm:text-right w-full sm:w-auto">
-                                                <Badge className="bg-green-600 text-white">Completed</Badge>
+                                            <div className="text-center">
+                                                <div className="bg-white/20 rounded-full p-4 mb-2">
+                                                    <CalendarDays className="h-8 w-8 text-white" />
+                                                </div>
+                                                <div className="text-2xl font-bold">{daysUntilVisit}</div>
+                                                <div className="text-blue-200 text-sm">
+                                                    {daysUntilVisit === 1 ? 'day' : 'days'} away
+                                                </div>
                                             </div>
                                         </div>
                                     </CardContent>
                                 </Card>
+                            )
+                        }
+                        
+                        return (
+                            <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0">
+                                <CardContent className="p-6">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <AlertCircle className="h-5 w-5 text-orange-200" />
+                                                <span className="text-orange-200 text-sm font-medium">NO UPCOMING VISIT</span>
+                                            </div>
+                                            <h3 className="text-xl font-bold mb-2">Visit Not Scheduled</h3>
+                                            <p className="text-orange-100">
+                                                Your group has not been scheduled for an upcoming visit
+                                            </p>
+                                        </div>
+                                        <div className="bg-white/20 rounded-full p-4">
+                                            <Calendar className="h-8 w-8 text-white" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    })()}
 
-                                <Card className="border-dashed">
-                                    <CardContent className="text-center py-8">
-                                        <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold mb-2">Upcoming Visit</h3>
-                                        <p className="text-muted-foreground mb-4">
-                                            Your next group visit is scheduled for February 15, 2024
-                                        </p>
-                                        <Badge className="bg-blue-100 text-blue-800">Scheduled</Badge>
-                                    </CardContent>
-                                </Card>
+                    {/* Current Month Status */}
+                    {(() => {
+                        const currentMonth = format(new Date(), 'yyyy-MM')
+                        const currentSchedule = data.groupSchedules?.find(schedule => schedule.month === currentMonth)
+                        
+                        if (!currentSchedule) return null
+                        
+                        return (
+                            <Card className={`border-l-4 ${
+                                currentSchedule.status === 'completed' ? 'border-l-green-500 bg-green-50' :
+                                currentSchedule.status === 'scheduled' ? 'border-l-blue-500 bg-blue-50' :
+                                'border-l-orange-500 bg-orange-50'
+                            }`}>
+                                <CardContent className="p-4 sm:p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            {currentSchedule.status === 'completed' ? (
+                                                <CheckCircle className="h-6 w-6 text-green-600" />
+                                            ) : currentSchedule.status === 'scheduled' ? (
+                                                <Calendar className="h-6 w-6 text-blue-600" />
+                                            ) : (
+                                                <AlertCircle className="h-6 w-6 text-orange-600" />
+                                            )}
+                                            <div>
+                                                <h4 className="font-semibold text-lg">
+                                                    {format(new Date(), 'MMMM yyyy')} Status
+                                                </h4>
+                                                <p className="text-muted-foreground text-sm">
+                                                    {currentSchedule.status === 'completed' ? 
+                                                        `Completed on ${format(new Date(currentSchedule.completedDate!), 'MMM dd, yyyy')}` :
+                                                     currentSchedule.status === 'scheduled' ? 
+                                                        `Scheduled for ${format(new Date(currentSchedule.scheduledDate!), 'MMM dd, yyyy')}` :
+                                                        'Awaiting schedule confirmation'
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Badge className={`${
+                                            currentSchedule.status === 'completed' ? 'bg-green-600' :
+                                            currentSchedule.status === 'scheduled' ? 'bg-blue-600' :
+                                            'bg-orange-600'
+                                        } text-white`}>
+                                            {currentSchedule.status.charAt(0).toUpperCase() + currentSchedule.status.slice(1)}
+                                        </Badge>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    })()}
+
+                    {/* Visit History & Schedule */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                    <Activity className="h-5 w-5" />
+                                    Visit History & Schedule
+                                </CardTitle>
+                                <Badge variant="outline" className="text-xs">
+                                    {data.groupSchedules?.length || 0} Records
+                                </Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {data.groupSchedules && data.groupSchedules.length > 0 ? (
+                                    data.groupSchedules
+                                        .sort((a, b) => new Date(b.month).getTime() - new Date(a.month).getTime())
+                                        .map((schedule) => {
+                                            const isUpcoming = schedule.status === 'scheduled' && 
+                                                schedule.scheduledDate && 
+                                                new Date(schedule.scheduledDate) > new Date()
+                                            
+                                            return (
+                                                <Card key={schedule._id} className={`hover:shadow-md transition-all duration-200 ${
+                                                    isUpcoming ? 'ring-2 ring-blue-200 bg-blue-50/50' : ''
+                                                }`}>
+                                                    <CardContent className="p-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-3 flex-1">
+                                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                                                    schedule.status === 'completed' ? 'bg-green-100' :
+                                                                    schedule.status === 'scheduled' ? 'bg-blue-100' :
+                                                                    'bg-orange-100'
+                                                                }`}>
+                                                                    {schedule.status === 'completed' ? (
+                                                                        <CheckCircle className="h-5 w-5 text-green-600" />
+                                                                    ) : schedule.status === 'scheduled' ? (
+                                                                        <Calendar className="h-5 w-5 text-blue-600" />
+                                                                    ) : (
+                                                                        <Clock className="h-5 w-5 text-orange-600" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <h3 className="font-semibold text-base">
+                                                                            {getMonthName(schedule.month)}
+                                                                        </h3>
+                                                                        {isUpcoming && (
+                                                                            <Badge className="bg-blue-600 text-white text-xs px-2 py-0.5">
+                                                                                Upcoming
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-muted-foreground">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <Calendar className="h-3 w-3" />
+                                                                            <span>
+                                                                                {schedule.status === 'completed' && schedule.completedDate ? 
+                                                                                    format(new Date(schedule.completedDate), 'MMM dd, yyyy') :
+                                                                                 schedule.status === 'scheduled' && schedule.scheduledDate ? 
+                                                                                    format(new Date(schedule.scheduledDate), 'MMM dd, yyyy') :
+                                                                                    'Date pending'
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <User className="h-3 w-3" />
+                                                                            <span>{schedule.overseerName}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-2">
+                                                                <Badge className={`text-xs ${
+                                                                    schedule.status === 'completed' ? 'bg-green-600 text-white' :
+                                                                    schedule.status === 'scheduled' ? 'bg-blue-600 text-white' :
+                                                                    'bg-orange-600 text-white'
+                                                                }`}>
+                                                                    {schedule.status === 'completed' ? 'Completed' :
+                                                                     schedule.status === 'scheduled' ? 'Scheduled' :
+                                                                     'Pending'}
+                                                                </Badge>
+                                                                {schedule.status === 'scheduled' && schedule.scheduledDate && (
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {format(new Date(schedule.scheduledDate), 'h:mm a')}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            )
+                                        })
+                                ) : (
+                                    <Card className="border-dashed border-2">
+                                        <CardContent className="text-center py-12">
+                                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Calendar className="h-8 w-8 text-gray-400" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold mb-2 text-gray-900">No Visit Records</h3>
+                                            <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
+                                                Your group's field service overseer visit history will appear here once visits are scheduled and completed.
+                                            </p>
+                                            <Badge variant="secondary">Awaiting First Visit</Badge>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Loader2, Radio, Mail, MessageSquare, Bell, Smartphone } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
-import { createBroadcast } from "@/lib/actions/communication.actions"
+import { createBroadcast, getRolesAndPrivileges } from "@/lib/actions/communication.actions"
 
 interface Member {
     _id: string
@@ -37,14 +37,33 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
         title: "",
         content: "",
         targetAudience: {
-            type: "all" as "all" | "group" | "role",
+            type: "all" as "all" | "group" | "role" | "privilege",
             groups: [] as string[],
-            roles: [] as string[]
+            roles: [] as string[],
+            privileges: [] as string[]
         },
         deliveryMethod: ["in-app"] as ("email" | "sms" | "push" | "in-app")[],
         scheduledFor: undefined as Date | undefined
     })
     const [loading, setLoading] = useState(false)
+    const [availableRoles, setAvailableRoles] = useState<string[]>([])
+    const [availablePrivileges, setAvailablePrivileges] = useState<string[]>([])
+    
+    useEffect(() => {
+        const fetchRolesAndPrivileges = async () => {
+            try {
+                const data = await getRolesAndPrivileges()
+                setAvailableRoles(data.roles)
+                setAvailablePrivileges(data.privileges)
+            } catch (error) {
+                console.error('Error fetching roles and privileges:', error)
+            }
+        }
+        
+        if (open) {
+            fetchRolesAndPrivileges()
+        }
+    }, [open])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -61,7 +80,7 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
             setFormData({
                 title: "",
                 content: "",
-                targetAudience: { type: "all", groups: [], roles: [] },
+                targetAudience: { type: "all", groups: [], roles: [], privileges: [] },
                 deliveryMethod: ["in-app"],
                 scheduledFor: undefined
             })
@@ -136,6 +155,7 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
                                 <SelectItem value="all">All Members</SelectItem>
                                 <SelectItem value="group">Specific Groups</SelectItem>
                                 <SelectItem value="role">Specific Roles</SelectItem>
+                                <SelectItem value="privilege">Specific Privileges</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -143,28 +163,90 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
                     {formData.targetAudience.type === "group" && (
                         <div>
                             <label className="text-sm font-medium">Select Groups</label>
-                            <Select onValueChange={(value) => {
-                                if (!formData.targetAudience.groups?.includes(value)) {
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        targetAudience: {
-                                            ...prev.targetAudience,
-                                            groups: [...(prev.targetAudience.groups || []), value]
-                                        }
-                                    }))
-                                }
-                            }}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select groups" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {groups.map(group => (
-                                        <SelectItem key={group._id} value={group._id}>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                {groups.map(group => (
+                                    <div key={group._id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`group-${group._id}`}
+                                            checked={formData.targetAudience.groups.includes(group._id)}
+                                            onCheckedChange={(checked) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    targetAudience: {
+                                                        ...prev.targetAudience,
+                                                        groups: checked 
+                                                            ? [...prev.targetAudience.groups, group._id]
+                                                            : prev.targetAudience.groups.filter(g => g !== group._id)
+                                                    }
+                                                }))
+                                            }}
+                                        />
+                                        <label htmlFor={`group-${group._id}`} className="text-sm cursor-pointer">
                                             {group.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {formData.targetAudience.type === "role" && (
+                        <div>
+                            <label className="text-sm font-medium">Select Roles</label>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                {availableRoles.map(role => (
+                                    <div key={role} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`role-${role}`}
+                                            checked={formData.targetAudience.roles.includes(role)}
+                                            onCheckedChange={(checked) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    targetAudience: {
+                                                        ...prev.targetAudience,
+                                                        roles: checked 
+                                                            ? [...prev.targetAudience.roles, role]
+                                                            : prev.targetAudience.roles.filter(r => r !== role)
+                                                    }
+                                                }))
+                                            }}
+                                        />
+                                        <label htmlFor={`role-${role}`} className="text-sm cursor-pointer capitalize">
+                                            {role.replace('_', ' ')}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {formData.targetAudience.type === "privilege" && (
+                        <div>
+                            <label className="text-sm font-medium">Select Privileges</label>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                {availablePrivileges.map(privilege => (
+                                    <div key={privilege} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`privilege-${privilege}`}
+                                            checked={formData.targetAudience.privileges.includes(privilege)}
+                                            onCheckedChange={(checked) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    targetAudience: {
+                                                        ...prev.targetAudience,
+                                                        privileges: checked 
+                                                            ? [...prev.targetAudience.privileges, privilege]
+                                                            : prev.targetAudience.privileges.filter(p => p !== privilege)
+                                                    }
+                                                }))
+                                            }}
+                                        />
+                                        <label htmlFor={`privilege-${privilege}`} className="text-sm cursor-pointer">
+                                            {privilege}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
