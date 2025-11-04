@@ -93,10 +93,24 @@ async function _updatePrivilege(user: User, id: string, values: { name: string }
     }
 }
 
+async function _deletePrivilege(user: User, id: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
 
+        await connectToDB();
 
+        const privilege = await Privilege.findByIdAndDelete(id);
+
+        if (!privilege) throw new Error("Privilege not found");
+
+    } catch (error) {
+        console.log("error happened while deleting privilege", error);
+        throw error
+    }
+}
 
 export const createPrivilege = await withAuth(_createPrivilege);
 export const fetchAllPrivileges = await withAuth(_fetchAllPrivileges);
 export const fetchPrivilegeById = await withAuth(_fetchPrivilegeById);
 export const updatePrivilege = await withAuth(_updatePrivilege);
+export const deletePrivilege = await withAuth(_deletePrivilege);

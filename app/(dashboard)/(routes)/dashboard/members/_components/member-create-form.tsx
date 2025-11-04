@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, User, Mail, Lock, Users, Car, CalendarIcon } from "lucide-react"
+import { Loader2, User, Mail, Lock, Users, Car, CalendarIcon, Plus, X, Crown } from "lucide-react"
 import MultiSelect from "@/components/commons/MultiSelect"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -33,7 +33,12 @@ const registrationSchema = z
         confirmPassword: z.string(),
         role: z.string().min(1, "Please select a role"),
         groupId: z.string(),
-        privileges: z.array(z.string())
+        privileges: z.array(z.string()),
+        familyRelationships: z.array(z.object({
+            memberId: z.string(),
+            relationship: z.string()
+        })).optional(),
+        isFamilyHead: z.boolean().optional()
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match",
@@ -43,8 +48,10 @@ const registrationSchema = z
 type RegistrationFormData = z.infer<typeof registrationSchema>
 
 
-export default function UserRegistrationForm({ roles, groups, privileges }: { roles: any[], groups: any[], privileges: any[] }) {
+export default function UserRegistrationForm({ roles, groups, privileges, members }: { roles: any[], groups: any[], privileges: any[], members: any[] }) {
     const [submitSuccess, setSubmitSuccess] = useState(false)
+    const [familyRelationships, setFamilyRelationships] = useState<Array<{ memberId: string; memberName: string; relationship: string }>>([])
+    const [isFamilyHead, setIsFamilyHead] = useState(false)
 
     const form = useForm<RegistrationFormData>({
         resolver: zodResolver(registrationSchema),
@@ -56,7 +63,9 @@ export default function UserRegistrationForm({ roles, groups, privileges }: { ro
             confirmPassword: "111111",
             role: "",
             groupId: "",
-            privileges: []
+            privileges: [],
+            familyRelationships: [],
+            isFamilyHead: false
         },
     });
 
@@ -64,9 +73,19 @@ export default function UserRegistrationForm({ roles, groups, privileges }: { ro
 
     const onSubmit = async (data: RegistrationFormData) => {
         try {
-            await createMember(data);
+            const memberData = {
+                ...data,
+                familyRelationships: familyRelationships.filter(r => r.memberId).map(r => ({
+                    memberId: r.memberId,
+                    relationship: r.relationship
+                })),
+                isFamilyHead
+            }
+            await createMember(memberData);
 
             form.reset();
+            setFamilyRelationships([]);
+            setIsFamilyHead(false);
             toast.success("Member created successfully!");
             setSubmitSuccess(true);
         } catch (error) {
@@ -471,6 +490,111 @@ export default function UserRegistrationForm({ roles, groups, privileges }: { ro
 
                             </div>
 
+                            {/* Family Relationships Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Users className="w-5 h-5 text-primary" />
+                                    <h3 className="text-lg font-semibold text-foreground">Family Relationships</h3>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-sm text-muted-foreground">Add family members and their relationships</p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                variant={isFamilyHead ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setIsFamilyHead(!isFamilyHead)}
+                                            >
+                                                <Crown className="w-4 h-4 mr-2" />
+                                                {isFamilyHead ? "Family Head" : "Set as Family Head"}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setFamilyRelationships([...familyRelationships, { memberId: '', memberName: '', relationship: 'other' }])}
+                                            >
+                                                <Plus className="w-4 h-4 mr-2" />
+                                                Add Family Member
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {familyRelationships.map((relationship, index) => (
+                                        <div key={index} className="flex gap-2 items-end p-3 bg-muted/50 rounded-lg">
+                                            <div className="flex-1">
+                                                <label className="text-xs font-medium text-muted-foreground">Family Member</label>
+                                                <Select
+                                                    value={relationship.memberId}
+                                                    onValueChange={(value) => {
+                                                        const member = members.find(m => m._id === value)
+                                                        const updated = [...familyRelationships]
+                                                        updated[index] = { ...updated[index], memberId: value, memberName: member?.fullName || '' }
+                                                        setFamilyRelationships(updated)
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select member" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {members.map((member) => (
+                                                            <SelectItem key={member._id} value={member._id}>
+                                                                {member.fullName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="w-32">
+                                                <label className="text-xs font-medium text-muted-foreground">Relationship</label>
+                                                <Select
+                                                    value={relationship.relationship}
+                                                    onValueChange={(value) => {
+                                                        const updated = [...familyRelationships]
+                                                        updated[index] = { ...updated[index], relationship: value }
+                                                        setFamilyRelationships(updated)
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="father">Father</SelectItem>
+                                                        <SelectItem value="mother">Mother</SelectItem>
+                                                        <SelectItem value="son">Son</SelectItem>
+                                                        <SelectItem value="daughter">Daughter</SelectItem>
+                                                        <SelectItem value="husband">Husband</SelectItem>
+                                                        <SelectItem value="wife">Wife</SelectItem>
+                                                        <SelectItem value="brother">Brother</SelectItem>
+                                                        <SelectItem value="sister">Sister</SelectItem>
+                                                        <SelectItem value="grandfather">Grandfather</SelectItem>
+                                                        <SelectItem value="grandmother">Grandmother</SelectItem>
+                                                        <SelectItem value="grandson">Grandson</SelectItem>
+                                                        <SelectItem value="granddaughter">Granddaughter</SelectItem>
+                                                        <SelectItem value="uncle">Uncle</SelectItem>
+                                                        <SelectItem value="aunt">Aunt</SelectItem>
+                                                        <SelectItem value="nephew">Nephew</SelectItem>
+                                                        <SelectItem value="niece">Niece</SelectItem>
+                                                        <SelectItem value="cousin">Cousin</SelectItem>
+                                                        <SelectItem value="other">Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setFamilyRelationships(familyRelationships.filter((_, i) => i !== index))}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
                             {/* Submit Button */}
                             <div className="pt-4 flex justify-end">

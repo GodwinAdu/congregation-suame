@@ -13,7 +13,8 @@ import {
     Mail,
     Shield,
     Clock,
-    MapPin
+    MapPin,
+    Award
 } from "lucide-react";
 import { CellAction } from "@/components/table/cell-action";
 import { MemberDetailsModal } from "@/components/table/MemberDetailsModal";
@@ -210,6 +211,11 @@ export const columns: ColumnDef<any>[] = [
                             label: "Manage Privileges",
                             type: "assignPrivileges",
                             icon: <Key className="h-4 w-4" />,
+                        },
+                        {
+                            label: "Assign Duties",
+                            type: "assignDuties",
+                            icon: <Award className="h-4 w-4" />,
                         },
                         {
                             label: "Delete member",

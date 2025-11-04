@@ -64,21 +64,21 @@ const OverseerReportGrid = () => {
     }
 
     const LoadingSkeleton = () => (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-64" />
+                <CardHeader className="pb-2 sm:pb-6">
+                    <Skeleton className="h-4 sm:h-6 w-32 sm:w-48" />
+                    <Skeleton className="h-3 sm:h-4 w-48 sm:w-64" />
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
+                <CardContent className="pt-2 sm:pt-6">
+                    <div className="space-y-2 sm:space-y-4">
                         {[...Array(5)].map((_, i) => (
-                            <div key={i} className="flex items-center space-x-4">
-                                <Skeleton className="h-4 w-32" />
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-4 w-16" />
-                                <Skeleton className="h-4 w-20" />
-                                <Skeleton className="h-4 w-32" />
+                            <div key={i} className="flex items-center space-x-2 sm:space-x-4">
+                                <Skeleton className="h-3 sm:h-4 w-24 sm:w-32" />
+                                <Skeleton className="h-3 sm:h-4 w-16 sm:w-24" />
+                                <Skeleton className="h-3 sm:h-4 w-12 sm:w-16" />
+                                <Skeleton className="h-3 sm:h-4 w-14 sm:w-20" />
+                                <Skeleton className="h-3 sm:h-4 w-20 sm:w-32" />
                             </div>
                         ))}
                     </div>
@@ -88,44 +88,49 @@ const OverseerReportGrid = () => {
     )
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Filter Controls */}
             <Card className="bg-card border-border">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-card-foreground">
-                        <Calendar className="w-5 h-5 text-primary" />
-                        Field Service Overseer Reports
+                <CardHeader className="pb-2 sm:pb-6">
+                    <CardTitle className="flex items-center gap-2 text-card-foreground text-base sm:text-lg">
+                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                        <span className="truncate">Field Service Overseer Reports</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                        <div className="flex gap-4 items-center">
+                <CardContent className="pt-2 sm:pt-6">
+                    <div className="flex flex-col gap-3 sm:gap-4">
+                        <div className="w-full">
                             <MonthSelection selectedMonth={handleMonthChange} />
                         </div>
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-2 sm:flex gap-2">
                             <Button
                                 onClick={() => setShowScheduleModal(true)}
                                 variant="outline"
-                                className="gap-2"
+                                className="gap-1 sm:gap-2 text-xs sm:text-sm"
+                                size="sm"
                             >
-                                <Calendar className="w-4 h-4" />
-                                Schedule
+                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden xs:inline">Schedule</span>
+                                <span className="xs:hidden">Sched</span>
                             </Button>
                             <Button
                                 onClick={() => setShowReportModal(true)}
-                                className="gap-2"
+                                className="gap-1 sm:gap-2 text-xs sm:text-sm"
+                                size="sm"
                             >
-                                <Plus className="w-4 h-4" />
-                                New Report
+                                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden xs:inline">New Report</span>
+                                <span className="xs:hidden">New</span>
                             </Button>
                             <Button
                                 variant="outline"
-                                size="icon"
+                                size="sm"
                                 onClick={handleRefresh}
                                 disabled={loading}
-                                className="shrink-0"
+                                className="col-span-2 sm:col-span-1 sm:w-auto"
                             >
-                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${loading ? 'animate-spin' : ''}`} />
+                                <span className="ml-1 sm:ml-2 text-xs sm:text-sm">Refresh</span>
                             </Button>
                         </div>
                     </div>
@@ -145,17 +150,24 @@ const OverseerReportGrid = () => {
                 <LoadingSkeleton />
             ) : (
                 <Card>
-                    <CardHeader>
-                        <CardTitle>
-                            Overseer Reports - {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    <CardHeader className="pb-2 sm:pb-6">
+                        <CardTitle className="text-sm sm:text-base lg:text-lg">
+                            <span className="hidden sm:inline">
+                                Overseer Reports - {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </span>
+                            <span className="sm:hidden">
+                                {selectedMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} Reports
+                            </span>
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <DataTable
-                            columns={createOverseerColumns()}
-                            data={reportsData}
-                            searchKey="groupName"
-                        />
+                    <CardContent className="pt-2 sm:pt-6 px-2 sm:px-6">
+                        <div className="overflow-x-auto">
+                            <DataTable
+                                columns={createOverseerColumns()}
+                                data={reportsData}
+                                searchKey="groupName"
+                            />
+                        </div>
                     </CardContent>
                 </Card>
             )}

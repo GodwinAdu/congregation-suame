@@ -117,6 +117,10 @@ export function NavMain({ role, user }: NavMainProps) {
           url: `/dashboard/members`,
         },
         {
+          title: "Families",
+          url: `/dashboard/members/families`,
+        },
+        {
           title: "Analytics",
           url: `/dashboard/members/analytics`,
         }
@@ -146,6 +150,14 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "Monthly Report",
           url: `/dashboard/monthly-report`,
           roleField: "monthlyReport"
+        },
+        {
+          title: "Public Witnessing",
+          url: `/dashboard/field-service/public-witnessing`,
+        },
+        {
+          title: "Meeting Schedule",
+          url: `/dashboard/field-service/meeting-schedule`,
         }
       ],
     },

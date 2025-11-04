@@ -339,6 +339,7 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                                             onCheckedChange={(checked) => 
                                                                 handleMemberUpdate(member.id, 'present', checked as boolean)
                                                             }
+                                                            className="h-3 w-3 sm:h-4 sm:w-4"
                                                         />
                                                         <Label htmlFor={`present-${member.id}`} className="text-xs sm:text-sm">Present</Label>
                                                     </div>
@@ -349,6 +350,7 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                                             onCheckedChange={(checked) => 
                                                                 handleMemberUpdate(member.id, 'hasStudy', checked as boolean)
                                                             }
+                                                            className="h-3 w-3 sm:h-4 sm:w-4"
                                                         />
                                                         <Label htmlFor={`study-${member.id}`} className="text-xs sm:text-sm">Study</Label>
                                                     </div>
@@ -359,6 +361,7 @@ export function OverseerReportModal({ open, onClose, selectedGroup, selectedMont
                                                             onCheckedChange={(checked) => 
                                                                 handleMemberUpdate(member.id, 'participatesInMinistry', checked as boolean)
                                                             }
+                                                            className="h-3 w-3 sm:h-4 sm:w-4"
                                                         />
                                                         <Label htmlFor={`ministry-${member.id}`} className="text-xs sm:text-sm">Ministry</Label>
                                                     </div>

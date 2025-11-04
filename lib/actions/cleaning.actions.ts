@@ -187,9 +187,59 @@ async function _fetchInventoryItems(user: User) {
     }
 }
 
+async function _deleteCleaningTask(user: User, id: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const task = await CleaningTask.findByIdAndDelete(id);
+        if (!task) throw new Error("Task not found");
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'system_access',
+            action: `${user.fullName} deleted cleaning task: ${task.task}`,
+            details: { entityId: id, entityType: 'CleaningTask' },
+        });
+
+        revalidatePath('/dashboard/cleaning');
+        return { success: true };
+    } catch (error) {
+        console.log("Error deleting cleaning task:", error);
+        throw error;
+    }
+}
+
+async function _deleteInventoryItem(user: User, id: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const item = await InventoryItem.findByIdAndDelete(id);
+        if (!item) throw new Error("Item not found");
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'system_access',
+            action: `${user.fullName} deleted inventory item: ${item.name}`,
+            details: { entityId: id, entityType: 'InventoryItem' },
+        });
+
+        revalidatePath('/dashboard/cleaning');
+        return { success: true };
+    } catch (error) {
+        console.log("Error deleting inventory item:", error);
+        throw error;
+    }
+}
+
 export const createCleaningTask = await withAuth(_createCleaningTask);
 export const updateCleaningTask = await withAuth(_updateCleaningTask);
 export const fetchCleaningTasks = await withAuth(_fetchCleaningTasks);
 export const createInventoryItem = await withAuth(_createInventoryItem);
 export const updateInventoryItem = await withAuth(_updateInventoryItem);
 export const fetchInventoryItems = await withAuth(_fetchInventoryItems);
+export const deleteCleaningTask = await withAuth(_deleteCleaningTask);
+export const deleteInventoryItem = await withAuth(_deleteInventoryItem);

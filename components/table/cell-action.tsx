@@ -20,11 +20,12 @@ import useClientRole from "@/lib/helpers/client-role"
 import { RoleDialog } from "./RoleModal"
 import { GroupDialog } from "./GroupModal"
 import { PrivilegeDialog } from "./PrivilegeModal"
+import { SimpleDutyModal } from "../../app/(dashboard)/(routes)/dashboard/members/_components/SimpleDutyModal"
 
 interface ActionOption<T> {
     label: string
     icon?: React.ReactNode
-    type: "view" | "edit" | "delete" | "custom" | "assignRole" | "assignGroup" | "assignPrivileges"
+    type: "view" | "edit" | "delete" | "custom" | "assignRole" | "assignGroup" | "assignPrivileges" | "assignDuties"
     permissionKey?: string
     onClick?: (item: T) => void
     href?: string
@@ -45,6 +46,7 @@ export function CellAction<T extends Record<string, unknown>>({
     onDelete,
 }: AdvancedCellActionProps<T>) {
     const [loading, setLoading] = useState(false)
+    const [showDutyModal, setShowDutyModal] = useState(false)
     const { isLoading, role } = useClientRole()
     const router = useRouter()
 
@@ -76,19 +78,13 @@ export function CellAction<T extends Record<string, unknown>>({
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
-                {isLoading ? (
-                    <DropdownMenuItem className="flex justify-center text-center">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    </DropdownMenuItem>
-                ) : (
-                    <>
-                        {actions
-                            .filter((action) => !action.hidden)
-                            .map((action, index) => {
-                                const hasPermission =
-                                    !action.permissionKey || role?.permissions?.[action.permissionKey]
+                {actions
+                    .filter((action) => !action.hidden)
+                    .map((action, index) => {
+                        const hasPermission =
+                            !action.permissionKey || role?.permissions?.[action.permissionKey]
 
-                                if (!hasPermission) return null
+                        if (!hasPermission) return null
 
                                 if (action.type === "delete") {
                                     return (
@@ -156,6 +152,21 @@ export function CellAction<T extends Record<string, unknown>>({
                                     )
                                 }
 
+                                if (action.type === "assignDuties") {
+                                    return (
+                                        <DropdownMenuItem
+                                            key={index}
+                                            onSelect={() => setShowDutyModal(true)}
+                                            disabled={loading || action.disabled}
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                {action.icon}
+                                                <span>{action.label}</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    )
+                                }
+
                                 if (action.href) {
                                     return (
                                         <DropdownMenuItem asChild key={index} disabled={action.disabled}>
@@ -193,10 +204,13 @@ export function CellAction<T extends Record<string, unknown>>({
                                         </div>
                                     </DropdownMenuItem>
                                 )
-                            })}
-                    </>
-                )}
+                    })}
             </DropdownMenuContent>
+            <SimpleDutyModal
+                open={showDutyModal}
+                onClose={() => setShowDutyModal(false)}
+                member={data}
+            />
         </DropdownMenu>
     )
 }

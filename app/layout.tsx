@@ -72,10 +72,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <PushNotificationProvider>
+         
             <Toaster richColors />
             {children}
-          </PushNotificationProvider>
+              
         </ThemeProvider>
       </body>
     </html>

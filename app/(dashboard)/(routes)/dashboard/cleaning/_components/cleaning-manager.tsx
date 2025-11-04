@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sparkles, Package, Plus, CheckCircle, Clock, AlertTriangle } from "lucide-react"
+import { Sparkles, Package, Plus, CheckCircle, Clock, AlertTriangle, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { updateCleaningTask, updateInventoryItem } from "@/lib/actions/cleaning.actions"
+import { updateCleaningTask, updateInventoryItem, deleteCleaningTask, deleteInventoryItem } from "@/lib/actions/cleaning.actions"
 import { AddTaskModal } from "./add-task-modal"
 import { AddInventoryModal } from "./add-inventory-modal"
 
@@ -17,7 +17,7 @@ interface CleaningTask {
     area: string
     task: string
     frequency: string
-    assignedTo?: { _id: string; fullName: string }
+    assignedTo?: { _id: string; name: string }
     dueDate: string
     completedDate?: string
     status: "Pending" | "In Progress" | "Completed" | "Overdue"
@@ -39,18 +39,18 @@ interface InventoryItem {
     notes?: string
 }
 
-interface Member {
+interface Group {
     _id: string
-    fullName: string
+    name: string
 }
 
 interface CleaningManagerProps {
     initialTasks: CleaningTask[]
     initialInventory: InventoryItem[]
-    members: Member[]
+    groups: Group[]
 }
 
-export function CleaningManager({ initialTasks, initialInventory, members }: CleaningManagerProps) {
+export function CleaningManager({ initialTasks, initialInventory, groups }: CleaningManagerProps) {
     const [tasks, setTasks] = useState<CleaningTask[]>(initialTasks)
     const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory)
     const [showTaskModal, setShowTaskModal] = useState(false)
@@ -73,13 +73,13 @@ export function CleaningManager({ initialTasks, initialInventory, members }: Cle
         }
     }
 
-    const handleAssignTask = async (taskId: string, memberId: string) => {
+    const handleAssignTask = async (taskId: string, groupId: string) => {
         try {
-            await updateCleaningTask(taskId, { assignedTo: memberId })
+            await updateCleaningTask(taskId, { assignedTo: groupId })
 
-            const member = members.find(m => m._id === memberId)
+            const group = groups.find(g => g._id === groupId)
             setTasks(prev => prev.map(task =>
-                task._id === taskId ? { ...task, assignedTo: member } : task
+                task._id === taskId ? { ...task, assignedTo: group } : task
             ))
 
             toast.success("Task assigned successfully")
@@ -99,6 +99,30 @@ export function CleaningManager({ initialTasks, initialInventory, members }: Cle
             toast.success("Inventory updated")
         } catch (error: any) {
             toast.error(error.message || "Failed to update inventory")
+        }
+    }
+
+    const handleDeleteTask = async (taskId: string) => {
+        if (!confirm("Are you sure you want to delete this task?")) return
+        
+        try {
+            await deleteCleaningTask(taskId)
+            setTasks(prev => prev.filter(task => task._id !== taskId))
+            toast.success("Task deleted successfully")
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete task")
+        }
+    }
+
+    const handleDeleteInventoryItem = async (itemId: string) => {
+        if (!confirm("Are you sure you want to delete this inventory item?")) return
+        
+        try {
+            await deleteInventoryItem(itemId)
+            setInventory(prev => prev.filter(item => item._id !== itemId))
+            toast.success("Inventory item deleted successfully")
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete inventory item")
         }
     }
 
@@ -186,12 +210,12 @@ export function CleaningManager({ initialTasks, initialInventory, members }: Cle
                                                     onValueChange={(value) => handleAssignTask(task._id, value)}
                                                 >
                                                     <SelectTrigger className="w-40">
-                                                        <SelectValue placeholder="Assign to" />
+                                                        <SelectValue placeholder="Assign to group" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {members.map((member) => (
-                                                            <SelectItem key={member._id} value={member._id}>
-                                                                {member.fullName}
+                                                        {groups.map((group) => (
+                                                            <SelectItem key={group._id} value={group._id}>
+                                                                {group.name}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
@@ -210,6 +234,16 @@ export function CleaningManager({ initialTasks, initialInventory, members }: Cle
                                                         <SelectItem value="Completed">Completed</SelectItem>
                                                     </SelectContent>
                                                 </Select>
+
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteTask(task._id)}
+                                                    className="w-40"
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Delete
+                                                </Button>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -283,6 +317,13 @@ export function CleaningManager({ initialTasks, initialInventory, members }: Cle
                                                     className="w-20 px-2 py-1 border rounded text-center"
                                                 />
                                                 <span className="text-sm text-muted-foreground">{item.unit}</span>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteInventoryItem(item._id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -295,7 +336,7 @@ export function CleaningManager({ initialTasks, initialInventory, members }: Cle
                 <AddTaskModal
                     open={showTaskModal}
                     onClose={() => setShowTaskModal(false)}
-                    members={members}
+                    groups={groups}
                     onSuccess={() => window.location.reload()}
                 />
 

@@ -1,4 +1,4 @@
-import { fetchUserById } from '@/lib/actions/user.actions'
+import { fetchUserById, fetchAllMembers } from '@/lib/actions/user.actions'
 import { fetchAllGroups } from '@/lib/actions/group.actions'
 import { fetchAllPrivileges } from '@/lib/actions/privilege.actions'
 import { EditMemberForm } from './_components/EditMemberForm'
@@ -12,10 +12,11 @@ const EditMemberPage = async ({ params }: EditMemberPageProps) => {
     const { id } = await params
     
     try {
-        const [member, groups, privileges] = await Promise.all([
+        const [member, groups, privileges, members] = await Promise.all([
             fetchUserById(id),
             fetchAllGroups(),
-            fetchAllPrivileges()
+            fetchAllPrivileges(),
+            fetchAllMembers()
         ])
 
         if (!member) {
@@ -33,6 +34,7 @@ const EditMemberPage = async ({ params }: EditMemberPageProps) => {
                     member={member}
                     groups={groups}
                     privileges={privileges}
+                    members={members}
                 />
             </div>
         )

@@ -26,11 +26,11 @@ const formSchema = z.object({
 interface AddTaskModalProps {
     open: boolean
     onClose: () => void
-    members: Array<{ _id: string; fullName: string }>
+    groups: Array<{ _id: string; name: string }>
     onSuccess: () => void
 }
 
-export function AddTaskModal({ open, onClose, members, onSuccess }: AddTaskModalProps) {
+export function AddTaskModal({ open, onClose, groups, onSuccess }: AddTaskModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -179,17 +179,17 @@ export function AddTaskModal({ open, onClose, members, onSuccess }: AddTaskModal
                             name="assignedTo"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Assign To (optional)</FormLabel>
+                                    <FormLabel>Assign To Group (optional)</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select member" />
+                                                <SelectValue placeholder="Select group" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {members.map((member) => (
-                                                <SelectItem key={member._id} value={member._id}>
-                                                    {member.fullName}
+                                            {groups.map((group) => (
+                                                <SelectItem key={group._id} value={group._id}>
+                                                    {group.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

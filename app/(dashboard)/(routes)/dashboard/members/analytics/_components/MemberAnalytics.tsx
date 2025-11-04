@@ -13,6 +13,7 @@ interface Member {
     email?: string
     phone: string
     groupId?: { name: string }
+    baptizedDate?: string
 }
 
 interface AnalyticsCategory {
@@ -25,6 +26,7 @@ interface AnalyticsData {
     totalMembers: number
     roles: AnalyticsCategory[]
     privileges: AnalyticsCategory[]
+    baptizedOneYearAgo: Member[]
 }
 
 interface MemberAnalyticsProps {
@@ -123,6 +125,58 @@ export function MemberAnalytics({ data }: MemberAnalyticsProps) {
                             </div>
                         ))}
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Baptized One Year Ago */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-blue-600" />
+                        Baptism Anniversaries (1 Year)
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {data.baptizedOneYearAgo.length > 0 ? (
+                        <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Members celebrating their 1-year baptism anniversary (within 30 days)
+                            </p>
+                            {data.baptizedOneYearAgo.map((member) => (
+                                <div key={member._id} className="flex items-center justify-between p-3 border rounded-lg bg-blue-50">
+                                    <div>
+                                        <p className="font-medium">{member.fullName}</p>
+                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                            {member.email && (
+                                                <div className="flex items-center gap-1">
+                                                    <Mail className="h-3 w-3" />
+                                                    {member.email}
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-1">
+                                                <Phone className="h-3 w-3" />
+                                                {member.phone}
+                                            </div>
+                                        </div>
+                                        {member.groupId && (
+                                            <Badge variant="outline" className="mt-1">
+                                                {member.groupId.name}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge className="bg-blue-600">
+                                            {member.baptizedDate ? new Date(member.baptizedDate).toLocaleDateString() : 'N/A'}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground text-center py-8">
+                            No baptism anniversaries in the next 30 days
+                        </p>
+                    )}
                 </CardContent>
             </Card>
 

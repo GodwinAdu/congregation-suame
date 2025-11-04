@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
 import { createAssignment } from "@/lib/actions/assignment.actions"
+import { getEligibleMembersForAssignment } from "@/lib/actions/member-duties.actions"
 
 const formSchema = z.object({
     meetingType: z.enum(["Midweek", "Weekend"]),
@@ -32,8 +33,17 @@ interface AddAssignmentModalProps {
     onSuccess: () => void
 }
 
+interface EligibleMember {
+    _id: string
+    fullName: string
+    role: string
+    gender: string
+}
+
 export function AddAssignmentModal({ open, onClose, week, members, onSuccess }: AddAssignmentModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [eligibleMembers, setEligibleMembers] = useState<EligibleMember[]>([])
+    const [eligibleAssistants, setEligibleAssistants] = useState<EligibleMember[]>([])
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -50,6 +60,35 @@ export function AddAssignmentModal({ open, onClose, week, members, onSuccess }: 
     })
 
     const assignmentType = form.watch("assignmentType")
+
+    // Fetch eligible members when assignment type changes
+    useEffect(() => {
+        const fetchEligibleMembers = async () => {
+            if (!assignmentType) return
+            
+            try {
+                const result = await getEligibleMembersForAssignment(assignmentType)
+                if (result.success) {
+                    setEligibleMembers(result.members)
+                    
+                    // For Life and Ministry, also get eligible assistants
+                    if (assignmentType === "Life and Ministry") {
+                        // Assistants can be any publisher
+                        setEligibleAssistants(members.filter(m => 
+                            result.members.some(em => em._id === m._id) || 
+                            members.includes(m)
+                        ))
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching eligible members:', error)
+                setEligibleMembers([])
+                setEligibleAssistants([])
+            }
+        }
+
+        fetchEligibleMembers()
+    }, [assignmentType, members])
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
@@ -207,11 +246,17 @@ export function AddAssignmentModal({ open, onClose, week, members, onSuccess }: 
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {members.map((member) => (
-                                                    <SelectItem key={member._id} value={member._id}>
-                                                        {member.fullName}
+                                                {eligibleMembers.length > 0 ? (
+                                                    eligibleMembers.map((member) => (
+                                                        <SelectItem key={member._id} value={member._id}>
+                                                            {member.fullName} ({member.role})
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <SelectItem value="no-members" disabled>
+                                                        No eligible members found
                                                     </SelectItem>
-                                                ))}
+                                                )}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -233,11 +278,19 @@ export function AddAssignmentModal({ open, onClose, week, members, onSuccess }: 
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {members.map((member) => (
-                                                        <SelectItem key={member._id} value={member._id}>
-                                                            {member.fullName}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {eligibleAssistants.length > 0 ? (
+                                                        eligibleAssistants.map((member) => (
+                                                            <SelectItem key={member._id} value={member._id}>
+                                                                {member.fullName}
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : (
+                                                        members.map((member) => (
+                                                            <SelectItem key={member._id} value={member._id}>
+                                                                {member.fullName}
+                                                            </SelectItem>
+                                                        ))
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

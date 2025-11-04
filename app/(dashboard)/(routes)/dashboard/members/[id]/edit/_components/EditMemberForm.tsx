@@ -9,29 +9,46 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { updateMember } from '@/lib/actions/user.actions'
+import { updateMember, fetchAllMembers } from '@/lib/actions/user.actions'
+import { Plus, X, Crown } from 'lucide-react'
+import { useEffect } from 'react'
 
 interface EditMemberFormProps {
     member: any
     groups: any[]
     privileges: any[]
+    members: any[]
 }
 
-export function EditMemberForm({ member, groups, privileges }: EditMemberFormProps) {
+export function EditMemberForm({ member, groups, privileges, members }: EditMemberFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
+    const [familyRelationships, setFamilyRelationships] = useState<Array<{ memberId: string; memberName: string; relationship: string }>>([])
+    const [isFamilyHead, setIsFamilyHead] = useState(false)
     const [formData, setFormData] = useState({
         fullName: member.fullName || '',
         email: member.email || '',
         phone: member.phone || '',
         gender: member.gender || '',
         dob: member.dob ? new Date(member.dob).toISOString().split('T')[0] : '',
+        baptizedDate: member.baptizedDate ? new Date(member.baptizedDate).toISOString().split('T')[0] : '',
         address: member.address || '',
         emergencyContact: member.emergencyContact || '',
         role: member.role || 'publisher',
         groupId: member.groupId?._id || 'none',
         privileges: member.privileges?.map((p: any) => p._id) || []
     })
+
+    useEffect(() => {
+        if (member.familyRelationships) {
+            setFamilyRelationships(member.familyRelationships.map((rel: any) => ({
+                memberId: rel.memberId._id || rel.memberId,
+                memberName: rel.memberId.fullName || members.find(m => m._id === rel.memberId)?.fullName || '',
+                relationship: rel.relationship
+            })))
+        }
+        setIsFamilyHead(member.isFamilyHead || false)
+    }, [member, members])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -41,7 +58,13 @@ export function EditMemberForm({ member, groups, privileges }: EditMemberFormPro
             await updateMember(member._id, {
                 ...formData,
                 groupId: formData.groupId === 'none' ? null : formData.groupId,
-                dob: formData.dob ? new Date(formData.dob) : undefined
+                dob: formData.dob ? new Date(formData.dob) : undefined,
+                baptizedDate: formData.baptizedDate ? new Date(formData.baptizedDate) : undefined,
+                familyRelationships: familyRelationships.filter(r => r.memberId).map(r => ({
+                    memberId: r.memberId,
+                    relationship: r.relationship
+                })),
+                isFamilyHead
             })
             toast.success('Member updated successfully')
             router.push('/dashboard/members')
@@ -115,6 +138,15 @@ export function EditMemberForm({ member, groups, privileges }: EditMemberFormPro
                                 type="date"
                                 value={formData.dob}
                                 onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="baptizedDate">Baptized Date</Label>
+                            <Input
+                                id="baptizedDate"
+                                type="date"
+                                value={formData.baptizedDate}
+                                onChange={(e) => setFormData(prev => ({ ...prev, baptizedDate: e.target.value }))}
                             />
                         </div>
                         <div>
@@ -194,6 +226,109 @@ export function EditMemberForm({ member, groups, privileges }: EditMemberFormPro
                             ))}
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Family Relationships</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">Manage family members and their relationships</p>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant={isFamilyHead ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setIsFamilyHead(!isFamilyHead)}
+                            >
+                                <Crown className="w-4 h-4 mr-2" />
+                                {isFamilyHead ? "Family Head" : "Set as Family Head"}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setFamilyRelationships([...familyRelationships, { memberId: '', memberName: '', relationship: 'other' }])}
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Family Member
+                            </Button>
+                        </div>
+                    </div>
+
+                    {familyRelationships.map((relationship, index) => (
+                        <div key={index} className="flex gap-2 items-end p-3 bg-muted/50 rounded-lg">
+                            <div className="flex-1">
+                                <Label className="text-xs font-medium text-muted-foreground">Family Member</Label>
+                                <Select
+                                    value={relationship.memberId}
+                                    onValueChange={(value) => {
+                                        const memberData = members.find(m => m._id === value)
+                                        const updated = [...familyRelationships]
+                                        updated[index] = { ...updated[index], memberId: value, memberName: memberData?.fullName || '' }
+                                        setFamilyRelationships(updated)
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select member" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {members.filter(m => m._id !== member._id).map((memberOption) => (
+                                            <SelectItem key={memberOption._id} value={memberOption._id}>
+                                                {memberOption.fullName}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="w-32">
+                                <Label className="text-xs font-medium text-muted-foreground">Relationship</Label>
+                                <Select
+                                    value={relationship.relationship}
+                                    onValueChange={(value) => {
+                                        const updated = [...familyRelationships]
+                                        updated[index] = { ...updated[index], relationship: value }
+                                        setFamilyRelationships(updated)
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="father">Father</SelectItem>
+                                        <SelectItem value="mother">Mother</SelectItem>
+                                        <SelectItem value="son">Son</SelectItem>
+                                        <SelectItem value="daughter">Daughter</SelectItem>
+                                        <SelectItem value="husband">Husband</SelectItem>
+                                        <SelectItem value="wife">Wife</SelectItem>
+                                        <SelectItem value="brother">Brother</SelectItem>
+                                        <SelectItem value="sister">Sister</SelectItem>
+                                        <SelectItem value="grandfather">Grandfather</SelectItem>
+                                        <SelectItem value="grandmother">Grandmother</SelectItem>
+                                        <SelectItem value="grandson">Grandson</SelectItem>
+                                        <SelectItem value="granddaughter">Granddaughter</SelectItem>
+                                        <SelectItem value="uncle">Uncle</SelectItem>
+                                        <SelectItem value="aunt">Aunt</SelectItem>
+                                        <SelectItem value="nephew">Nephew</SelectItem>
+                                        <SelectItem value="niece">Niece</SelectItem>
+                                        <SelectItem value="cousin">Cousin</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setFamilyRelationships(familyRelationships.filter((_, i) => i !== index))}
+                                className="h-8 w-8 p-0"
+                            >
+                                <X className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    ))}
                 </CardContent>
             </Card>
 

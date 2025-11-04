@@ -27,10 +27,12 @@ import {
     Users,
     Presentation,
     Mic,
-    CalendarDays
+    CalendarDays,
+    Crown
 } from 'lucide-react'
 import { FieldServiceReportModal } from './field-service-report-modal'
 import { format, startOfWeek, endOfWeek, isWithinInterval, subMonths } from 'date-fns'
+import { fetchFamilyMemberReports } from '@/lib/actions/publisher.actions'
 
 interface User {
     _id: string
@@ -41,6 +43,17 @@ interface User {
     role: string
     privileges: Array<{ name: string }>
     groupId: { name: string }
+    familyRelationships?: Array<{
+        memberId: {
+            _id: string
+            fullName: string
+            email?: string
+            phone?: string
+            groupId?: { name: string }
+        }
+        relationship: string
+    }>
+    isFamilyHead?: boolean
 }
 
 interface PublisherData {
@@ -133,6 +146,9 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
     const [showReportModal, setShowReportModal] = useState(false)
     const [selectedMonth, setSelectedMonth] = useState('all')
     const [selectedReportMonth, setSelectedReportMonth] = useState('')
+    const [selectedFamilyMember, setSelectedFamilyMember] = useState<string | null>(null)
+    const [familyMemberReports, setFamilyMemberReports] = useState<any[]>([])
+    const [loadingReports, setLoadingReports] = useState(false)
     
     const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
     const currentWeekEnd = endOfWeek(new Date(), { weekStartsOn: 1 })
@@ -202,6 +218,21 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
     const getMonthName = (monthStr: string) => {
         const [year, month] = monthStr.split('-')
         return format(new Date(parseInt(year), parseInt(month) - 1), 'MMMM yyyy')
+    }
+
+    const handleViewFamilyReports = async (memberId: string) => {
+        if (!user.isFamilyHead) return
+        
+        setLoadingReports(true)
+        try {
+            const reports = await fetchFamilyMemberReports(memberId)
+            setFamilyMemberReports(reports)
+            setSelectedFamilyMember(memberId)
+        } catch (error) {
+            console.error('Error fetching family member reports:', error)
+        } finally {
+            setLoadingReports(false)
+        }
     }
 
     return (
@@ -321,23 +352,22 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
                         <span className="hidden sm:inline">Assignments</span>
                         <span className="sm:hidden">Tasks</span>
                     </TabsTrigger>
-                    <TabsTrigger value="profile" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                        <User className="h-4 w-4" />
-                        <span>Profile</span>
+                    <TabsTrigger value="families" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
+                        <Users className="h-4 w-4" />
+                        <span>Families</span>
                     </TabsTrigger>
                     <TabsTrigger value="transport" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
                         <Car className="h-4 w-4" />
                         <span className="hidden sm:inline">Transport</span>
                         <span className="sm:hidden">Car</span>
                     </TabsTrigger>
-                    <TabsTrigger value="activity" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                        <Activity className="h-4 w-4" />
-                        <span>Activity</span>
+                    <TabsTrigger value="activity" className="flex flex-col items-center gap-0.5 sm:gap-1 p-1 sm:p-2 text-xs">
+                        <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="text-xs">Activity</span>
                     </TabsTrigger>
-                    <TabsTrigger value="overseer" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                        <Users className="h-4 w-4" />
-                        <span className="hidden sm:inline">Overseer</span>
-                        <span className="sm:hidden">FSO</span>
+                    <TabsTrigger value="overseer" className="flex flex-col items-center gap-0.5 sm:gap-1 p-1 sm:p-2 text-xs">
+                        <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="text-xs">FSO</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -558,55 +588,175 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
 
 
 
-                {/* Profile Tab */}
-                <TabsContent value="profile" className="space-y-4 sm:space-y-6">
+                {/* Families Tab */}
+                <TabsContent value="families" className="space-y-4 sm:space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                <User className="h-5 w-5" />
-                                Personal Information
+                                <Users className="h-5 w-5" />
+                                Family Members
+                                {user.isFamilyHead && (
+                                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                                        <Crown className="h-3 w-3 mr-1" />
+                                        Family Head
+                                    </Badge>
+                                )}
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                <div>
-                                    <label className="text-xs sm:text-sm font-medium text-muted-foreground">Full Name</label>
-                                    <p className="text-sm sm:text-lg font-semibold">{user.fullName}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs sm:text-sm font-medium text-muted-foreground">Role</label>
-                                    <p className="text-sm sm:text-lg font-semibold capitalize">{user.role.replace('_', ' ')}</p>
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <label className="text-xs sm:text-sm font-medium text-muted-foreground">Email</label>
-                                    <p className="text-sm sm:text-lg break-all">{user.email}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs sm:text-sm font-medium text-muted-foreground">Phone</label>
-                                    <p className="text-sm sm:text-lg">{user.phone}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs sm:text-sm font-medium text-muted-foreground">Group</label>
-                                    <p className="text-sm sm:text-lg">{user.groupId?.name || 'Not assigned'}</p>
-                                </div>
-                                {user.address && (
-                                    <div className="sm:col-span-2">
-                                        <label className="text-xs sm:text-sm font-medium text-muted-foreground">Address</label>
-                                        <p className="text-sm sm:text-lg">{user.address}</p>
+                        <CardContent>
+                            {user.familyRelationships && user.familyRelationships.length > 0 ? (
+                                <div className="space-y-4">
+                                    <div className="grid gap-4">
+                                        {user.familyRelationships.map((relationship: any, index: number) => {
+                                            const relatedMember = relationship.memberId || relationship.member;
+                                            const memberName = relatedMember?.fullName || relationship.memberName || 'Unknown Member';
+                                            
+                                            return (
+                                                <Card key={index} className="hover:shadow-md transition-shadow">
+                                                    <CardContent className="p-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar className="h-10 w-10">
+                                                                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold">
+                                                                        {memberName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div>
+                                                                    <h3 className="font-semibold text-base">{memberName}</h3>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        {relatedMember?.email || 'No email provided'}
+                                                                    </p>
+                                                                    {relatedMember?.phone && (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            {relatedMember.phone}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <Badge 
+                                                                    variant="outline" 
+                                                                    className={`text-xs mb-2 ${
+                                                                        relationship.relationship === 'father' || relationship.relationship === 'husband' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                                        relationship.relationship === 'mother' || relationship.relationship === 'wife' ? 'bg-pink-50 text-pink-700 border-pink-200' :
+                                                                        relationship.relationship === 'son' || relationship.relationship === 'daughter' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                        relationship.relationship === 'brother' || relationship.relationship === 'sister' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                                        'bg-gray-50 text-gray-700 border-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    {relationship.relationship.charAt(0).toUpperCase() + relationship.relationship.slice(1)}
+                                                                </Badge>
+                                                                {relatedMember?.groupId?.name && (
+                                                                    <p className="text-xs text-muted-foreground mb-2">
+                                                                        Group: {relatedMember.groupId.name}
+                                                                    </p>
+                                                                )}
+                                                                {user.isFamilyHead && (
+                                                                    <Button 
+                                                                        size="sm" 
+                                                                        variant="outline"
+                                                                        onClick={() => handleViewFamilyReports(relatedMember._id)}
+                                                                        className="text-xs"
+                                                                    >
+                                                                        <FileText className="h-3 w-3 mr-1" />
+                                                                        Reports
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })}
                                     </div>
-                                )}
-                            </div>
-                            
-                            {user.privileges && user.privileges.length > 0 && (
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Privileges</label>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {user.privileges.map((privilege, index) => (
-                                            <Badge key={index} variant="outline">
-                                                {privilege.name}
-                                            </Badge>
-                                        ))}
-                                    </div>
+                                    
+                                    {/* Family Member Reports Section */}
+                                    {user.isFamilyHead && selectedFamilyMember && (
+                                        <div className="mt-6 pt-6 border-t">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-lg font-semibold">Field Service Reports</h3>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setSelectedFamilyMember(null)
+                                                        setFamilyMemberReports([])
+                                                    }}
+                                                >
+                                                    Back to Family
+                                                </Button>
+                                            </div>
+                                            
+                                            {loadingReports ? (
+                                                <div className="text-center py-8">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                                    <p className="text-muted-foreground mt-2">Loading reports...</p>
+                                                </div>
+                                            ) : familyMemberReports.length > 0 ? (
+                                                <div className="grid gap-3">
+                                                    {familyMemberReports.map((report) => (
+                                                        <Card key={report._id} className="hover:shadow-md transition-shadow">
+                                                            <CardContent className="p-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-4">
+                                                                        <div className="text-center">
+                                                                            <div className="text-2xl font-bold text-blue-600">
+                                                                                {report.hours || 0}
+                                                                            </div>
+                                                                            <div className="text-xs text-muted-foreground">Hours</div>
+                                                                        </div>
+                                                                        <div className="text-center">
+                                                                            <div className="text-2xl font-bold text-purple-600">
+                                                                                {report.bibleStudents}
+                                                                            </div>
+                                                                            <div className="text-xs text-muted-foreground">Studies</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h4 className="font-semibold">{getMonthName(report.month)}</h4>
+                                                                            <p className="text-sm text-muted-foreground">
+                                                                                Submitted {format(new Date(report.createdAt), 'MMM dd, yyyy')}
+                                                                            </p>
+                                                                            {report.comments && (
+                                                                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                                                    "{report.comments}"
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex flex-col items-end gap-2">
+                                                                        {report.auxiliaryPioneer && (
+                                                                            <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                                                                                Auxiliary Pioneer
+                                                                            </Badge>
+                                                                        )}
+                                                                        <Badge variant={report.check ? "default" : "secondary"} className="text-xs">
+                                                                            {report.check ? "Approved" : "Pending"}
+                                                                        </Badge>
+                                                                    </div>
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8">
+                                                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                                    <h3 className="text-lg font-semibold mb-2">No Reports Found</h3>
+                                                    <p className="text-muted-foreground">
+                                                        This family member has not submitted any field service reports yet
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold mb-2">No Family Members</h3>
+                                    <p className="text-muted-foreground">
+                                        No family relationships have been added to your profile
+                                    </p>
                                 </div>
                             )}
                         </CardContent>

@@ -11,7 +11,9 @@ import { Calendar, Users, BookOpen, Plus, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { updateAssignment, fetchAssignmentsByWeek } from "@/lib/actions/assignment.actions"
+import { getEligibleMembersForAssignment } from "@/lib/actions/member-duties.actions"
 import { AddAssignmentModal } from "./add-assignment-modal"
+import { EligibleMemberSelect } from "./eligible-member-select"
 
 interface Assignment {
     _id: string
@@ -43,6 +45,7 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
     const [selectedWeek, setSelectedWeek] = useState(currentWeek)
     const [showAddModal, setShowAddModal] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [eligibleMembersCache, setEligibleMembersCache] = useState<Record<string, Member[]>>({})
     const router = useRouter()
 
     // Update assignments when currentWeek prop changes
@@ -102,6 +105,27 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
         } catch (error: any) {
             toast.error(error.message || "Failed to refresh assignments")
         }
+    }
+
+    const getEligibleMembersForAssignmentType = async (assignmentType: string) => {
+        if (eligibleMembersCache[assignmentType]) {
+            return eligibleMembersCache[assignmentType]
+        }
+
+        try {
+            const result = await getEligibleMembersForAssignment(assignmentType)
+            if (result.success) {
+                setEligibleMembersCache(prev => ({
+                    ...prev,
+                    [assignmentType]: result.members
+                }))
+                return result.members
+            }
+        } catch (error) {
+            console.error('Error fetching eligible members:', error)
+        }
+        
+        return members // Fallback to all members
     }
 
     const formatWeekRange = (weekStart: string) => {
@@ -229,21 +253,13 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label className="text-sm font-medium">Assigned To</Label>
-                                                <Select
+                                                <EligibleMemberSelect
+                                                    assignmentType={assignment.assignmentType}
                                                     value={assignment.assignedTo?._id || ""}
                                                     onValueChange={(value) => handleAssignMember(assignment._id, value, 'assignedTo')}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select member" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {members.map((member) => (
-                                                            <SelectItem key={member._id} value={member._id}>
-                                                                {member.fullName}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                    getEligibleMembers={getEligibleMembersForAssignmentType}
+                                                    placeholder="Select member"
+                                                />
                                             </div>
                                             
                                             {assignment.assignmentType === "Life and Ministry" && (
@@ -333,21 +349,13 @@ export function AssignmentManager({ initialAssignments, members, currentWeek }: 
                                         
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium">Assigned To</Label>
-                                            <Select
+                                            <EligibleMemberSelect
+                                                assignmentType={assignment.assignmentType}
                                                 value={assignment.assignedTo?._id || ""}
                                                 onValueChange={(value) => handleAssignMember(assignment._id, value, 'assignedTo')}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select member" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {members.map((member) => (
-                                                        <SelectItem key={member._id} value={member._id}>
-                                                            {member.fullName}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                                getEligibleMembers={getEligibleMembersForAssignmentType}
+                                                placeholder="Select member"
+                                            />
                                         </div>
                                     </div>
                                 ))

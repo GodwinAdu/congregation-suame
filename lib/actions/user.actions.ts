@@ -16,12 +16,18 @@ interface MemberProps {
     phone: string;
     gender?: string;
     dob?: Date;
+    baptizedDate?: Date;
     address?: string;
     emergencyContact?: string;
     password: string;
     role: string;
     groupId?: string;
     privileges: string[];
+    familyRelationships?: Array<{
+        memberId: string;
+        relationship: string;
+    }>;
+    isFamilyHead?: boolean;
 }
 
 async function _createMember(user: User, values: MemberProps) {
@@ -43,12 +49,15 @@ async function _createMember(user: User, values: MemberProps) {
             phone: values.phone,
             gender: values.gender,
             dob: values.dob,
+            baptizedDate: values.baptizedDate,
             address: values.address,
             emergencyContact: values.emergencyContact,
             password: hashedPassword,
             role: values.role,
             groupId: values.groupId,
             privileges: values.privileges,
+            familyRelationships: values.familyRelationships || [],
+            isFamilyHead: values.isFamilyHead || false,
             createdBy: user._id
         });
 
@@ -80,6 +89,7 @@ async function _fetchAllMembers(user: User) {
                 { path: "privileges", model: Privilege },
                 { path: "groupId", model: Group },
                 { path: "createdBy", model: Member },
+                { path: "familyRelationships.memberId", model: Member, select: "fullName" },
             ])
             .exec();
 
@@ -106,6 +116,7 @@ async function _fetchAllMembersByRole(user: User) {
                 { path: "privileges", model: Privilege },
                 { path: "groupId", model: Group },
                 { path: "createdBy", model: Member },
+                { path: "familyRelationships.memberId", model: Member, select: "fullName" },
             ])
             .exec();
 
@@ -170,6 +181,28 @@ export async function fetchUserById(id: string) {
     } catch (error) {
         console.error("Error fetching user by ID:", error);
         throw new Error("Failed to fetch user");
+    }
+}
+
+async function _fetchMemberById(user: User, id: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const member = await Member.findById(id)
+            .populate('groupId', 'name')
+            .populate('privileges', 'name')
+            .populate('familyRelationships.memberId', 'fullName');
+
+        if (!member) {
+            throw new Error("Member not found");
+        }
+
+        return JSON.parse(JSON.stringify(member));
+    } catch (error) {
+        console.error("Error fetching member by ID:", error);
+        throw error;
     }
 }
 
@@ -522,7 +555,24 @@ async function _deleteMember(user: User, memberId: string) {
 async function _getCurrentUser(user: User) {
     try {
         if (!user) throw new Error("User not authorized");
-        return JSON.parse(JSON.stringify(user));
+        
+        await connectToDB();
+        
+        const fullUser = await Member.findById(user._id)
+            .populate('groupId', 'name')
+            .populate('privileges', 'name')
+            .populate('familyRelationships.memberId', 'fullName email phone groupId')
+            .populate({
+                path: 'familyRelationships.memberId',
+                populate: {
+                    path: 'groupId',
+                    select: 'name'
+                }
+            });
+            
+        if (!fullUser) throw new Error("User not found");
+        
+        return JSON.parse(JSON.stringify(fullUser));
     } catch (error) {
         console.log("error happened while getting current user", error);
         throw error;
@@ -540,3 +590,4 @@ export const deleteMember = await withAuth(_deleteMember);
 export const resetMemberPassword = await withAuth(_resetMemberPassword);
 export const sendMemberInvite = await withAuth(_sendMemberInvite);
 export const getCurrentUser = await withAuth(_getCurrentUser);
+export const fetchMemberById = await withAuth(_fetchMemberById);

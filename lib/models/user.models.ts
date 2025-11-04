@@ -22,7 +22,7 @@ const UserSchema = new Schema({
     },
     email: {
         type: String,
-        default:null
+        default: null
     },
     gender: {
         type: String,
@@ -34,19 +34,19 @@ const UserSchema = new Schema({
     },
     emergencyContact: {
         type: String,
-        default:null
+        default: null
     },
     dob: {
         type: Date,
-        default:null
+        default: null
     },
-    baptizedDate:{
-        type:Date,
-        default:null
+    baptizedDate: {
+        type: Date,
+        default: null
     },
     address: {
         type: String,
-        default:null
+        default: null
     },
     password: {
         type: String,
@@ -56,8 +56,30 @@ const UserSchema = new Schema({
         type: String,
         default: "publisher",
     },
-    privileges: [{ type: Schema.Types.ObjectId, ref: "Privilege", default:[] }],
+    privileges: [{ type: Schema.Types.ObjectId, ref: "Privilege", default: [] }],
     groupId: { type: Schema.Types.ObjectId, ref: "Group", default: null },
+    familyRelationships: [{
+        memberId: { type: Schema.Types.ObjectId, ref: "Member" },
+        relationship: {
+            type: String,
+            enum: ['father', 'mother', 'son', 'daughter', 'husband', 'wife', 'brother', 'sister', 'grandfather', 'grandmother', 'grandson', 'granddaughter', 'uncle', 'aunt', 'nephew', 'niece', 'cousin', 'other']
+        }
+    }],
+    isFamilyHead: {
+        type: Boolean,
+        default: false
+    },
+    duties: [{
+        name: { type: String, required: true },
+        category: {
+            type: String,
+            enum: ['midweek_meeting', 'weekend_meeting', 'field_service', 'administrative', 'special_events']
+        },
+        assignedDate: { type: Date, default: Date.now },
+        assignedBy: { type: Schema.Types.ObjectId, ref: "Member" },
+        notes: String,
+        isActive: { type: Boolean, default: true }
+    }],
     createdBy: { type: Schema.Types.ObjectId, ref: "Member" },
     modifiedBy: { type: Schema.Types.ObjectId, ref: "Member" }
 }, { timestamps: true })

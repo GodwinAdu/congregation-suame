@@ -1,20 +1,20 @@
 import React from 'react'
 import { CleaningManager } from './_components/cleaning-manager'
 import { fetchCleaningTasks, fetchInventoryItems } from '@/lib/actions/cleaning.actions'
-import { fetchMembers } from '@/lib/actions/assignment.actions'
+import { fetchAllGroups } from '@/lib/actions/group.actions'
 
 const page = async () => {
-    const [tasks, inventory, members] = await Promise.all([
+    const [tasks, inventory, groups] = await Promise.all([
         fetchCleaningTasks(),
         fetchInventoryItems(),
-        fetchMembers()
+        fetchAllGroups()
     ])
     
     return (
         <CleaningManager 
             initialTasks={tasks}
             initialInventory={inventory}
-            members={members}
+            groups={groups}
         />
     )
 }

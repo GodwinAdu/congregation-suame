@@ -24,11 +24,11 @@ export interface OverseerReportData {
 export const createOverseerColumns = (): ColumnDef<OverseerReportData>[] => [
     {
         accessorKey: "groupName",
-        header: "Service Group",
+        header: "Group",
         cell: ({ row }) => (
-            <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{row.getValue("groupName")}</span>
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                <span className="font-medium text-xs sm:text-sm truncate">{row.getValue("groupName")}</span>
             </div>
         ),
     },
@@ -37,38 +37,49 @@ export const createOverseerColumns = (): ColumnDef<OverseerReportData>[] => [
         header: "Month",
         cell: ({ row }) => {
             const month = row.getValue("month") as string
-            return format(new Date(month), 'MMMM yyyy')
+            return (
+                <span className="text-xs sm:text-sm">
+                    <span className="hidden sm:inline">{format(new Date(month), 'MMMM yyyy')}</span>
+                    <span className="sm:hidden">{format(new Date(month), 'MMM yy')}</span>
+                </span>
+            )
         },
     },
     {
         accessorKey: "visitDate",
-        header: "Visit Date",
+        header: "Date",
         cell: ({ row }) => {
             const visitDate = row.getValue("visitDate") as string
             const scheduledDate = row.original.scheduledDate
             
             if (visitDate) {
                 return (
-                    <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-green-600" />
-                        <span className="text-green-600 font-medium">
-                            {format(new Date(visitDate), 'MMM dd, yyyy')}
-                        </span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1">
+                        <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-green-600" />
+                            <span className="text-green-600 font-medium text-xs sm:text-sm">
+                                <span className="hidden sm:inline">{format(new Date(visitDate), 'MMM dd, yyyy')}</span>
+                                <span className="sm:hidden">{format(new Date(visitDate), 'MMM dd')}</span>
+                            </span>
+                        </div>
                     </div>
                 )
             } else if (scheduledDate) {
                 return (
-                    <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-blue-600" />
-                        <span className="text-blue-600">
-                            {format(new Date(scheduledDate), 'MMM dd, yyyy')}
-                        </span>
-                        <Badge variant="outline" className="text-xs">Scheduled</Badge>
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-blue-600" />
+                            <span className="text-blue-600 text-xs sm:text-sm">
+                                <span className="hidden sm:inline">{format(new Date(scheduledDate), 'MMM dd, yyyy')}</span>
+                                <span className="sm:hidden">{format(new Date(scheduledDate), 'MMM dd')}</span>
+                            </span>
+                        </div>
+                        <Badge variant="outline" className="text-xs w-fit">Scheduled</Badge>
                     </div>
                 )
             }
             
-            return <span className="text-muted-foreground">Not scheduled</span>
+            return <span className="text-muted-foreground text-xs sm:text-sm">Not scheduled</span>
         },
     },
     {
@@ -77,57 +88,63 @@ export const createOverseerColumns = (): ColumnDef<OverseerReportData>[] => [
         cell: ({ row }) => {
             const status = row.getValue("status") as string
             const statusConfig = {
-                completed: { label: "Completed", className: "bg-green-100 text-green-800" },
-                scheduled: { label: "Scheduled", className: "bg-blue-100 text-blue-800" },
-                pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" }
+                completed: { label: "Completed", short: "Done", className: "bg-green-100 text-green-800" },
+                scheduled: { label: "Scheduled", short: "Sched", className: "bg-blue-100 text-blue-800" },
+                pending: { label: "Pending", short: "Pend", className: "bg-yellow-100 text-yellow-800" }
             }
             const config = statusConfig[status as keyof typeof statusConfig]
-            return <Badge className={config.className}>{config.label}</Badge>
+            return (
+                <Badge className={`${config.className} text-xs`}>
+                    <span className="hidden sm:inline">{config.label}</span>
+                    <span className="sm:hidden">{config.short}</span>
+                </Badge>
+            )
         },
     },
     {
         accessorKey: "presentCount",
-        header: "Attendance",
+        header: "Attend",
         cell: ({ row }) => {
             const present = row.getValue("presentCount") as number
             const total = row.original.totalMembers
             return (
                 <div className="flex items-center gap-1">
                     <Users className="h-3 w-3 text-muted-foreground" />
-                    <span>{present}/{total}</span>
+                    <span className="text-xs sm:text-sm font-medium">{present}/{total}</span>
                 </div>
             )
         },
     },
     {
         accessorKey: "studyCount",
-        header: "Bible Studies",
+        header: "Studies",
         cell: ({ row }) => (
             <div className="flex items-center gap-1">
                 <BookOpen className="h-3 w-3 text-muted-foreground" />
-                <span>{row.getValue("studyCount")}</span>
+                <span className="text-xs sm:text-sm font-medium">{row.getValue("studyCount")}</span>
             </div>
         ),
     },
     {
         accessorKey: "ministryActive",
-        header: "Ministry Active",
+        header: "Active",
         cell: ({ row }) => (
-            <span>{row.getValue("ministryActive")}</span>
+            <span className="text-xs sm:text-sm font-medium">{row.getValue("ministryActive")}</span>
         ),
     },
     {
         accessorKey: "followUpNeeded",
-        header: "Follow-up",
+        header: "F/Up",
         cell: ({ row }) => {
             const needsFollowUp = row.getValue("followUpNeeded") as boolean
             return needsFollowUp ? (
-                <Badge variant="outline" className="gap-1">
+                <Badge variant="outline" className="gap-1 text-xs">
                     <AlertTriangle className="h-3 w-3" />
-                    Required
+                    <span className="hidden sm:inline">Required</span>
+                    <span className="sm:hidden">Yes</span>
                 </Badge>
             ) : (
-                <span className="text-muted-foreground">None</span>
+                <span className="text-muted-foreground text-xs sm:text-sm">No</span>
             )
         },
     },

@@ -23,10 +23,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createPrivilege } from "@/lib/actions/privilege.actions";
+import { createPrivilege, updatePrivilege } from "@/lib/actions/privilege.actions";
+import { useState } from "react";
 
 const formSchema = z.object({
     name: z.string().min(2, {
@@ -34,13 +35,20 @@ const formSchema = z.object({
     }),
 });
 
-export function PrivilegeModal() {
+interface PrivilegeModalProps {
+    privilege?: any;
+}
+
+export function PrivilegeModal({ privilege }: PrivilegeModalProps) {
     const router = useRouter();
     // 1. Define your form.
+    const [open, setOpen] = useState(false);
+    const isEditing = !!privilege;
+    
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: "",
+            name: privilege?.name || "",
         },
     });
 
@@ -49,14 +57,18 @@ export function PrivilegeModal() {
     // 2. Define a submit handler.
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            await createPrivilege(values)
+            if (isEditing) {
+                await updatePrivilege(privilege._id, values);
+                toast.success("Privilege updated successfully");
+            } else {
+                await createPrivilege(values);
+                toast.success("New privilege created successfully");
+            }
             router.refresh();
             form.reset();
-            toast.success("New privilege created", {
-                description: "New house was added successfully...",
-            });
+            setOpen(false);
         } catch (error) {
-            console.log("error happened while creating privilege", error);
+            console.log("error happened while saving privilege", error);
             toast.error("Something went wrong", {
                 description: "Please try again later...",
             });
@@ -64,17 +76,26 @@ export function PrivilegeModal() {
     }
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className={cn(buttonVariants())}>
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    Add
-                </Button>
+                {isEditing ? (
+                    <button className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm hover:bg-accent rounded-sm transition-colors">
+                        <Edit className="h-4 w-4" />
+                        Edit
+                    </button>
+                ) : (
+                    <Button className={cn(buttonVariants())}>
+                        <PlusCircle className="w-4 h-4 mr-2" />
+                        New Privilege
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] w-[96%]">
                 <DialogHeader>
-                    <DialogTitle>New Privilege</DialogTitle>
-                    <DialogDescription>Create congregation privilege .</DialogDescription>
+                    <DialogTitle>{isEditing ? 'Edit Privilege' : 'New Privilege'}</DialogTitle>
+                    <DialogDescription>
+                        {isEditing ? 'Update privilege information' : 'Create congregation privilege'}
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <Form {...form}>
@@ -84,7 +105,7 @@ export function PrivilegeModal() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Enter Group Name</FormLabel>
+                                        <FormLabel>Enter Privilege Name</FormLabel>
                                         <FormControl>
                                             <Input
                                                 placeholder="Eg. Elder"
@@ -123,7 +144,7 @@ export function PrivilegeModal() {
                             /> */}
 
                             <Button disabled={isSubmitting} type="submit">
-                                {isSubmitting ? "Creating..." : "Submit"}
+                                {isSubmitting ? (isEditing ? "Updating..." : "Creating...") : "Submit"}
                             </Button>
                         </form>
                     </Form>

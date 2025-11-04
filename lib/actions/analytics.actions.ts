@@ -97,10 +97,34 @@ async function _fetchMemberAnalytics(user: User) {
             }
         ];
 
+        // Members baptized a year ago (within 30 days of anniversary)
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        const startRange = new Date(oneYearAgo);
+        startRange.setDate(startRange.getDate() - 15); // 15 days before anniversary
+        const endRange = new Date(oneYearAgo);
+        endRange.setDate(endRange.getDate() + 15); // 15 days after anniversary
+        
+        const baptizedOneYearAgo = members.filter(member => {
+            if (!member.baptizedDate) return false;
+            const baptizedDate = new Date(member.baptizedDate);
+            const thisYearAnniversary = new Date(baptizedDate);
+            thisYearAnniversary.setFullYear(new Date().getFullYear());
+            return thisYearAnniversary >= startRange && thisYearAnniversary <= endRange;
+        }).map((m: any) => ({
+            _id: m._id,
+            fullName: m.fullName,
+            email: m.email,
+            phone: m.phone,
+            baptizedDate: m.baptizedDate,
+            groupId: m.groupId
+        }));
+
         return JSON.parse(JSON.stringify({
             totalMembers: members.length,
             roles: roleCounts,
-            privileges: privilegeCounts
+            privileges: privilegeCounts,
+            baptizedOneYearAgo
         }));
     } catch (error) {
         console.log("Error fetching member analytics:", error);

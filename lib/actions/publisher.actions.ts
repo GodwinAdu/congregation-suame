@@ -145,5 +145,25 @@ async function _submitFieldServiceReport(user: User, data: {
     }
 }
 
+async function _fetchFamilyMemberReports(user: User, memberId: string) {
+    try {
+        if (!user) throw new Error("User not authorized")
+        if (!user.isFamilyHead) throw new Error("Only family heads can view family member reports")
+
+        await connectToDB()
+
+        const reports = await FieldServiceReport.find({ publisher: memberId })
+            .sort({ month: -1 })
+            .limit(12)
+            .lean()
+
+        return JSON.parse(JSON.stringify(reports))
+    } catch (error) {
+        console.error("Error fetching family member reports:", error)
+        throw error
+    }
+}
+
 export const fetchPublisherData = await withAuth(_fetchPublisherData)
 export const submitFieldServiceReport = await withAuth(_submitFieldServiceReport)
+export const fetchFamilyMemberReports = await withAuth(_fetchFamilyMemberReports)
