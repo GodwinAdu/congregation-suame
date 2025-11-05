@@ -1,194 +1,208 @@
 "use server"
 
-import { connectToDB } from "@/lib/mongoose"
-import { Duty, MemberDuty } from "@/lib/models/duty.models"
-import { User } from "@/lib/models/user.models"
-import { withAuth } from "@/lib/helpers/withAuth"
-import { logActivity } from "@/lib/helpers/activity-logger"
+import { User, withAuth } from "../helpers/auth";
+import { connectToDB } from "../mongoose";
+import Member from "../models/user.models";
+import { logActivity } from "../utils/activity-logger";
+import { revalidatePath } from "next/cache";
 
-// Default duties for congregation
-const DEFAULT_DUTIES = [
-    // Midweek Meeting
-    { name: "Spiritual Gems", category: "midweek_meeting", description: "Present spiritual gems from weekly Bible reading", requirements: { gender: "both", baptized: true } },
-    { name: "Bible Reading", category: "midweek_meeting", description: "Read assigned Bible portion", requirements: { gender: "both" } },
-    { name: "Initial Call", category: "midweek_meeting", description: "Demonstrate initial call in field service", requirements: { gender: "both" } },
-    { name: "Return Visit", category: "midweek_meeting", description: "Demonstrate return visit", requirements: { gender: "both" } },
-    { name: "Bible Study", category: "midweek_meeting", description: "Conduct Bible study demonstration", requirements: { gender: "both" } },
-    { name: "Living as Christians", category: "midweek_meeting", description: "Present Living as Christians part", requirements: { gender: "both", baptized: true } },
-    { name: "Life and Ministry Chairman", category: "midweek_meeting", description: "Chair Life and Ministry meeting", requirements: { gender: "male", privileges: ["Elder", "Ministerial Servant"] } },
-    
-    // Weekend Meeting
-    { name: "Public Talk", category: "weekend_meeting", description: "Deliver public talk", requirements: { gender: "male", privileges: ["Elder"] } },
-    { name: "Public Talk Chairman", category: "weekend_meeting", description: "Chair public meeting", requirements: { gender: "male", privileges: ["Elder", "Ministerial Servant"] } },
-    { name: "Watchtower Reader", category: "weekend_meeting", description: "Read Watchtower paragraphs", requirements: { gender: "male", baptized: true } },
-    { name: "Watchtower Conductor", category: "weekend_meeting", description: "Conduct Watchtower study", requirements: { gender: "male", privileges: ["Elder"] } },
-    
-    // Field Service
-    { name: "Field Service Overseer", category: "field_service", description: "Oversee field service group", requirements: { gender: "male", privileges: ["Elder", "Ministerial Servant"] } },
-    { name: "Field Service Group Conductor", category: "field_service", description: "Conduct field service group", requirements: { gender: "male", baptized: true } },
-    { name: "Public Witnessing Coordinator", category: "field_service", description: "Coordinate public witnessing", requirements: { gender: "both", baptized: true } },
-    
-    // Administrative
-    { name: "Literature Servant", category: "administrative", description: "Manage congregation literature", requirements: { gender: "male", privileges: ["Elder", "Ministerial Servant"] } },
-    { name: "Accounts Servant", category: "administrative", description: "Handle congregation accounts", requirements: { gender: "male", privileges: ["Elder", "Ministerial Servant"] } },
-    { name: "Secretary", category: "administrative", description: "Congregation secretary duties", requirements: { gender: "male", privileges: ["Elder", "Ministerial Servant"] } },
-    { name: "Sound System Operator", category: "administrative", description: "Operate sound system", requirements: { gender: "male", baptized: true } },
-    { name: "Attendant", category: "administrative", description: "Meeting attendant duties", requirements: { gender: "male", baptized: true } },
-    
-    // Special Events
-    { name: "Circuit Assembly Chairman", category: "special_events", description: "Chair circuit assembly parts", requirements: { gender: "male", privileges: ["Elder"] } },
-    { name: "Convention Chairman", category: "special_events", description: "Chair convention parts", requirements: { gender: "male", privileges: ["Elder"] } },
-    { name: "Memorial Speaker", category: "special_events", description: "Deliver Memorial talk", requirements: { gender: "male", privileges: ["Elder"] } }
-]
+const CONGREGATION_DUTIES = {
+    midweek_meeting: [
+        "Spiritual Gems", "Bible Reading", "Initial Call", "Return Visit",
+        "Bible Study", "Living as Christians", "Life and Ministry Chairman",
+        "Watchtower Reader", "Bible Student Reader"
+    ],
+    weekend_meeting: [
+        "Public Talk", "Public Talk Chairman", "Watchtower Reader", "Watchtower Conductor",
+        "Public Talk Speaker", "Bible Student Reader"
+    ],
+    field_service: [
+        "Field Service Overseer", "Field Service Group Conductor", "Public Witnessing Coordinator"
+    ],
+    administrative: [
+        "Literature Servant", "Accounts Servant", "Secretary", "Sound System Operator", "Attendant"
+    ],
+    special_events: [
+        "Circuit Assembly Chairman", "Convention Chairman", "Memorial Speaker"
+    ]
+}
 
-export const initializeDefaultDuties = withAuth(async (currentUser) => {
+async function _assignDutyToMember(user: User, memberId: string, dutyName: string, category: string, notes?: string) {
     try {
-        await connectToDB()
-        
-        const existingDuties = await Duty.countDocuments()
-        if (existingDuties > 0) {
-            return { success: true, message: "Duties already initialized" }
-        }
-        
-        const duties = DEFAULT_DUTIES.map(duty => ({
-            ...duty,
-            createdBy: currentUser._id
-        }))
-        
-        await Duty.insertMany(duties)
-        
-        await logActivity(currentUser._id, 'DUTY_MANAGEMENT', 'Initialized default congregation duties', true)
-        
-        return { success: true, message: "Default duties initialized successfully" }
-    } catch (error) {
-        console.error('Error initializing duties:', error)
-        return { success: false, message: "Failed to initialize duties" }
-    }
-})
+        if (!user) throw new Error("User not authorized");
 
-export const getAllDuties = withAuth(async (currentUser) => {
-    try {
-        await connectToDB()
-        
-        const duties = await Duty.find({ isActive: true })
-            .sort({ category: 1, name: 1 })
-            .lean()
-        
-        return { success: true, duties }
-    } catch (error) {
-        console.error('Error fetching duties:', error)
-        return { success: false, duties: [] }
-    }
-})
+        await connectToDB();
 
-export const assignDutyToMember = withAuth(async (currentUser, memberId: string, dutyId: string, notes?: string) => {
-    try {
-        await connectToDB()
-        
-        // Check if member exists
-        const member = await User.findById(memberId)
+        const member = await Member.findById(memberId);
         if (!member) {
-            return { success: false, message: "Member not found" }
+            throw new Error("Member not found");
         }
-        
-        // Check if duty exists
-        const duty = await Duty.findById(dutyId)
-        if (!duty) {
-            return { success: false, message: "Duty not found" }
+
+        // Check if duty already assigned
+        const existingDuty = member.duties?.find((d: any) => d.name === dutyName && d.isActive);
+        if (existingDuty) {
+            throw new Error("Member already has this duty");
         }
-        
-        // Check if assignment already exists
-        const existingAssignment = await MemberDuty.findOne({ memberId, dutyId, isActive: true })
-        if (existingAssignment) {
-            return { success: false, message: "Member already assigned to this duty" }
+
+        const newDuty = {
+            name: dutyName,
+            category,
+            assignedDate: new Date(),
+            assignedBy: user._id,
+            notes: notes || '',
+            isActive: true
+        };
+
+        member.duties = member.duties || [];
+        member.duties.push(newDuty);
+        await member.save();
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'duty_assignment',
+            action: `${user.fullName} assigned ${dutyName} to ${member.fullName}`,
+            details: { memberId, dutyName, category }
+        });
+
+        revalidatePath('/dashboard/members');
+        return JSON.parse(JSON.stringify(member));
+    } catch (error) {
+        console.error('Error assigning duty:', error);
+        throw error;
+    }
+}
+
+async function _removeDutyFromMember(user: User, memberId: string, dutyName: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const member = await Member.findById(memberId);
+        if (!member) {
+            throw new Error("Member not found");
         }
-        
-        // Create new assignment
-        const assignment = new MemberDuty({
-            memberId,
-            dutyId,
-            notes,
-            assignedBy: currentUser._id
+
+        const dutyIndex = member.duties?.findIndex((d: any) => d.name === dutyName && d.isActive);
+        if (dutyIndex === -1) {
+            throw new Error("Duty not found");
+        }
+
+        member.duties[dutyIndex].isActive = false;
+        await member.save();
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'duty_assignment',
+            action: `${user.fullName} removed ${dutyName} from ${member.fullName}`,
+            details: { memberId, dutyName }
+        });
+
+        revalidatePath('/dashboard/members');
+        return JSON.parse(JSON.stringify(member));
+    } catch (error) {
+        console.error('Error removing duty:', error);
+        throw error;
+    }
+}
+
+async function _getMemberDuties(user: User, memberId: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const member = await Member.findById(memberId).lean();
+
+        if (!member) {
+            throw new Error("Member not found");
+        }
+
+        const activeDuties = member.duties?.filter((d: any) => d.isActive) || [];
+
+        return JSON.parse(JSON.stringify(activeDuties));
+    } catch (error) {
+        console.error('Error fetching member duties:', error);
+        throw error;
+    }
+}
+
+async function _getAllAvailableDuties(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+        return CONGREGATION_DUTIES;
+    } catch (error) {
+        console.error('Error fetching available duties:', error);
+        throw error;
+    }
+}
+
+async function _getMembersWithDuties(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const members = await Member.find({
+            'duties.isActive': true
         })
-        
-        await assignment.save()
-        
-        await logActivity(currentUser._id, 'DUTY_ASSIGNMENT', `Assigned ${duty.name} to ${member.fullName}`, true)
-        
-        return { success: true, message: "Duty assigned successfully" }
-    } catch (error) {
-        console.error('Error assigning duty:', error)
-        return { success: false, message: "Failed to assign duty" }
-    }
-})
-
-export const removeDutyFromMember = withAuth(async (currentUser, memberId: string, dutyId: string) => {
-    try {
-        await connectToDB()
-        
-        const assignment = await MemberDuty.findOne({ memberId, dutyId, isActive: true })
-        if (!assignment) {
-            return { success: false, message: "Assignment not found" }
-        }
-        
-        assignment.isActive = false
-        await assignment.save()
-        
-        const member = await User.findById(memberId)
-        const duty = await Duty.findById(dutyId)
-        
-        await logActivity(currentUser._id, 'DUTY_ASSIGNMENT', `Removed ${duty?.name} from ${member?.fullName}`, true)
-        
-        return { success: true, message: "Duty removed successfully" }
-    } catch (error) {
-        console.error('Error removing duty:', error)
-        return { success: false, message: "Failed to remove duty" }
-    }
-})
-
-export const getMemberDuties = withAuth(async (currentUser, memberId: string) => {
-    try {
-        await connectToDB()
-        
-        const assignments = await MemberDuty.find({ memberId, isActive: true })
-            .populate('dutyId')
-            .populate('assignedBy', 'fullName')
-            .sort({ assignedDate: -1 })
-            .lean()
-        
-        return { success: true, assignments }
-    } catch (error) {
-        console.error('Error fetching member duties:', error)
-        return { success: false, assignments: [] }
-    }
-})
-
-export const getAllMembersWithDuties = withAuth(async (currentUser) => {
-    try {
-        await connectToDB()
-        
-        const members = await User.find({ role: { $in: ['publisher', 'ministerial_servant', 'elder'] } })
-            .select('fullName email role gender baptizedDate privileges groupId')
+            .select('fullName email role gender baptizedDate privileges groupId duties')
             .populate('groupId', 'name')
-            .lean()
-        
-        // Get duties for each member
-        const membersWithDuties = await Promise.all(
-            members.map(async (member) => {
-                const assignments = await MemberDuty.find({ memberId: member._id, isActive: true })
-                    .populate('dutyId')
-                    .lean()
-                
-                return {
-                    ...member,
-                    duties: assignments.map(a => a.dutyId)
-                }
-            })
-        )
-        
-        return { success: true, members: membersWithDuties }
+            .lean();
+
+        return JSON.parse(JSON.stringify(members));
     } catch (error) {
-        console.error('Error fetching members with duties:', error)
-        return { success: false, members: [] }
+        console.error('Error fetching members with duties:', error);
+        throw error;
     }
-})
+}
+
+async function _getEligibleMembersForAssignment(user: User, assignmentType: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        // Map assignment types to duty names
+        const dutyMapping: Record<string, string[]> = {
+            "Watchtower Reader": ["Watchtower Reader", "Watchtower Conductor"],
+            "Bible Student Reader": ["Bible Reading", "Bible Student Reader"],
+            "Life and Ministry": ["Initial Call", "Return Visit", "Bible Study", "Life and Ministry Chairman", "Spiritual Gems", "Living as Christians"],
+            "Public Talk Speaker": ["Public Talk", "Public Talk Speaker", "Public Talk Chairman"]
+        };
+
+        const eligibleDuties = dutyMapping[assignmentType];
+        
+        if (!eligibleDuties) {
+            // If no mapping found, return all members
+            const allMembers = await Member.find({})
+                .select('fullName email role gender')
+                .lean();
+            return JSON.parse(JSON.stringify(allMembers));
+        }
+
+        // Find members who have any of the eligible duties assigned
+        const members = await Member.find({
+            duties: {
+                $elemMatch: {
+                    name: { $in: eligibleDuties },
+                    isActive: true
+                }
+            }
+        })
+            .select('fullName email role gender duties')
+            .lean();
+
+        return JSON.parse(JSON.stringify(members));
+    } catch (error) {
+        console.error('Error fetching eligible members:', error);
+        throw error;
+    }
+}
+
+export const assignDutyToMember = await withAuth(_assignDutyToMember);
+export const removeDutyFromMember = await withAuth(_removeDutyFromMember);
+export const getMemberDuties = await withAuth(_getMemberDuties);
+export const getAllAvailableDuties = await withAuth(_getAllAvailableDuties);
+export const getMembersWithDuties = await withAuth(_getMembersWithDuties);
+export const getEligibleMembersForAssignment = await withAuth(_getEligibleMembersForAssignment);
