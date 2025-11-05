@@ -16,7 +16,7 @@ import {
     CheckCircle,
     AlertCircle
 } from 'lucide-react'
-import { initializeDefaultDuties, getAllDuties, getAllMembersWithDuties } from '@/lib/actions/duty.actions'
+import { getAllAvailableDuties, getMembersWithDuties } from '@/lib/actions/duty.actions'
 
 const categoryIcons = {
     midweek_meeting: Mic,
@@ -48,17 +48,16 @@ export default function DutyManagement() {
         setLoading(true)
         try {
             const [dutiesResult, membersResult] = await Promise.all([
-                getAllDuties(),
-                getAllMembersWithDuties()
+                getAllAvailableDuties(),
+                getMembersWithDuties()
             ])
             
-            if (dutiesResult.success) {
-                setDuties(dutiesResult.duties)
-            }
-            
-            if (membersResult.success) {
-                setMembers(membersResult.members)
-            }
+            // Convert duties object to array
+            const dutiesArray = Object.entries(dutiesResult).flatMap(([category, duties]) => 
+                (duties as string[]).map(name => ({ name, category }))
+            )
+            setDuties(dutiesArray)
+            setMembers(membersResult)
         } catch (error) {
             console.error('Error fetching data:', error)
             toast.error('Failed to load data')
@@ -70,14 +69,8 @@ export default function DutyManagement() {
     const handleInitializeDuties = async () => {
         setInitializing(true)
         try {
-            const result = await initializeDefaultDuties()
-            
-            if (result.success) {
-                toast.success(result.message)
-                fetchData()
-            } else {
-                toast.error(result.message)
-            }
+            toast.success('Duties are already available')
+            fetchData()
         } catch (error) {
             console.error('Error initializing duties:', error)
             toast.error('Failed to initialize duties')
@@ -164,6 +157,7 @@ export default function DutyManagement() {
                         <h3 className="text-lg font-semibold">Duties by Category</h3>
                         {Object.entries(groupedDuties).map(([category, categoryDuties]) => {
                             const IconComponent = categoryIcons[category as keyof typeof categoryIcons]
+                            const duties = categoryDuties as any[]
                             return (
                                 <Card key={category}>
                                     <CardHeader className="pb-3">
@@ -171,35 +165,20 @@ export default function DutyManagement() {
                                             <IconComponent className="h-4 w-4" />
                                             {category.replace('_', ' ').toUpperCase()}
                                             <Badge variant="outline" className="ml-auto">
-                                                {categoryDuties.length}
+                                                {duties.length}
                                             </Badge>
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="pt-0">
                                         <div className="space-y-2">
-                                            {categoryDuties.map((duty) => (
-                                                <div key={duty._id} className="p-3 rounded-lg border">
+                                            {duties.map((duty, index) => (
+                                                <div key={`${duty.name}-${index}`} className="p-3 rounded-lg border">
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
                                                             <h4 className="font-medium text-sm">{duty.name}</h4>
-                                                            <p className="text-xs text-muted-foreground mt-1">
-                                                                {duty.description}
-                                                            </p>
-                                                            <div className="flex items-center gap-2 mt-2">
-                                                                <Badge className={categoryColors[category as keyof typeof categoryColors]} size="sm">
-                                                                    {duty.requirements.gender}
-                                                                </Badge>
-                                                                {duty.requirements.baptized && (
-                                                                    <Badge variant="outline" size="sm">
-                                                                        Baptized
-                                                                    </Badge>
-                                                                )}
-                                                                {duty.requirements.privileges?.length > 0 && (
-                                                                    <Badge variant="outline" size="sm">
-                                                                        {duty.requirements.privileges.join(', ')}
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
+                                                            <Badge className={categoryColors[category as keyof typeof categoryColors]} size="sm">
+                                                                {category.replace('_', ' ')}
+                                                            </Badge>
                                                         </div>
                                                     </div>
                                                 </div>
