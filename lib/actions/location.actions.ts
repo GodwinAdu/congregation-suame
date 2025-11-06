@@ -59,7 +59,7 @@ async function _getMembersWithLocations(user: User) {
             'location.latitude': { $ne: null },
             'location.longitude': { $ne: null },
             'location.isPublic': true
-        }).select('fullName location groupId');
+        }).select('fullName location groupId role phone');
 
         return JSON.parse(JSON.stringify(members));
     } catch (error) {

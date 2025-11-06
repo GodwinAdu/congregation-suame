@@ -1,11 +1,11 @@
 import React from 'react'
 import { TerritoryManager } from './_components/territory-manager'
-import { fetchTerritories } from '@/lib/actions/territory.actions'
+import { getTerritories } from '@/lib/actions/territory.actions'
 import { fetchAllMembers } from '@/lib/actions/user.actions'
 
 const page = async () => {
     const [territories, members] = await Promise.all([
-        fetchTerritories(),
+        getTerritories(),
         fetchAllMembers()
     ])
 

@@ -10,7 +10,7 @@ export async function requirePermission(pathname: string) {
     redirect('/sign-in');
   }
 
-  const permissionKey = routePermissions[pathname];
+  const permissionKey = routePermissions[pathname as keyof typeof routePermissions];
   
   if (!permissionKey) {
     return user; // No specific permission required

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ interface Member {
   _id: string;
   fullName: string;
   phone?: string;
+  role: string;
   groupId?: {
     name: string;
   };
@@ -41,6 +42,16 @@ interface MembersMapProps {
 
 export function MembersMap({ members }: MembersMapProps) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const formatDate = (dateString: string | Date) => {
+    if (!isClient) return 'Loading...';
+    return new Date(dateString).toLocaleDateString();
+  };
 
   const openInMaps = (member: Member) => {
     const { latitude, longitude } = member.location;
@@ -107,7 +118,7 @@ export function MembersMap({ members }: MembersMapProps) {
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Updated: {new Date(member.location.lastUpdated).toLocaleDateString()}
+                        Updated: {formatDate(member.location.lastUpdated)}
                       </p>
                     </div>
                   </div>
@@ -167,7 +178,7 @@ export function MembersMap({ members }: MembersMapProps) {
               <div>
                 <Label className="text-sm font-medium">Last Updated</Label>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(selectedMember.location.lastUpdated).toLocaleString()}
+                  {isClient ? new Date(selectedMember.location.lastUpdated).toLocaleString() : 'Loading...'}
                 </p>
               </div>
 

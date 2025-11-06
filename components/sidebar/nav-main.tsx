@@ -225,12 +225,29 @@ export function NavMain({ role, user }: NavMainProps) {
       roleField: "territory",
       items: [
         {
-          title: "Territories",
-          url: `/dashboard/territory`,
+          title: "Territory Map",
+          url: `/dashboard/territories`,
+          roleField: "territoryView"
         },
         {
-          title: "Return Visits",
-          url: `/dashboard/territory/return-visits`,
+          title: "Territory List",
+          url: `/dashboard/territories/list`,
+          roleField: "territoryManage"
+        },
+        {
+          title: "Assignments",
+          url: `/dashboard/territories/assignments`,
+          roleField: "territoryAssign"
+        },
+        {
+          title: "Analytics",
+          url: `/dashboard/territories/analytics`,
+          roleField: "territoryAnalytics"
+        },
+        {
+          title: "Import KML",
+          url: `/dashboard/territories/import`,
+          roleField: "territoryImport"
         }
       ],
     },

@@ -1,47 +1,97 @@
-import { model, models, Schema } from "mongoose"
+import { Document, model, Schema, models } from "mongoose";
+
+export interface ITerritory extends Document {
+  _id: string;
+  number: string;
+  name: string;
+  description?: string;
+  boundaries: {
+    type: 'Polygon' | 'MultiPolygon';
+    coordinates: number[][][];
+  };
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  area?: number; // in square kilometers
+  difficulty: 'easy' | 'medium' | 'hard';
+  type: 'residential' | 'business' | 'rural' | 'apartment' | 'mixed';
+  isActive: boolean;
+  lastWorked?: Date;
+  completedDate?: Date;
+  estimatedHours: number;
+  householdCount?: number;
+  notes?: string;
+  kmlData?: string; // Original KML/KMZ data
+  createdBy: Schema.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ITerritoryAssignment extends Document {
+  _id: string;
+  territoryId: Schema.Types.ObjectId;
+  publisherId: Schema.Types.ObjectId;
+  assignedDate: Date;
+  dueDate?: Date;
+  returnedDate?: Date;
+  status: 'assigned' | 'completed' | 'overdue' | 'returned';
+  workStarted?: Date;
+  workCompleted?: Date;
+  hoursWorked?: number;
+  householdsVisited?: number;
+  notes?: string;
+  assignedBy: Schema.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const TerritorySchema = new Schema({
-    number: { type: String, required: true, unique: true },
-    name: String,
-    type: { type: String, enum: ['residential', 'business', 'rural', 'foreign'], default: 'residential' },
-    boundaries: {
-        type: { type: String, enum: ['Polygon'], default: 'Polygon' },
-        coordinates: [[[Number]]]
-    },
-    assignedTo: { type: Schema.Types.ObjectId, ref: "Member" },
-    assignedDate: Date,
-    lastWorked: Date,
-    status: { type: String, enum: ['available', 'assigned', 'completed', 'do-not-call'], default: 'available' },
-    difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
-    notes: String,
-    addresses: [{
-        street: String,
-        number: String,
-        apartment: String,
-        status: { type: String, enum: ['not-worked', 'not-home', 'do-not-call', 'interested', 'study'], default: 'not-worked' },
-        lastVisited: Date,
-        notes: String,
-        language: String
-    }]
-}, { timestamps: true })
+  number: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  description: { type: String },
+  boundaries: {
+    type: { type: String, enum: ['Polygon', 'MultiPolygon'], required: true },
+    coordinates: { type: [[[Number]]], required: true }
+  },
+  center: {
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true }
+  },
+  area: { type: Number },
+  difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+  type: { type: String, enum: ['residential', 'business', 'rural', 'apartment', 'mixed'], default: 'residential' },
+  isActive: { type: Boolean, default: true },
+  lastWorked: { type: Date },
+  completedDate: { type: Date },
+  estimatedHours: { type: Number, default: 2 },
+  householdCount: { type: Number },
+  notes: { type: String },
+  kmlData: { type: String },
+  createdBy: { type: Schema.Types.ObjectId, ref: "Member", required: true }
+}, { timestamps: true });
 
-const ReturnVisitSchema = new Schema({
-    territoryId: { type: Schema.Types.ObjectId, ref: "Territory", required: true },
-    publisherId: { type: Schema.Types.ObjectId, ref: "Member", required: true },
-    address: String,
-    personName: String,
-    phoneNumber: String,
-    email: String,
-    interest: String,
-    nextVisitDate: Date,
-    status: { type: String, enum: ['active', 'study', 'inactive', 'moved'], default: 'active' },
-    visits: [{
-        date: { type: Date, default: Date.now },
-        notes: String,
-        literature: String,
-        duration: Number
-    }]
-}, { timestamps: true })
+const TerritoryAssignmentSchema = new Schema({
+  territoryId: { type: Schema.Types.ObjectId, ref: "Territory", required: true },
+  publisherId: { type: Schema.Types.ObjectId, ref: "Member", required: true },
+  assignedDate: { type: Date, default: Date.now },
+  dueDate: { type: Date },
+  returnedDate: { type: Date },
+  status: { type: String, enum: ['assigned', 'completed', 'overdue', 'returned'], default: 'assigned' },
+  workStarted: { type: Date },
+  workCompleted: { type: Date },
+  hoursWorked: { type: Number },
+  householdsVisited: { type: Number },
+  notes: { type: String },
+  assignedBy: { type: Schema.Types.ObjectId, ref: "Member", required: true }
+}, { timestamps: true });
 
-export const Territory = models.Territory || model("Territory", TerritorySchema)
-export const ReturnVisit = models.ReturnVisit || model("ReturnVisit", ReturnVisitSchema)
+// Indexes for performance
+TerritorySchema.index({ number: 1 });
+TerritorySchema.index({ isActive: 1 });
+TerritorySchema.index({ 'center.latitude': 1, 'center.longitude': 1 });
+TerritoryAssignmentSchema.index({ territoryId: 1, status: 1 });
+TerritoryAssignmentSchema.index({ publisherId: 1, status: 1 });
+
+export const Territory = models.Territory || model("Territory", TerritorySchema);
+export const TerritoryAssignment = models.TerritoryAssignment || model("TerritoryAssignment", TerritoryAssignmentSchema);

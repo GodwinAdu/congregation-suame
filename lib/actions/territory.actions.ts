@@ -1,155 +1,262 @@
 "use server"
 
-import { User, withAuth } from "../helpers/auth"
-import { Territory, ReturnVisit } from "../models/territory.models"
-import { connectToDB } from "../mongoose"
-import { revalidatePath } from "next/cache"
-import { logActivity } from "../utils/activity-logger"
+import { User, withAuth } from "../helpers/auth";
+import { Territory, TerritoryAssignment } from "../models/territory.models";
+import { connectToDB } from "../mongoose";
+import { revalidatePath } from "next/cache";
+import { logActivity } from "../utils/activity-logger";
 
-async function _createTerritory(user: User, data: {
-    number: string
-    name?: string
-    type: 'residential' | 'business' | 'rural' | 'foreign'
-    boundaries?: any
-    difficulty: 'easy' | 'medium' | 'hard'
-    notes?: string
-}) {
-    try {
-        await connectToDB()
-        
-        const territory = new Territory(data)
-        await territory.save()
-
-        await logActivity({
-            userId: user._id as string,
-            type: 'territory_create',
-            action: `${user.fullName} created territory ${data.number}`,
-            details: { entityId: territory._id, entityType: 'Territory' }
-        })
-
-        revalidatePath('/dashboard/territory')
-        return JSON.parse(JSON.stringify(territory))
-    } catch (error) {
-        console.error('Error creating territory:', error)
-        throw error
-    }
+interface TerritoryData {
+  number: string;
+  name: string;
+  description?: string;
+  boundaries: {
+    type: 'Polygon' | 'MultiPolygon';
+    coordinates: number[][][];
+  };
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  area?: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  type: 'residential' | 'business' | 'rural' | 'apartment' | 'mixed';
+  estimatedHours: number;
+  householdCount?: number;
+  notes?: string;
+  kmlData?: string;
 }
 
-async function _assignTerritory(user: User, territoryId: string, publisherId: string) {
-    try {
-        await connectToDB()
-        
-        const territory = await Territory.findByIdAndUpdate(
-            territoryId,
-            { 
-                assignedTo: publisherId,
-                assignedDate: new Date(),
-                status: 'assigned'
-            },
-            { new: true }
-        ).populate('assignedTo', 'fullName')
-
-        await logActivity({
-            userId: user._id as string,
-            type: 'territory_assign',
-            action: `${user.fullName} assigned territory ${territory.number} to ${territory.assignedTo.fullName}`,
-            details: { entityId: territoryId, entityType: 'Territory' }
-        })
-
-        revalidatePath('/dashboard/territory')
-        return JSON.parse(JSON.stringify(territory))
-    } catch (error) {
-        console.error('Error assigning territory:', error)
-        throw error
-    }
+interface AssignmentData {
+  territoryId: string;
+  publisherId: string;
+  dueDate?: Date;
+  notes?: string;
 }
 
-async function _fetchTerritories(user: User) {
-    try {
-        await connectToDB()
-        
-        const territories = await Territory.find({})
-            .populate('assignedTo', 'fullName')
-            .sort({ number: 1 })
+async function _createTerritory(user: User, territoryData: TerritoryData) {
+  try {
+    if (!user) throw new Error("User not authorized");
 
-        return JSON.parse(JSON.stringify(territories))
-    } catch (error) {
-        console.error('Error fetching territories:', error)
-        throw error
-    }
+    await connectToDB();
+
+    const territory = await Territory.create({
+      ...territoryData,
+      createdBy: user._id
+    });
+
+    await logActivity({
+      userId: user._id,
+      type: 'territory_create',
+      action: `${user.fullName} created territory ${territoryData.number}`,
+      details: { entityId: territory._id, entityType: 'Territory' },
+    });
+
+    revalidatePath('/dashboard/territories');
+    return JSON.parse(JSON.stringify(territory));
+  } catch (error) {
+    console.log("Error creating territory:", error);
+    throw error;
+  }
 }
 
-async function _createReturnVisit(user: User, data: {
-    territoryId: string
-    address: string
-    personName: string
-    phoneNumber?: string
-    email?: string
-    interest: string
-    nextVisitDate: Date
-}) {
-    try {
-        await connectToDB()
-        
-        const returnVisit = new ReturnVisit({
-            ...data,
-            publisherId: user._id
-        })
-        await returnVisit.save()
+async function _updateTerritory(user: User, territoryId: string, territoryData: Partial<TerritoryData>) {
+  try {
+    if (!user) throw new Error("User not authorized");
 
-        await logActivity({
-            userId: user._id as string,
-            type: 'return_visit_create',
-            action: `${user.fullName} created return visit for ${data.personName}`,
-            details: { entityId: returnVisit._id, entityType: 'ReturnVisit' }
-        })
+    await connectToDB();
 
-        revalidatePath('/dashboard/territory')
-        return JSON.parse(JSON.stringify(returnVisit))
-    } catch (error) {
-        console.error('Error creating return visit:', error)
-        throw error
-    }
+    const territory = await Territory.findByIdAndUpdate(
+      territoryId,
+      territoryData,
+      { new: true, runValidators: true }
+    );
+
+    if (!territory) throw new Error("Territory not found");
+
+    await logActivity({
+      userId: user._id,
+      type: 'territory_update',
+      action: `${user.fullName} updated territory ${territory.number}`,
+      details: { entityId: territoryId, entityType: 'Territory' },
+    });
+
+    revalidatePath('/dashboard/territories');
+    return JSON.parse(JSON.stringify(territory));
+  } catch (error) {
+    console.log("Error updating territory:", error);
+    throw error;
+  }
 }
 
-async function _addVisitRecord(user: User, returnVisitId: string, visitData: {
-    notes: string
-    literature?: string
-    duration: number
-}) {
-    try {
-        await connectToDB()
-        
-        const returnVisit = await ReturnVisit.findByIdAndUpdate(
-            returnVisitId,
-            {
-                $push: {
-                    visits: {
-                        ...visitData,
-                        date: new Date()
-                    }
-                }
-            },
-            { new: true }
-        )
+async function _getTerritories(user: User) {
+  try {
+    if (!user) throw new Error("User not authorized");
 
-        await logActivity({
-            userId: user._id as string,
-            type: 'visit_record',
-            action: `${user.fullName} added visit record`,
-            details: { entityId: returnVisitId, entityType: 'ReturnVisit' }
-        })
+    await connectToDB();
 
-        revalidatePath('/dashboard/territory')
-        return JSON.parse(JSON.stringify(returnVisit))
-    } catch (error) {
-        console.error('Error adding visit record:', error)
-        throw error
-    }
+    const territories = await Territory.find({ isActive: true })
+      .populate('createdBy', 'fullName')
+      .sort({ number: 1 });
+
+    return JSON.parse(JSON.stringify(territories));
+  } catch (error) {
+    console.log("Error fetching territories:", error);
+    throw error;
+  }
 }
 
-export const createTerritory = await withAuth(_createTerritory)
-export const assignTerritory = await withAuth(_assignTerritory)
-export const fetchTerritories = await withAuth(_fetchTerritories)
-export const createReturnVisit = await withAuth(_createReturnVisit)
-export const addVisitRecord = await withAuth(_addVisitRecord)
+async function _assignTerritory(user: User, assignmentData: AssignmentData) {
+  try {
+    if (!user) throw new Error("User not authorized");
+
+    await connectToDB();
+
+    // Check if territory is already assigned
+    const existingAssignment = await TerritoryAssignment.findOne({
+      territoryId: assignmentData.territoryId,
+      status: 'assigned'
+    });
+
+    if (existingAssignment) {
+      throw new Error("Territory is already assigned");
+    }
+
+    const assignment = await TerritoryAssignment.create({
+      ...assignmentData,
+      assignedBy: user._id
+    });
+
+    await logActivity({
+      userId: user._id,
+      type: 'territory_assign',
+      action: `${user.fullName} assigned territory to publisher`,
+      details: { entityId: assignment._id, entityType: 'TerritoryAssignment' },
+    });
+
+    revalidatePath('/dashboard/territories');
+    return JSON.parse(JSON.stringify(assignment));
+  } catch (error) {
+    console.log("Error assigning territory:", error);
+    throw error;
+  }
+}
+
+async function _getTerritoryAssignments(user: User) {
+  try {
+    if (!user) throw new Error("User not authorized");
+
+    await connectToDB();
+
+    const assignments = await TerritoryAssignment.find()
+      .populate('territoryId', 'number name type difficulty')
+      .populate('publisherId', 'fullName phone')
+      .populate('assignedBy', 'fullName')
+      .sort({ assignedDate: -1 });
+
+    return JSON.parse(JSON.stringify(assignments));
+  } catch (error) {
+    console.log("Error fetching assignments:", error);
+    throw error;
+  }
+}
+
+async function _returnTerritory(user: User, assignmentId: string, returnData: { hoursWorked?: number; householdsVisited?: number; notes?: string }) {
+  try {
+    if (!user) throw new Error("User not authorized");
+
+    await connectToDB();
+
+    const assignment = await TerritoryAssignment.findByIdAndUpdate(
+      assignmentId,
+      {
+        ...returnData,
+        returnedDate: new Date(),
+        status: 'returned'
+      },
+      { new: true }
+    );
+
+    if (!assignment) throw new Error("Assignment not found");
+
+    // Update territory last worked date
+    await Territory.findByIdAndUpdate(assignment.territoryId, {
+      lastWorked: new Date()
+    });
+
+    await logActivity({
+      userId: user._id,
+      type: 'territory_return',
+      action: `${user.fullName} returned territory`,
+      details: { entityId: assignmentId, entityType: 'TerritoryAssignment' },
+    });
+
+    revalidatePath('/dashboard/territories');
+    return JSON.parse(JSON.stringify(assignment));
+  } catch (error) {
+    console.log("Error returning territory:", error);
+    throw error;
+  }
+}
+
+async function _parseKMLFile(user: User, kmlContent: string) {
+  try {
+    if (!user) throw new Error("User not authorized");
+
+    // Basic KML parsing - in production, use a proper KML parser
+    const territories = [];
+    
+    // This is a simplified parser - you'd want to use a library like @tmcw/togeojson
+    const placemarkRegex = /<Placemark>(.*?)<\/Placemark>/gs;
+    const nameRegex = /<name>(.*?)<\/name>/;
+    const coordinatesRegex = /<coordinates>(.*?)<\/coordinates>/;
+    
+    let match;
+    while ((match = placemarkRegex.exec(kmlContent)) !== null) {
+      const placemark = match[1];
+      const nameMatch = nameRegex.exec(placemark);
+      const coordsMatch = coordinatesRegex.exec(placemark);
+      
+      if (nameMatch && coordsMatch) {
+        const name = nameMatch[1].trim();
+        const coordsText = coordsMatch[1].trim();
+        
+        // Parse coordinates (longitude,latitude,altitude format in KML)
+        const coords = coordsText.split(/\s+/).map(coord => {
+          const [lng, lat] = coord.split(',').map(Number);
+          return [lng, lat];
+        });
+        
+        if (coords.length >= 3) {
+          // Ensure polygon is closed
+          if (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1]) {
+            coords.push(coords[0]);
+          }
+          
+          // Calculate center point
+          const centerLat = coords.reduce((sum, coord) => sum + coord[1], 0) / coords.length;
+          const centerLng = coords.reduce((sum, coord) => sum + coord[0], 0) / coords.length;
+          
+          territories.push({
+            name,
+            coordinates: [coords],
+            center: { latitude: centerLat, longitude: centerLng }
+          });
+        }
+      }
+    }
+    
+    return territories;
+  } catch (error) {
+    console.log("Error parsing KML:", error);
+    throw error;
+  }
+}
+
+export const createTerritory = await withAuth(_createTerritory);
+export const updateTerritory = await withAuth(_updateTerritory);
+export const getTerritories = await withAuth(_getTerritories);
+export const assignTerritory = await withAuth(_assignTerritory);
+export const getTerritoryAssignments = await withAuth(_getTerritoryAssignments);
+export const returnTerritory = await withAuth(_returnTerritory);
+export const parseKMLFile = await withAuth(_parseKMLFile);

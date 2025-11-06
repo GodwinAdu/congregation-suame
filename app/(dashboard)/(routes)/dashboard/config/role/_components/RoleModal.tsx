@@ -88,8 +88,15 @@ const formSchema = z.object({
         communicationBroadcasts: z.boolean().default(false),
         communicationMessages: z.boolean().default(false),
         
-        // Other Features
+        // Territory Management
         territory: z.boolean().default(false),
+        territoryView: z.boolean().default(false),
+        territoryManage: z.boolean().default(false),
+        territoryAssign: z.boolean().default(false),
+        territoryAnalytics: z.boolean().default(false),
+        territoryImport: z.boolean().default(false),
+        
+        // Other Features
         cleaning: z.boolean().default(false),
         transport: z.boolean().default(false),
         events: z.boolean().default(false),
@@ -181,8 +188,19 @@ const permissionGroups = [
         permissions: [
             { key: "fieldService", label: "Field Service Access", description: "Access field service features" },
             { key: "fieldServiceMeetingSchedule", label: "Meeting Schedule", description: "Manage field service meeting schedules" },
-            { key: "fieldServicePublicWitnessing", label: "Public Witnessing", description: "Manage public witnessing activities" },
-            { key: "territory", label: "Territory Management", description: "Manage territories and assignments" }
+            { key: "fieldServicePublicWitnessing", label: "Public Witnessing", description: "Manage public witnessing activities" }
+        ]
+    },
+    {
+        title: "Territory Management",
+        icon: MapPin,
+        permissions: [
+            { key: "territory", label: "Territory Access", description: "Access territory management section" },
+            { key: "territoryView", label: "View Territories", description: "View territory maps and information" },
+            { key: "territoryManage", label: "Manage Territories", description: "Create, edit, and delete territories" },
+            { key: "territoryAssign", label: "Territory Assignments", description: "Assign territories to publishers" },
+            { key: "territoryAnalytics", label: "Territory Analytics", description: "View territory statistics and reports" },
+            { key: "territoryImport", label: "Import Territories", description: "Import KML/KMZ files from Google Earth" }
         ]
     },
     {
@@ -324,8 +342,15 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                     communicationBroadcasts: false,
                     communicationMessages: false,
                     
-                    // Other Features
+                    // Territory Management
                     territory: false,
+                    territoryView: false,
+                    territoryManage: false,
+                    territoryAssign: false,
+                    territoryAnalytics: false,
+                    territoryImport: false,
+                    
+                    // Other Features
                     cleaning: false,
                     transport: false,
                     events: false,

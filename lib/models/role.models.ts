@@ -39,6 +39,11 @@ export interface IRole {
     aiAssignments: boolean;
     aiInsights: boolean;
     attendanceTracker: boolean;
+    territoryView: boolean;
+    territoryManage: boolean;
+    territoryAssign: boolean;
+    territoryAnalytics: boolean;
+    territoryImport: boolean;
     monthlyReportHelpNeeded: boolean;
     documentForms: boolean;
     financialAnalytics: boolean;
@@ -114,8 +119,15 @@ const RoleSchema = new Schema({
         communicationBroadcasts: { type: Boolean, default: false },
         communicationMessages: { type: Boolean, default: false },
         
-        // Other Features
+        // Territory Management
         territory: { type: Boolean, default: false },
+        territoryView: { type: Boolean, default: false },
+        territoryManage: { type: Boolean, default: false },
+        territoryAssign: { type: Boolean, default: false },
+        territoryAnalytics: { type: Boolean, default: false },
+        territoryImport: { type: Boolean, default: false },
+        
+        // Other Features
         cleaning: { type: Boolean, default: false },
         transport: { type: Boolean, default: false },
         events: { type: Boolean, default: false },
