@@ -80,7 +80,7 @@ export function LocationUpdate({ currentLocation }: LocationUpdateProps) {
     setLoading(true);
     
     try {
-      await updateMyLocation({
+      const updatedMember = await updateMyLocation({
         latitude: Number(location.latitude),
         longitude: Number(location.longitude),
         address: location.address,
@@ -88,6 +88,9 @@ export function LocationUpdate({ currentLocation }: LocationUpdateProps) {
       });
       
       toast.success('Location updated successfully');
+      
+      // Refresh the page to show updated data
+      window.location.reload();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update location');
     } finally {

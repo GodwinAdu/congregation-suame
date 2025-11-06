@@ -1,22 +1,38 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation, Phone, Home, Route } from 'lucide-react';
-import { InteractiveMap } from '@/components/location/interactive-map';
+import { Label } from '@/components/ui/label';
+import { MapPin, Navigation, Phone, Home, Route, Loader2 } from 'lucide-react';
+
+// Dynamic import to prevent SSR issues
+const InteractiveMap = dynamic(() => import('@/components/location/interactive-map').then(mod => ({ default: mod.InteractiveMap })), {
+  ssr: false,
+  loading: () => (
+    <Card>
+      <CardContent className="h-96 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </CardContent>
+    </Card>
+  )
+});
 
 interface Member {
   _id: string;
   fullName: string;
+  phone?: string;
+  groupId?: {
+    name: string;
+  };
   location: {
     latitude: number;
     longitude: number;
     address?: string;
     lastUpdated: Date;
   };
-  groupId?: string;
 }
 
 interface MembersMapProps {
@@ -50,7 +66,7 @@ export function MembersMap({ members }: MembersMapProps) {
       {/* Interactive Map */}
       <div className="lg:col-span-2">
         <InteractiveMap 
-          members={members} 
+          members={members || []} 
           onMemberSelect={setSelectedMember}
         />
       </div>
@@ -180,6 +196,3 @@ export function MembersMap({ members }: MembersMapProps) {
   );
 }
 
-function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={className}>{children}</div>;
-}

@@ -40,6 +40,8 @@ async function _updateMemberLocation(user: User, memberId: string, locationData:
         });
 
         revalidatePath('/dashboard/members');
+        revalidatePath('/dashboard/members/map');
+        revalidatePath('/dashboard/profile');
         return JSON.parse(JSON.stringify(member));
     } catch (error) {
         console.log("Error updating location:", error);
@@ -93,6 +95,7 @@ async function _updateMyLocation(user: User, locationData: LocationData) {
         });
 
         revalidatePath('/dashboard/profile');
+        revalidatePath('/dashboard/members/map');
         return JSON.parse(JSON.stringify(member));
     } catch (error) {
         console.log("Error updating my location:", error);
