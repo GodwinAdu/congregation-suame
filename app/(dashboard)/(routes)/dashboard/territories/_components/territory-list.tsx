@@ -17,7 +17,8 @@ import {
   MoreHorizontal,
   Edit,
   UserPlus,
-  RotateCcw
+  RotateCcw,
+  Plus
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CreateTerritoryModal } from './create-territory-modal';
 
 interface Territory {
   _id: string;
@@ -66,11 +68,13 @@ interface Assignment {
 interface TerritoryListProps {
   territories: Territory[];
   assignments: Assignment[];
+  onRefresh?: () => void;
 }
 
-export function TerritoryList({ territories, assignments }: TerritoryListProps) {
+export function TerritoryList({ territories, assignments, onRefresh }: TerritoryListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Get assignment for territory
   const getAssignment = (territoryId: string) => {
@@ -124,6 +128,18 @@ export function TerritoryList({ territories, assignments }: TerritoryListProps) 
 
   return (
     <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">Territory Management</h2>
+          <p className="text-sm text-muted-foreground">Manage and assign territories to publishers</p>
+        </div>
+        <Button onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Territory
+        </Button>
+      </div>
+      
       {/* Controls */}
       <Card>
         <CardContent className="p-4">
@@ -389,6 +405,15 @@ export function TerritoryList({ territories, assignments }: TerritoryListProps) 
           </Table>
         </CardContent>
       </Card>
+      
+      <CreateTerritoryModal 
+        open={showCreateModal} 
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          onRefresh?.();
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }
