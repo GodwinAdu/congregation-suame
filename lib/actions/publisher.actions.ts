@@ -100,7 +100,7 @@ async function _fetchPublisherData(user: User) {
 async function _submitFieldServiceReport(user: User, data: {
     month: string
     hours?: number
-    bibleStudents: number
+    bibleStudies: number
     auxiliaryPioneer?: boolean
     check?: boolean
     comments?: string
@@ -109,23 +109,63 @@ async function _submitFieldServiceReport(user: User, data: {
         if (!user) throw new Error("User not authorized")
 
         await connectToDB()
-
+        
+        // Check if user can record hours (has pioneer privilege or auxiliary pioneer checked)
+        const Member = (await import('../models/user.models')).default
+        
+        const member = await Member.findById(user._id).populate('privileges')
+        const hasPioneerPrivilege = member.privileges.some((p: any) => 
+            p.name === 'Pioneer' || p.name === 'Regular Pioneer' || p.name === 'Auxiliary Pioneer'
+        )
+        
+        // Only allow hours if user has pioneer privilege or checked auxiliary pioneer
+        if (data.hours && !hasPioneerPrivilege && !data.auxiliaryPioneer) {
+            throw new Error("Only pioneers can record hours. Check 'Auxiliary Pioneer' if you served as one this month.")
+        }
+        
+        // Check editing restrictions - can edit previous month report until 10th of current month
+        const currentDate = new Date()
+        const currentDay = currentDate.getDate()
+        const reportMonth = new Date(data.month + '-01')
+        const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+        const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+        
         const existingReport = await FieldServiceReport.findOne({
             publisher: user._id,
             month: data.month
         })
+        
+        // Allow editing if:
+        // 1. It's the previous month report and we're before 10th of current month
+        // 2. It's the current month report (always editable)
+        const isPreviousMonth = reportMonth.getTime() === previousMonth.getTime()
+        const isCurrentMonth = reportMonth.getTime() === currentMonth.getTime()
+        
+        if (existingReport && !isCurrentMonth && !isPreviousMonth) {
+            throw new Error("Only current and previous month reports can be edited")
+        }
+        
+        if (existingReport && isPreviousMonth && currentDay > 10) {
+            throw new Error("Previous month reports can only be edited until the 10th of the current month")
+        }
 
         let report
         if (existingReport) {
             report = await FieldServiceReport.findByIdAndUpdate(
                 existingReport._id,
-                { ...data },
+                { 
+                    ...data,
+                    bibleStudents: data.bibleStudies,
+                    hours: (hasPioneerPrivilege || data.auxiliaryPioneer) ? data.hours : undefined
+                },
                 { new: true, runValidators: false }
             )
         } else {
             report = new FieldServiceReport({
                 ...data,
-                publisher: user._id
+                bibleStudents: data.bibleStudies,
+                publisher: user._id,
+                hours: (hasPioneerPrivilege || data.auxiliaryPioneer) ? data.hours : undefined
             })
             await report.save()
         }
@@ -164,6 +204,88 @@ async function _fetchFamilyMemberReports(user: User, memberId: string) {
     }
 }
 
+async function _checkReportingPermissions(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized")
+
+        await connectToDB()
+        
+        const Member = (await import('../models/user.models')).default
+        const member = await Member.findById(user._id).populate('privileges')
+        
+        const hasPioneerPrivilege = member.privileges.some((p: any) => 
+            p.name === 'Pioneer' || p.name === 'Regular Pioneer' || p.name === 'Auxiliary Pioneer'
+        )
+        
+        // Check editing permissions
+        const currentDate = new Date()
+        const currentDay = currentDate.getDate()
+        const canEditPreviousMonth = currentDay <= 10
+        
+        return {
+            canRecordHours: hasPioneerPrivilege,
+            canEditPreviousMonth,
+            hasPioneerPrivilege
+        }
+    } catch (error) {
+        console.error("Error checking reporting permissions:", error)
+        throw error
+    }
+}
+
+async function _deleteFieldServiceReport(user: User, reportId: string) {
+    try {
+        if (!user) throw new Error("User not authorized")
+
+        await connectToDB()
+        
+        const report = await FieldServiceReport.findById(reportId)
+        if (!report) {
+            throw new Error("Report not found")
+        }
+        
+        // Check if user owns the report
+        if (report.publisher.toString() !== user._id?.toString()) {
+            throw new Error("You can only delete your own reports")
+        }
+        
+        // Check deletion restrictions - same as editing
+        const currentDate = new Date()
+        const currentDay = currentDate.getDate()
+        const reportMonth = new Date(report.month + '-01')
+        const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+        const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+        
+        const isPreviousMonth = reportMonth.getTime() === previousMonth.getTime()
+        const isCurrentMonth = reportMonth.getTime() === currentMonth.getTime()
+        
+        if (!isCurrentMonth && !isPreviousMonth) {
+            throw new Error("Only current and previous month reports can be deleted")
+        }
+        
+        if (isPreviousMonth && currentDay > 10) {
+            throw new Error("Previous month reports can only be deleted until the 10th of the current month")
+        }
+        
+        await FieldServiceReport.findByIdAndDelete(reportId)
+        
+        await logActivity({
+            userId: user._id as string,
+            type: 'report_delete',
+            action: `${user.fullName} deleted field service report for ${report.month}`,
+            details: { entityId: reportId, entityType: 'FieldServiceReport' }
+        })
+        
+        revalidatePath('/dashboard/publisher')
+        return { success: true }
+    } catch (error) {
+        console.error("Error deleting field service report:", error)
+        throw error
+    }
+}
+
 export const fetchPublisherData = await withAuth(_fetchPublisherData)
 export const submitFieldServiceReport = await withAuth(_submitFieldServiceReport)
 export const fetchFamilyMemberReports = await withAuth(_fetchFamilyMemberReports)
+export const checkReportingPermissions = await withAuth(_checkReportingPermissions)
+export const deleteFieldServiceReport = await withAuth(_deleteFieldServiceReport)

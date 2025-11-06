@@ -10,6 +10,8 @@ import { logActivity } from "../utils/activity-logger"
 import Member from "../models/user.models"
 import Role from "../models/role.models"
 import Privilege from "../models/privilege.models"
+import { extractBestGhanaNumber } from "../sms/extra-number"
+import { smsConfig } from "../sms/sms-config"
 
 async function _sendMessage(user: User, data: {
     to: string[]
@@ -77,31 +79,35 @@ async function _createBroadcast(user: User, data: {
         let recipients = []
         
         if (data.targetAudience.type === 'all') {
-            const allMembers = await Member.find({ status: 'active' }).select('_id email')
+            const allMembers = await Member.find({}).select('_id email phone')
             recipients = allMembers.map(m => m._id)
         } else if (data.targetAudience.type === 'role') {
             const roleMembers = await Member.find({
-                status: 'active',
                 role: { $in: data.targetAudience.roles }
-            }).select('_id email')
+            }).select('_id email phone')
             recipients = roleMembers.map(m => m._id)
         } else if (data.targetAudience.type === 'group') {
             const groupMembers = await Member.find({
-                status: 'active',
                 groupId: { $in: data.targetAudience.groups }
-            }).select('_id email')
+            }).select('_id email phone')
             recipients = groupMembers.map(m => m._id)
         } else if (data.targetAudience.type === 'privilege') {
+            // First get privilege IDs by name
+            const privilegeIds = await Privilege.find({
+                name: { $in: data.targetAudience.privileges }
+            }).select('_id')
+            
             const privilegeMembers = await Member.find({
-                status: 'active',
-                'privileges.name': { $in: data.targetAudience.privileges }
-            }).select('_id email')
+                privileges: { $in: privilegeIds.map(p => p._id) }
+            }).select('_id email phone')
             recipients = privilegeMembers.map(m => m._id)
         }
 
+        console.log('Broadcast recipients:', recipients)
+
         const broadcast = new Broadcast({
             ...data,
-            sender: user._id,
+            sender: user?._id,
             recipients,
             status: data.scheduledFor ? 'scheduled' : 'sent'
         })
@@ -152,7 +158,7 @@ async function _createAnnouncement(user: User, data: {
         let recipients = []
         
         if (data.targetAudience.type === 'all') {
-            const allMembers = await Member.find({ status: 'active' }).select('_id')
+            const allMembers = await Member.find({ }).select('_id')
             recipients = allMembers.map(m => m._id.toString())
         } else if (data.targetAudience.roles) {
             const roleMembers = await Member.find({
@@ -334,12 +340,39 @@ async function _deleteMessage(user: User, messageId: string) {
 async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[]) {
     try {
         const broadcast = await Broadcast.findById(broadcastId).populate('sender', 'fullName email')
+        console.log('Delivering broadcast:', broadcastId, 'via', deliveryMethods)
         if (!broadcast) throw new Error('Broadcast not found')
 
-        const recipients = await Member.find({ 
-            _id: { $in: broadcast.recipients },
-            status: 'active' 
-        }).select('_id fullName email')
+        let recipients = []
+        
+        // Get recipients based on target audience
+        if (broadcast.targetAudience?.type === 'all') {
+            recipients = await Member.find({}).select('_id fullName email phone')
+        } else if (broadcast.targetAudience?.type === 'role') {
+            recipients = await Member.find({ 
+                role: { $in: broadcast.targetAudience.roles || [] }
+            }).select('_id fullName email phone')
+        } else if (broadcast.targetAudience?.type === 'group') {
+            recipients = await Member.find({ 
+                groupId: { $in: broadcast.targetAudience.groups || [] }
+            }).select('_id fullName email phone')
+        } else if (broadcast.targetAudience?.type === 'privilege') {
+            // First get privilege IDs by name
+            const privilegeIds = await Privilege.find({
+                name: { $in: broadcast.targetAudience.privileges || [] }
+            }).select('_id')
+            
+            recipients = await Member.find({ 
+                privileges: { $in: privilegeIds.map(p => p._id) }
+            }).select('_id fullName email phone')
+        } else if (broadcast.recipients && broadcast.recipients.length > 0) {
+            recipients = await Member.find({ 
+                _id: { $in: broadcast.recipients }
+            }).select('_id fullName email phone')
+        }
+
+        console.log('Broadcast recipients:', recipients.length, 'members found')
+        console.log('Target audience:', broadcast.targetAudience)
 
         // In-app notifications
         if (deliveryMethods.includes('in-app')) {
@@ -357,31 +390,67 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
 
         // Email notifications
         if (deliveryMethods.includes('email')) {
-            const nodemailer = require('nodemailer')
-            const transporter = nodemailer.createTransport({
-                // Configure with your email settings
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            })
-
+            let emailsSent = 0
+            let emailsFailed = 0
+            
+            const { wrappedSendMail } = await import('../services/email.service')
+            
             for (const recipient of recipients) {
                 if (recipient.email) {
-                    await transporter.sendMail({
-                        from: process.env.EMAIL_USER,
-                        to: recipient.email,
-                        subject: broadcast.title,
-                        html: `
-                            <h2>${broadcast.title}</h2>
-                            <p>${broadcast.content}</p>
-                            <hr>
-                            <p><small>Sent by ${broadcast.sender.fullName}</small></p>
-                        `
-                    })
+                    try {
+                        const success = await wrappedSendMail({
+                            from: `"Suame Congregation" <${process.env.SMTP_USER}>`,
+                            to: recipient.email,
+                            subject: broadcast.title,
+                            html: `
+                                <h2>${broadcast.title}</h2>
+                                <p>${broadcast.content.replace(/\n/g, '<br>')}</p>
+                                <hr>
+                                <p><small>Sent by ${broadcast.sender.fullName}<br>Suame Congregation</small></p>
+                            `
+                        })
+                        
+                        if (success) {
+                            emailsSent++
+                            console.log(`Email sent to ${recipient.fullName} (${recipient.email})`)
+                        } else {
+                            emailsFailed++
+                        }
+                    } catch (error) {
+                        emailsFailed++
+                        console.error(`Failed to send email to ${recipient.email}:`, error)
+                    }
+                } else {
+                    console.log(`No email address for ${recipient.fullName}`)
                 }
             }
+            
+            if (emailsSent === 0 && broadcast.sender.email) {
+                try {
+                    const success = await wrappedSendMail({
+                        from: `"Suame Congregation" <${process.env.SMTP_USER}>`,
+                        to: broadcast.sender.email,
+                        subject: `[TEST COPY] ${broadcast.title}`,
+                        html: `
+                            <div style="background: #fff3cd; padding: 10px; margin-bottom: 20px; border-radius: 4px;">
+                                <strong>⚠️ Test Copy:</strong> This broadcast was sent to you because no congregation members have email addresses configured.
+                            </div>
+                            <h2>${broadcast.title}</h2>
+                            <p>${broadcast.content.replace(/\n/g, '<br>')}</p>
+                            <hr>
+                            <p><small>Original sender: ${broadcast.sender.fullName}<br>Suame Congregation</small></p>
+                        `
+                    })
+                    
+                    if (success) {
+                        console.log(`Test copy sent to sender: ${broadcast.sender.email}`)
+                    }
+                } catch (error) {
+                    console.error('Failed to send test copy to sender:', error)
+                }
+            }
+            
+            console.log(`Email delivery complete: ${emailsSent} sent, ${emailsFailed} failed`)
         }
 
         // Push notifications
@@ -446,8 +515,43 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
 
         // SMS notifications
         if (deliveryMethods.includes('sms')) {
-            console.log('SMS delivery requested for broadcast:', broadcast.title)
-            // TODO: Implement SMS service integration
+            let smsSent = 0
+            let smsFailed = 0
+            
+            
+            // Collect valid phone numbers
+            const validPhones = []
+            for (const recipient of recipients) {
+                if (recipient.phone) {
+                    const normalizedPhone = extractBestGhanaNumber(recipient.phone)
+                    if (normalizedPhone) {
+                        validPhones.push(normalizedPhone)
+                        console.log(`Valid phone for ${recipient.fullName}: ${normalizedPhone}`)
+                    } else {
+                        console.log(`Invalid phone for ${recipient.fullName}: ${recipient.phone}`)
+                    }
+                } else {
+                    console.log(`No phone number for ${recipient.fullName}`)
+                }
+            }
+            
+            if (validPhones.length > 0) {
+                try {
+                    const smsResult = await smsConfig({
+                        text: `${broadcast.title}\n\n${broadcast.content}\n\n- ${broadcast.sender.fullName}\nSuame Congregation`,
+                        sender: 'Suame JW',
+                        destinations: validPhones
+                    })
+                    
+                    smsSent = validPhones.length
+                    console.log(`SMS sent to ${smsSent} recipients`)
+                } catch (error) {
+                    smsFailed = validPhones.length
+                    console.error('SMS delivery failed:', error)
+                }
+            }
+            
+            console.log(`SMS delivery complete: ${smsSent} sent, ${smsFailed} failed`)
         }
 
     } catch (error) {

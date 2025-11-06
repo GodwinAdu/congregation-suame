@@ -28,11 +28,14 @@ import {
     Presentation,
     Mic,
     CalendarDays,
-    Crown
+    Crown,
+    Edit,
+    Trash2
 } from 'lucide-react'
 import { FieldServiceReportModal } from './field-service-report-modal'
 import { format, startOfWeek, endOfWeek, isWithinInterval, subMonths } from 'date-fns'
-import { fetchFamilyMemberReports } from '@/lib/actions/publisher.actions'
+import { fetchFamilyMemberReports, deleteFieldServiceReport } from '@/lib/actions/publisher.actions'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 interface User {
     _id: string
@@ -149,6 +152,9 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
     const [selectedFamilyMember, setSelectedFamilyMember] = useState<string | null>(null)
     const [familyMemberReports, setFamilyMemberReports] = useState<any[]>([])
     const [loadingReports, setLoadingReports] = useState(false)
+    const [editingReport, setEditingReport] = useState<any>(null)
+    const [deletingReport, setDeletingReport] = useState<any>(null)
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false)
     
     const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
     const currentWeekEnd = endOfWeek(new Date(), { weekStartsOn: 1 })
@@ -233,6 +239,40 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
         } finally {
             setLoadingReports(false)
         }
+    }
+
+    const handleEditReport = (report: any) => {
+        setEditingReport(report)
+        setSelectedReportMonth(report.month)
+        setShowReportModal(true)
+    }
+
+    const handleDeleteReport = async () => {
+        if (!deletingReport) return
+        
+        try {
+            await deleteFieldServiceReport(deletingReport._id)
+            setShowDeleteDialog(false)
+            setDeletingReport(null)
+            window.location.reload()
+        } catch (error: any) {
+            console.error('Error deleting report:', error)
+            alert(error.message || 'Failed to delete report')
+        }
+    }
+
+    const canEditOrDelete = (report: any) => {
+        const currentDate = new Date()
+        const currentDay = currentDate.getDate()
+        const reportMonth = new Date(report.month + '-01')
+        const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+        const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+        
+        const isPreviousMonth = reportMonth.getTime() === previousMonth.getTime()
+        const isCurrentMonth = reportMonth.getTime() === currentMonth.getTime()
+        
+        // Can edit current month reports anytime, previous month until 10th
+        return isCurrentMonth || (isPreviousMonth && currentDay <= 10)
     }
 
     return (
@@ -481,14 +521,39 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                                                        {report.auxiliaryPioneer && (
-                                                            <Badge className="bg-yellow-100 text-yellow-800 text-xs">
-                                                                Auxiliary Pioneer
+                                                        <div className="flex items-center gap-2">
+                                                            {report.auxiliaryPioneer && (
+                                                                <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                                                                    Auxiliary Pioneer
+                                                                </Badge>
+                                                            )}
+                                                            <Badge variant={report.check ? "default" : "secondary"} className="text-xs">
+                                                                {report.check ? "Reported" : "Unreported"}
                                                             </Badge>
+                                                        </div>
+                                                        {canEditOrDelete(report) && (
+                                                            <div className="flex items-center gap-1">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => handleEditReport(report)}
+                                                                    className="h-8 w-8 p-0"
+                                                                >
+                                                                    <Edit className="h-3 w-3" />
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                        setDeletingReport(report)
+                                                                        setShowDeleteDialog(true)
+                                                                    }}
+                                                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
                                                         )}
-                                                        <Badge variant={report.check ? "default" : "secondary"} className="text-xs">
-                                                            {report.check ? "Approved" : "Pending"}
-                                                        </Badge>
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -1153,10 +1218,37 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
                 onClose={() => {
                     setShowReportModal(false)
                     setSelectedReportMonth('')
+                    setEditingReport(null)
                 }}
                 currentMonth={selectedReportMonth || data.thisMonth.month}
-                existingReport={data.thisMonth.report}
+                existingReport={editingReport || data.thisMonth.report}
             />
+            
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Field Service Report</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete the report for {deletingReport && getMonthName(deletingReport.month)}? 
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => {
+                            setShowDeleteDialog(false)
+                            setDeletingReport(null)
+                        }}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={handleDeleteReport}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Delete Report
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

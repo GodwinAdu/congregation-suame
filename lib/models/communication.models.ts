@@ -20,9 +20,10 @@ const BroadcastSchema = new Schema({
     content: { type: String, required: true },
     sender: { type: Schema.Types.ObjectId, ref: "Member", required: true },
     targetAudience: {
-        type: { type: String, enum: ['all', 'group', 'role'], required: true },
+        type: { type: String, enum: ['all', 'group', 'role', 'privilege'], required: true },
         groups: [{ type: Schema.Types.ObjectId, ref: "Group" }],
-        roles: [String]
+        roles: [String],
+        privileges: [String]
     },
     scheduledFor: Date,
     status: { type: String, enum: ['draft', 'scheduled', 'sent'], default: 'draft' },

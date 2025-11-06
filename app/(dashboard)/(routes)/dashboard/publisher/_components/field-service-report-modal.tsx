@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, Loader2, BookOpen, Clock, Calendar } from "lucide-react"
 import { toast } from "sonner"
-import { submitFieldServiceReport } from "@/lib/actions/publisher.actions"
+import { submitFieldServiceReport, checkReportingPermissions } from "@/lib/actions/publisher.actions"
 import { format, subMonths } from "date-fns"
 
 interface FieldServiceReportModalProps {
@@ -33,13 +33,49 @@ export function FieldServiceReportModal({
         setSelectedMonth(currentMonth)
     }, [currentMonth])
     const [formData, setFormData] = useState({
-        hours: existingReport?.hours || 0,
-        bibleStudents: existingReport?.bibleStudents || 0,
-        auxiliaryPioneer: existingReport?.auxiliaryPioneer || false,
-        check: existingReport?.check || false,
-        comments: existingReport?.comments || ""
+        hours: 0,
+        bibleStudies: 0,
+        auxiliaryPioneer: false,
+        check: false,
+        comments: ""
     })
+    
+    // Update form data when existingReport changes
+    useEffect(() => {
+        if (existingReport) {
+            setFormData({
+                hours: existingReport.hours || 0,
+                bibleStudies: existingReport.bibleStudents || 0,
+                auxiliaryPioneer: existingReport.auxiliaryPioneer || false,
+                check: existingReport.check || false,
+                comments: existingReport.comments || ""
+            })
+        } else {
+            setFormData({
+                hours: 0,
+                bibleStudies: 0,
+                auxiliaryPioneer: false,
+                check: false,
+                comments: ""
+            })
+        }
+    }, [existingReport])
     const [loading, setLoading] = useState(false)
+    const [permissions, setPermissions] = useState<any>(null)
+    
+    useEffect(() => {
+        const fetchPermissions = async () => {
+            try {
+                const perms = await checkReportingPermissions()
+                setPermissions(perms)
+            } catch (error) {
+                console.error('Error fetching permissions:', error)
+            }
+        }
+        if (open) {
+            fetchPermissions()
+        }
+    }, [open])
     
     const monthOptions = Array.from({ length: 12 }, (_, i) => {
         const date = subMonths(new Date(), 6 - i)
@@ -104,26 +140,28 @@ export function FieldServiceReportModal({
                         </Select>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="hours" className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-blue-600" />
-                                Hours
-                            </Label>
-                            <Input
-                                id="hours"
-                                type="number"
-                                min="0"
-                                step="0.5"
-                                value={formData.hours}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
-                                    hours: parseFloat(e.target.value) || 0 
-                                }))}
-                                placeholder="0"
-                                className="text-center text-lg font-semibold"
-                            />
-                        </div>
+                    <div className={`grid ${permissions?.canRecordHours || formData.auxiliaryPioneer ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                        {(permissions?.canRecordHours || formData.auxiliaryPioneer) && (
+                            <div className="space-y-2">
+                                <Label htmlFor="hours" className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-blue-600" />
+                                    Hours
+                                </Label>
+                                <Input
+                                    id="hours"
+                                    type="number"
+                                    min="0"
+                                    step="0.5"
+                                    value={formData.hours}
+                                    onChange={(e) => setFormData(prev => ({ 
+                                        ...prev, 
+                                        hours: parseFloat(e.target.value) || 0 
+                                    }))}
+                                    placeholder="0"
+                                    className="text-center text-lg font-semibold"
+                                />
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="bibleStudents" className="flex items-center gap-2">
@@ -131,13 +169,13 @@ export function FieldServiceReportModal({
                                 Bible Studies
                             </Label>
                             <Input
-                                id="bibleStudents"
+                                id="bibleStudies"
                                 type="number"
                                 min="0"
-                                value={formData.bibleStudents}
+                                value={formData.bibleStudies}
                                 onChange={(e) => setFormData(prev => ({ 
                                     ...prev, 
-                                    bibleStudents: parseInt(e.target.value) || 0 
+                                    bibleStudies: parseInt(e.target.value) || 0 
                                 }))}
                                 placeholder="0"
                                 className="text-center text-lg font-semibold"
@@ -190,16 +228,44 @@ export function FieldServiceReportModal({
                         />
                     </div>
 
+                    {(() => {
+                        const currentDate = new Date()
+                        const currentDay = currentDate.getDate()
+                        const reportMonth = new Date(selectedMonth + '-01')
+                        const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+                        const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+                        
+                        const isPreviousMonth = reportMonth.getTime() === previousMonth.getTime()
+                        const isCurrentMonth = reportMonth.getTime() === currentMonth.getTime()
+                        const canEdit = isCurrentMonth || (isPreviousMonth && currentDay <= 10)
+                        
+                        if (!canEdit) {
+                            return (
+                                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                                    <p className="text-sm text-yellow-800">
+                                        ⚠️ {isPreviousMonth ? 
+                                            'Previous month reports can only be edited until the 10th of the current month.' :
+                                            'Only current and previous month reports can be edited.'
+                                        }
+                                    </p>
+                                </div>
+                            )
+                        }
+                        return null
+                    })()}
+
                     <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-semibold text-blue-800 mb-2">Report Summary</h4>
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <span className="text-muted-foreground">Hours:</span>
-                                <span className="font-semibold ml-2">{formData.hours}</span>
-                            </div>
+                            {(permissions?.canRecordHours || formData.auxiliaryPioneer) && (
+                                <div>
+                                    <span className="text-muted-foreground">Hours:</span>
+                                    <span className="font-semibold ml-2">{formData.hours}</span>
+                                </div>
+                            )}
                             <div>
                                 <span className="text-muted-foreground">Studies:</span>
-                                <span className="font-semibold ml-2">{formData.bibleStudents}</span>
+                                <span className="font-semibold ml-2">{formData.bibleStudies}</span>
                             </div>
                         </div>
                         {formData.auxiliaryPioneer && (
@@ -215,7 +281,22 @@ export function FieldServiceReportModal({
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+                        <Button 
+                            type="submit" 
+                            disabled={loading || (() => {
+                                const currentDate = new Date()
+                                const currentDay = currentDate.getDate()
+                                const reportMonth = new Date(selectedMonth + '-01')
+                                const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+                                const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+                                
+                                const isPreviousMonth = reportMonth.getTime() === previousMonth.getTime()
+                                const isCurrentMonth = reportMonth.getTime() === currentMonth.getTime()
+                                
+                                return !isCurrentMonth && !(isPreviousMonth && currentDay <= 10)
+                            })()} 
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
                             {loading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
