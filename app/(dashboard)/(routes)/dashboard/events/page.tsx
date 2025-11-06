@@ -1,8 +1,10 @@
 import React from 'react'
 import { EventManager } from './_components/event-manager'
 import { fetchEvents } from '@/lib/actions/event.actions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+    await requirePermission('/dashboard/events')
     const events = await fetchEvents()
 
     return (

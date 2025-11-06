@@ -28,9 +28,10 @@ export function RecordContributionModal({ open, onClose, members, onSuccess }: R
     const [formData, setFormData] = useState({
         memberId: "",
         amount: "",
-        type: "worldwide-work" as 'worldwide-work' | 'local-congregation' | 'kingdom-hall' | 'circuit-assembly' | 'other',
+        type: "worldwide-work",
         method: "cash" as 'cash' | 'check' | 'online' | 'bank-transfer',
         anonymous: false,
+        meetingDate: new Date().toISOString().split('T')[0],
         notes: ""
     })
 
@@ -50,6 +51,7 @@ export function RecordContributionModal({ open, onClose, members, onSuccess }: R
                 type: formData.type,
                 method: formData.method,
                 anonymous: formData.anonymous,
+                meetingDate: new Date(formData.meetingDate),
                 notes: formData.notes || undefined
             })
             
@@ -63,6 +65,7 @@ export function RecordContributionModal({ open, onClose, members, onSuccess }: R
                 type: "worldwide-work",
                 method: "cash",
                 anonymous: false,
+                meetingDate: new Date().toISOString().split('T')[0],
                 notes: ""
             })
         } catch (error: any) {
@@ -105,9 +108,11 @@ export function RecordContributionModal({ open, onClose, members, onSuccess }: R
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="worldwide-work">Worldwide Work</SelectItem>
-                                <SelectItem value="local-congregation">Local Congregation</SelectItem>
-                                <SelectItem value="kingdom-hall">Kingdom Hall</SelectItem>
-                                <SelectItem value="circuit-assembly">Circuit Assembly</SelectItem>
+                                <SelectItem value="local-congregation-expenses">Local Congregation Expenses</SelectItem>
+                                <SelectItem value="kingdom-hall-construction">Kingdom Hall Construction</SelectItem>
+                                <SelectItem value="circuit-assembly-expenses">Circuit Assembly Expenses</SelectItem>
+                                <SelectItem value="co-visit-expenses">CO Visit Expenses</SelectItem>
+                                <SelectItem value="disaster-relief">Disaster Relief</SelectItem>
                                 <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                         </Select>
@@ -162,6 +167,17 @@ export function RecordContributionModal({ open, onClose, members, onSuccess }: R
                             </Select>
                         </div>
                     )}
+
+                    <div className="space-y-2">
+                        <Label htmlFor="meetingDate">Meeting Date *</Label>
+                        <Input
+                            id="meetingDate"
+                            type="date"
+                            value={formData.meetingDate}
+                            onChange={(e) => setFormData(prev => ({ ...prev, meetingDate: e.target.value }))}
+                            required
+                        />
+                    </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="notes">Notes (Optional)</Label>

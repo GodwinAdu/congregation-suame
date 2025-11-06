@@ -1,8 +1,10 @@
 import React from 'react'
 import { CalendarView } from './_components/calendar-view'
 import { getCalendarEvents } from '@/lib/actions/event.actions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+    await requirePermission('/dashboard/calendar')
     const currentDate = new Date()
     const events = await getCalendarEvents(currentDate.getMonth() + 1, currentDate.getFullYear())
 

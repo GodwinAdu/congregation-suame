@@ -1,8 +1,10 @@
 import React from 'react'
 import { NotificationCenter } from './_components/notification-center'
 import { fetchNotifications, fetchNotificationPreferences, getNotificationStats } from '@/lib/actions/notification.actions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+    await requirePermission('/dashboard/notifications')
     const [notifications, preferences, stats] = await Promise.all([
         fetchNotifications(),
         fetchNotificationPreferences(),

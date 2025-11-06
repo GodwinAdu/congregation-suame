@@ -1,7 +1,9 @@
 import React from 'react'
 import { AIAssignmentSuggestions } from './_components/ai-assignment-suggestions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
-const page = () => {
+const page = async () => {
+    await requirePermission('/dashboard/ai/assignments')
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background p-4">
             <div className="max-w-7xl mx-auto space-y-6">

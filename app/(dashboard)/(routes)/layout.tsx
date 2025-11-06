@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sidebar";
 import { currentUser } from "@/lib/helpers/session";
 import { RoleProvider } from "@/lib/context/role-context";
+import { redirect } from "next/navigation";
 
 
 export default async function RootLayout({
@@ -15,9 +16,11 @@ export default async function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const [user] = await Promise.all([
-        currentUser() ?? null,
-    ]);
+    const user = await currentUser();
+    
+    if (!user) {
+        redirect('/sign-in');
+    }
 
     return (
         <RoleProvider>

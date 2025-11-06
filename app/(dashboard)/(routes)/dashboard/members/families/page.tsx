@@ -1,5 +1,6 @@
 import React from 'react'
 import FamilyGrid from './_components/FamilyGrid'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const FamiliesPage = () => {
     return (

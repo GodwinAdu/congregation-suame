@@ -1,6 +1,7 @@
 import React from 'react'
 import { MeetingAttendanceTracker } from '../_components/meeting-attendane-tracker'
 import { fetchAttendanceByServiceYear } from '@/lib/actions/attendance.actions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 interface PageProps {
     searchParams: Promise<{ year?: string }>

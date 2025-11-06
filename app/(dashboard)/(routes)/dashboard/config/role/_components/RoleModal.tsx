@@ -33,30 +33,80 @@ import React from "react"
 const formSchema = z.object({
     name: z.string().min(1, "Role name is required").max(50, "Role name too long"),
     permissions: z.object({
+        // Core Dashboard
         dashboard: z.boolean().default(false),
         publisherDashboard: z.boolean().default(true),
+        profile: z.boolean().default(true),
+        settings: z.boolean().default(true),
+        resetPassword: z.boolean().default(true),
+        
+        // Configuration
         config: z.boolean().default(false),
+        configDuties: z.boolean().default(false),
+        configGroup: z.boolean().default(false),
+        configPrivilege: z.boolean().default(false),
+        configRole: z.boolean().default(false),
+        updatePermissions: z.boolean().default(false),
+        
+        // Member Management
+        manageAllMembers: z.boolean().default(false),
         manageGroupMembers: z.boolean().default(false),
+        memberAnalytics: z.boolean().default(false),
+        memberFamilies: z.boolean().default(false),
+        
+        // Reports
         manageAllReport: z.boolean().default(false),
         manageGroupReport: z.boolean().default(false),
-        manageAllMembers: z.boolean().default(false),
-        manageUser: z.boolean().default(false),
-        manageAttendance: z.boolean().default(false),
-        transport: z.boolean().default(false),
-        history: z.boolean().default(false),
-        trash: z.boolean().default(false),
         monthlyReport: z.boolean().default(false),
-        assignments: z.boolean().default(false),
-        cleaning: z.boolean().default(false),
-        territory: z.boolean().default(false),
-        financial: z.boolean().default(false),
-        communication: z.boolean().default(false),
-        events: z.boolean().default(false),
-        documents: z.boolean().default(false),
-        aiAssistant: z.boolean().default(false),
-        notifications: z.boolean().default(false),
+        monthlyReportHelpNeeded: z.boolean().default(false),
         overseerReports: z.boolean().default(false),
         overseerAnalytics: z.boolean().default(false),
+        
+        // Attendance
+        manageAttendance: z.boolean().default(false),
+        attendanceTracker: z.boolean().default(false),
+        
+        // Assignments & Meetings
+        assignments: z.boolean().default(false),
+        calendar: z.boolean().default(false),
+        
+        // Field Service
+        fieldService: z.boolean().default(false),
+        fieldServiceMeetingSchedule: z.boolean().default(false),
+        fieldServicePublicWitnessing: z.boolean().default(false),
+        
+        // Financial
+        financial: z.boolean().default(false),
+        financialAnalytics: z.boolean().default(false),
+        financialBudget: z.boolean().default(false),
+        financialContributions: z.boolean().default(false),
+        financialExpenses: z.boolean().default(false),
+        
+        // Communication
+        communication: z.boolean().default(false),
+        communicationAnnouncements: z.boolean().default(false),
+        communicationBroadcasts: z.boolean().default(false),
+        communicationMessages: z.boolean().default(false),
+        
+        // Other Features
+        territory: z.boolean().default(false),
+        cleaning: z.boolean().default(false),
+        transport: z.boolean().default(false),
+        events: z.boolean().default(false),
+        documents: z.boolean().default(false),
+        documentForms: z.boolean().default(false),
+        notifications: z.boolean().default(false),
+        
+        // AI Features
+        aiAssistant: z.boolean().default(false),
+        aiAnalytics: z.boolean().default(false),
+        aiAssignments: z.boolean().default(false),
+        aiInsights: z.boolean().default(false),
+        
+        // System
+        history: z.boolean().default(false),
+        trash: z.boolean().default(false),
+        manageUser: z.boolean().default(false)
     })
 })
 
@@ -70,80 +120,119 @@ interface RoleModalProps {
 
 const permissionGroups = [
     {
-        title: "Dashboard & Overview",
+        title: "Core Access",
         icon: Settings,
         permissions: [
-            { key: "dashboard", label: "Dashboard Access", description: "View main dashboard and statistics" },
-            { key: "publisherDashboard", label: "Publisher Dashboard", description: "Access personal publisher dashboard and reports" }
+            { key: "dashboard", label: "Main Dashboard", description: "View main dashboard and statistics" },
+            { key: "publisherDashboard", label: "Publisher Dashboard", description: "Access personal publisher dashboard" },
+            { key: "profile", label: "Profile Access", description: "View and edit personal profile" },
+            { key: "settings", label: "Settings", description: "Access notification and app settings" },
+            { key: "resetPassword", label: "Reset Password", description: "Change account password" }
+        ]
+    },
+    {
+        title: "Configuration",
+        icon: Shield,
+        permissions: [
+            { key: "config", label: "Configuration Access", description: "Access configuration section" },
+            { key: "configDuties", label: "Manage Duties", description: "Configure congregation duties" },
+            { key: "configGroup", label: "Manage Groups", description: "Configure field service groups" },
+            { key: "configPrivilege", label: "Manage Privileges", description: "Configure member privileges" },
+            { key: "configRole", label: "Manage Roles", description: "Configure user roles and permissions" },
+            { key: "updatePermissions", label: "Update Permissions", description: "Modify system permissions" }
         ]
     },
     {
         title: "Member Management",
         icon: Users,
         permissions: [
-            { key: "manageAllMembers", label: "Manage All Members", description: "Full access to all member records" },
-            { key: "manageGroupMembers", label: "Manage Group Members", description: "Manage members within assigned groups" },
-            { key: "manageUser", label: "User Management", description: "Create, edit, and delete user accounts" },
-            {key:"config", label:"Configuration", description:"Manage Role, Groups and Privileges in the congregation"}
+            { key: "manageAllMembers", label: "All Members", description: "Full access to all member records" },
+            { key: "manageGroupMembers", label: "Group Members", description: "Manage members within assigned groups" },
+            { key: "memberAnalytics", label: "Member Analytics", description: "View member statistics and insights" },
+            { key: "memberFamilies", label: "Family Management", description: "Manage family relationships" },
+            { key: "manageUser", label: "User Accounts", description: "Create, edit, and delete user accounts" }
         ]
     },
     {
-        title: "Reports & Documentation",
+        title: "Reports & Analytics",
         icon: FileText,
         permissions: [
-            { key: "manageAllReport", label: "Manage All Reports", description: "Access and manage all field service reports" },
-            { key: "manageGroupReport", label: "Manage Group Reports", description: "Manage reports within assigned groups" },
-            { key: "monthlyReport", label: "Monthly Reports", description: "View monthly congregation statistics and reports" },
-            { key: "overseerReports", label: "Overseer Reports", description: "Create and manage field service overseer reports" },
-            { key: "overseerAnalytics", label: "Overseer Analytics", description: "View analytics and insights for overseer reports" }
+            { key: "manageAllReport", label: "All Reports", description: "Access all field service reports" },
+            { key: "manageGroupReport", label: "Group Reports", description: "Manage reports within assigned groups" },
+            { key: "monthlyReport", label: "Monthly Reports", description: "View monthly congregation statistics" },
+            { key: "monthlyReportHelpNeeded", label: "Help Needed Reports", description: "Manage help needed tracking" },
+            { key: "overseerReports", label: "Overseer Reports", description: "Create and manage overseer reports" },
+            { key: "overseerAnalytics", label: "Overseer Analytics", description: "View overseer analytics and insights" }
         ]
     },
     {
-        title: "Activities & Events",
+        title: "Attendance & Meetings",
         icon: Calendar,
         permissions: [
-            { key: "manageAttendance", label: "Manage Attendance", description: "Track and manage meeting attendance" },
-            { key: "transport", label: "Transport Management", description: "Manage transportation and payments" },
-            { key: "assignments", label: "Meeting Assignments", description: "Manage meeting assignments and schedules" },
-            { key: "cleaning", label: "Kingdom Hall Management", description: "Manage cleaning tasks and inventory" }
+            { key: "manageAttendance", label: "Attendance Management", description: "Track and manage meeting attendance" },
+            { key: "attendanceTracker", label: "Attendance Tracker", description: "Access attendance tracking tools" },
+            { key: "assignments", label: "Meeting Assignments", description: "Manage meeting assignments" },
+            { key: "calendar", label: "Calendar Access", description: "View and manage calendar events" }
         ]
     },
     {
-        title: "Territory & Field Service",
+        title: "Field Service",
         icon: MapPin,
         permissions: [
-            { key: "territory", label: "Territory Management", description: "Manage territories, assignments, and return visits" }
+            { key: "fieldService", label: "Field Service Access", description: "Access field service features" },
+            { key: "fieldServiceMeetingSchedule", label: "Meeting Schedule", description: "Manage field service meeting schedules" },
+            { key: "fieldServicePublicWitnessing", label: "Public Witnessing", description: "Manage public witnessing activities" },
+            { key: "territory", label: "Territory Management", description: "Manage territories and assignments" }
         ]
     },
     {
         title: "Financial Management",
         icon: DollarSign,
         permissions: [
-            { key: "financial", label: "Financial Management", description: "Manage contributions, expenses, and budgets" }
+            { key: "financial", label: "Financial Access", description: "Access financial management" },
+            { key: "financialAnalytics", label: "Financial Analytics", description: "View financial reports and analytics" },
+            { key: "financialBudget", label: "Budget Management", description: "Manage budgets and planning" },
+            { key: "financialContributions", label: "Contributions", description: "Manage contribution records" },
+            { key: "financialExpenses", label: "Expense Management", description: "Manage expenses and approvals" }
         ]
     },
     {
-        title: "Communication & Events",
+        title: "Communication",
         icon: MessageSquare,
         permissions: [
-            { key: "communication", label: "Communication Hub", description: "Send messages, announcements, and broadcasts" },
-            { key: "events", label: "Events & Calendar", description: "Manage events and calendar scheduling" },
-            { key: "notifications", label: "Notifications", description: "Manage notification preferences and delivery" }
+            { key: "communication", label: "Communication Hub", description: "Access communication features" },
+            { key: "communicationAnnouncements", label: "Announcements", description: "Create and manage announcements" },
+            { key: "communicationBroadcasts", label: "Broadcasts", description: "Send broadcasts to congregation" },
+            { key: "communicationMessages", label: "Messages", description: "Send and receive messages" }
         ]
     },
     {
-        title: "Documents & AI",
+        title: "Other Features",
         icon: FolderOpen,
         permissions: [
-            { key: "documents", label: "Document Management", description: "Manage documents, forms, and file sharing" },
-            { key: "aiAssistant", label: "AI Assistant", description: "Access AI-powered insights and suggestions" }
+            { key: "cleaning", label: "Kingdom Hall Management", description: "Manage cleaning and maintenance" },
+            { key: "transport", label: "Transport Management", description: "Manage transportation and fees" },
+            { key: "events", label: "Events Management", description: "Manage events and activities" },
+            { key: "documents", label: "Document Management", description: "Manage documents and files" },
+            { key: "documentForms", label: "Forms Management", description: "Manage forms and templates" },
+            { key: "notifications", label: "Notifications", description: "Manage notification system" }
         ]
     },
     {
-        title: "System & Maintenance",
+        title: "AI Features",
+        icon: Bot,
+        permissions: [
+            { key: "aiAssistant", label: "AI Assistant", description: "Access AI assistant features" },
+            { key: "aiAnalytics", label: "AI Analytics", description: "View AI-powered analytics" },
+            { key: "aiAssignments", label: "AI Assignments", description: "Use AI for assignment suggestions" },
+            { key: "aiInsights", label: "AI Insights", description: "Access AI insights and recommendations" }
+        ]
+    },
+    {
+        title: "System Administration",
         icon: Shield,
         permissions: [
-            { key: "history", label: "System History", description: "View system logs and activity history" },
+            { key: "history", label: "System History", description: "View system logs and activity" },
             { key: "trash", label: "Trash Management", description: "Access and restore deleted items" }
         ]
     }
@@ -180,30 +269,80 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
             form.reset({
                 name: "",
                 permissions: {
+                    // Core Dashboard
                     dashboard: false,
                     publisherDashboard: true,
+                    profile: true,
+                    settings: true,
+                    resetPassword: true,
+                    
+                    // Configuration
                     config: false,
+                    configDuties: false,
+                    configGroup: false,
+                    configPrivilege: false,
+                    configRole: false,
+                    updatePermissions: false,
+                    
+                    // Member Management
+                    manageAllMembers: false,
                     manageGroupMembers: false,
+                    memberAnalytics: false,
+                    memberFamilies: false,
+                    
+                    // Reports
                     manageAllReport: false,
                     manageGroupReport: false,
-                    manageAllMembers: false,
-                    manageUser: false,
-                    manageAttendance: false,
-                    transport: false,
-                    history: false,
-                    trash: false,
                     monthlyReport: false,
-                    assignments: false,
-                    cleaning: false,
-                    territory: false,
-                    financial: false,
-                    communication: false,
-                    events: false,
-                    documents: false,
-                    aiAssistant: false,
-                    notifications: false,
+                    monthlyReportHelpNeeded: false,
                     overseerReports: false,
                     overseerAnalytics: false,
+                    
+                    // Attendance
+                    manageAttendance: false,
+                    attendanceTracker: false,
+                    
+                    // Assignments & Meetings
+                    assignments: false,
+                    calendar: false,
+                    
+                    // Field Service
+                    fieldService: false,
+                    fieldServiceMeetingSchedule: false,
+                    fieldServicePublicWitnessing: false,
+                    
+                    // Financial
+                    financial: false,
+                    financialAnalytics: false,
+                    financialBudget: false,
+                    financialContributions: false,
+                    financialExpenses: false,
+                    
+                    // Communication
+                    communication: false,
+                    communicationAnnouncements: false,
+                    communicationBroadcasts: false,
+                    communicationMessages: false,
+                    
+                    // Other Features
+                    territory: false,
+                    cleaning: false,
+                    transport: false,
+                    events: false,
+                    documents: false,
+                    documentForms: false,
+                    notifications: false,
+                    
+                    // AI Features
+                    aiAssistant: false,
+                    aiAnalytics: false,
+                    aiAssignments: false,
+                    aiInsights: false,
+                    
+                    // System
+                    history: false,
+                    trash: false,
+                    manageUser: false
                 }
             })
         }

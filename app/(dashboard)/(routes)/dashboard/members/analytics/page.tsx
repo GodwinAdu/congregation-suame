@@ -1,7 +1,9 @@
 import { fetchMemberAnalytics } from '@/lib/actions/analytics.actions'
 import { MemberAnalytics } from './_components/MemberAnalytics'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const MemberAnalyticsPage = async () => {
+    await requirePermission('/dashboard/members/analytics')
     const analytics = await fetchMemberAnalytics()
 
     return (

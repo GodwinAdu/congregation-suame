@@ -1,6 +1,7 @@
 import Heading from '@/components/commons/Header'
 import { Separator } from '@/components/ui/separator'
 import GroupGrid from './_components/GroupGrid'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 
 const page = () => {

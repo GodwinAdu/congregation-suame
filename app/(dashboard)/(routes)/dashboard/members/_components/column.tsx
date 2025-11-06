@@ -151,6 +151,39 @@ export const columns: ColumnDef<any>[] = [
         }
     },
     {
+        accessorKey: "location",
+        header: "Location",
+        cell: ({ row }) => {
+            const location = row.original.location;
+            if (!location?.latitude || !location?.longitude) {
+                return (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span className="text-xs">No location</span>
+                    </div>
+                );
+            }
+            return (
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-green-600" />
+                        <Badge variant={location.isPublic ? "default" : "secondary"} className="text-xs">
+                            {location.isPublic ? "Public" : "Private"}
+                        </Badge>
+                    </div>
+                    {location.address && (
+                        <p className="text-xs text-muted-foreground truncate max-w-32">
+                            {location.address}
+                        </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                        Updated: {location.lastUpdated ? new Date(location.lastUpdated).toLocaleDateString() : 'Never'}
+                    </p>
+                </div>
+            );
+        }
+    },
+    {
         id: "actions",
         header: "Actions",
         cell: ({ row }) => {

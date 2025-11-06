@@ -94,17 +94,30 @@ export function NavMain({ role, user }: NavMainProps) {
           url: `/dashboard/config/privilege`,
         },
         {
-          title:"Roles",
-          url:"/dashboard/config/role"
+          title: "Roles",
+          url: `/dashboard/config/role`
+        },
+        {
+          title: "Duties",
+          url: `/dashboard/config/duties`,
         }
       ],
     },
     {
       title: "Attendance",
-      url: `/dashboard/attendance`,
+      url: "#",
       icon: UserCheck,
-      isActive: false,
-      roleField: "manageAttendance"
+      roleField: "manageAttendance",
+      items: [
+        {
+          title: "Overview",
+          url: `/dashboard/attendance`,
+        },
+        {
+          title: "Attendance Tracker",
+          url: `/dashboard/attendance/attendance-tracker`,
+        }
+      ],
     },
     {
       title: "Members",
@@ -123,6 +136,10 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Analytics",
           url: `/dashboard/members/analytics`,
+        },
+        {
+          title: "Location Map",
+          url: `/dashboard/members/map`,
         }
       ],
     },
@@ -150,6 +167,11 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "Monthly Report",
           url: `/dashboard/monthly-report`,
           roleField: "monthlyReport"
+        },
+        {
+          title: "Help Needed",
+          url: `/dashboard/monthly-report/help-needed`,
+          roleField: "monthlyReportHelpNeeded"
         },
         {
           title: "Public Witnessing",
@@ -219,6 +241,10 @@ export function NavMain({ role, user }: NavMainProps) {
       roleField: "financial",
       items: [
         {
+          title: "Overview",
+          url: `/dashboard/financial`,
+        },
+        {
           title: "Contributions",
           url: `/dashboard/financial/contributions`,
         },
@@ -229,6 +255,10 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Budget",
           url: `/dashboard/financial/budget`,
+        },
+        {
+          title: "Analytics",
+          url: `/dashboard/financial/analytics`,
         }
       ],
     },
@@ -238,6 +268,10 @@ export function NavMain({ role, user }: NavMainProps) {
       icon: MessageSquare,
       roleField: "communication",
       items: [
+        {
+          title: "Overview",
+          url: `/dashboard/communication`,
+        },
         {
           title: "Messages",
           url: `/dashboard/communication/messages`,
@@ -317,6 +351,31 @@ export function NavMain({ role, user }: NavMainProps) {
       icon: History,
       isActive: false,
       roleField: "history"
+    },
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings,
+      roleField: "settings",
+      items: [
+        {
+          title: "Profile",
+          url: `/dashboard/profile`,
+        },
+        {
+          title: "Notifications",
+          url: `/dashboard/settings/notifications`,
+        },
+        {
+          title: "Reset Password",
+          url: `/dashboard/reset-password`,
+        },
+        {
+          title: "Update Permissions",
+          url: `/dashboard/update-permissions`,
+          roleField: "updatePermissions"
+        }
+      ],
     },
     {
       title: "Recycle Bin",

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { currentUserRole } from '@/lib/helpers/get-user-role'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface RoleContextType {
   role: IRole | undefined
@@ -22,6 +23,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       setRole(data)
     } catch (error) {
       console.error('Error fetching role:', error)
+      setRole(undefined)
     } finally {
       setIsLoading(false)
     }

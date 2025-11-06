@@ -29,8 +29,10 @@ import {
 import Link from 'next/link'
 import { fetchMessages, fetchAnnouncements, fetchBroadcasts } from '@/lib/actions/communication.actions'
 import { format, isToday, isYesterday, subDays } from 'date-fns'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+    await requirePermission('/dashboard/communication')
     const [messages, announcements, broadcasts] = await Promise.all([
         fetchMessages(),
         fetchAnnouncements(),

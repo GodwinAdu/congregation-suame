@@ -9,16 +9,80 @@ import { logActivity } from "../utils/activity-logger";
 interface RoleData {
     name: string;
     permissions: {
+        // Core Dashboard
         dashboard: boolean;
+        publisherDashboard: boolean;
+        profile: boolean;
+        settings: boolean;
+        resetPassword: boolean;
+        
+        // Configuration
+        config: boolean;
+        configDuties: boolean;
+        configGroup: boolean;
+        configPrivilege: boolean;
+        configRole: boolean;
+        updatePermissions: boolean;
+        
+        // Member Management
+        manageAllMembers: boolean;
         manageGroupMembers: boolean;
+        memberAnalytics: boolean;
+        memberFamilies: boolean;
+        
+        // Reports
         manageAllReport: boolean;
         manageGroupReport: boolean;
-        manageAllMembers: boolean;
-        manageUser: boolean;
+        monthlyReport: boolean;
+        monthlyReportHelpNeeded: boolean;
+        overseerReports: boolean;
+        overseerAnalytics: boolean;
+        
+        // Attendance
         manageAttendance: boolean;
+        attendanceTracker: boolean;
+        
+        // Assignments & Meetings
+        assignments: boolean;
+        calendar: boolean;
+        
+        // Field Service
+        fieldService: boolean;
+        fieldServiceMeetingSchedule: boolean;
+        fieldServicePublicWitnessing: boolean;
+        
+        // Financial
+        financial: boolean;
+        financialAnalytics: boolean;
+        financialBudget: boolean;
+        financialContributions: boolean;
+        financialExpenses: boolean;
+        
+        // Communication
+        communication: boolean;
+        communicationAnnouncements: boolean;
+        communicationBroadcasts: boolean;
+        communicationMessages: boolean;
+        
+        // Other Features
+        territory: boolean;
+        cleaning: boolean;
         transport: boolean;
+        events: boolean;
+        documents: boolean;
+        documentForms: boolean;
+        notifications: boolean;
+        
+        // AI Features
+        aiAssistant: boolean;
+        aiAnalytics: boolean;
+        aiAssignments: boolean;
+        aiInsights: boolean;
+        
+        // System
         history: boolean;
         trash: boolean;
+        manageUser: boolean;
     };
 }
 

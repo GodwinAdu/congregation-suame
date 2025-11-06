@@ -1,7 +1,9 @@
 import { Suspense } from 'react'
 import { HelpNeededView } from './_components/help-needed-view'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
-export default function HelpNeededPage() {
+export default async function HelpNeededPage() {
+  await requirePermission('/dashboard/monthly-report/help-needed')
   return (
     <div className="space-y-6">
       <div>

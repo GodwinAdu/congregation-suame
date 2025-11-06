@@ -80,6 +80,13 @@ const UserSchema = new Schema({
         notes: String,
         isActive: { type: Boolean, default: true }
     }],
+    location: {
+        latitude: { type: Number, default: null },
+        longitude: { type: Number, default: null },
+        address: { type: String, default: null },
+        lastUpdated: { type: Date, default: null },
+        isPublic: { type: Boolean, default: false }
+    },
     createdBy: { type: Schema.Types.ObjectId, ref: "Member" },
     modifiedBy: { type: Schema.Types.ObjectId, ref: "Member" }
 }, { timestamps: true })

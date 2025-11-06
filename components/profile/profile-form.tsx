@@ -100,37 +100,38 @@ export function ProfileForm({ user }: ProfileFormProps) {
         <div className="space-y-6">
             {/* Profile Header */}
             <Card>
-                <CardContent className="pt-6">
-                    <div className="flex items-center space-x-4">
-                        <Avatar className="h-20 w-20">
+                <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                        <Avatar className="h-16 w-16 sm:h-20 sm:w-20 mx-auto sm:mx-0">
                             <AvatarImage src="" />
-                            <AvatarFallback className="text-lg">
+                            <AvatarFallback className="text-base sm:text-lg">
                                 {getInitials(user.fullName)}
                             </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                            <h2 className="text-2xl font-bold">{user.fullName}</h2>
-                            <p className="text-muted-foreground">{user.email}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                                <Badge variant="secondary">{user.role}</Badge>
+                        <div className="flex-1 text-center sm:text-left">
+                            <h2 className="text-xl sm:text-2xl font-bold">{user.fullName}</h2>
+                            <p className="text-sm sm:text-base text-muted-foreground">{user.email}</p>
+                            <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
+                                <Badge variant="secondary" className="text-xs">{user.role}</Badge>
                                 {user.groupId && (
-                                    <Badge variant="outline">{user.groupId.name}</Badge>
+                                    <Badge variant="outline" className="text-xs">{user.groupId.name}</Badge>
                                 )}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex justify-center sm:justify-end w-full sm:w-auto">
                             {!isEditing ? (
-                                <Button onClick={() => setIsEditing(true)} className="gap-2">
+                                <Button onClick={() => setIsEditing(true)} className="gap-2 w-full sm:w-auto text-sm">
                                     <Edit className="h-4 w-4" />
-                                    Edit Profile
+                                    <span className="hidden sm:inline">Edit Profile</span>
+                                    <span className="sm:hidden">Edit</span>
                                 </Button>
                             ) : (
-                                <div className="flex gap-2">
-                                    <Button onClick={handleSave} disabled={loading} className="gap-2">
+                                <div className="flex gap-2 w-full sm:w-auto">
+                                    <Button onClick={handleSave} disabled={loading} className="gap-2 flex-1 sm:flex-none text-sm">
                                         <Save className="h-4 w-4" />
                                         {loading ? "Saving..." : "Save"}
                                     </Button>
-                                    <Button variant="outline" onClick={handleCancel} className="gap-2">
+                                    <Button variant="outline" onClick={handleCancel} className="gap-2 flex-1 sm:flex-none text-sm">
                                         <X className="h-4 w-4" />
                                         Cancel
                                     </Button>
@@ -141,7 +142,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Personal Information */}
                 <Card>
                     <CardHeader>

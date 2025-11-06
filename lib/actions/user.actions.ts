@@ -28,6 +28,12 @@ interface MemberProps {
         relationship: string;
     }>;
     isFamilyHead?: boolean;
+    location?: {
+        latitude?: number;
+        longitude?: number;
+        address?: string;
+        isPublic?: boolean;
+    };
 }
 
 async function _createMember(user: User, values: MemberProps) {
@@ -58,6 +64,10 @@ async function _createMember(user: User, values: MemberProps) {
             privileges: values.privileges,
             familyRelationships: values.familyRelationships || [],
             isFamilyHead: values.isFamilyHead || false,
+            location: values.location ? {
+                ...values.location,
+                lastUpdated: values.location.latitude && values.location.longitude ? new Date() : null
+            } : undefined,
             createdBy: user._id
         });
 

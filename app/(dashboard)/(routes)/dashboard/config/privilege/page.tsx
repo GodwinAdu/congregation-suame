@@ -4,8 +4,10 @@ import { DataTable } from '@/components/table/data-table'
 import { columns } from './_components/column'
 import { PrivilegeModal } from './_components/PrivilegeModal'
 import { fetchAllPrivileges } from '@/lib/actions/privilege.actions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+    await requirePermission('/dashboard/config/privilege')
     const privileges = await fetchAllPrivileges()
     return (
         <>

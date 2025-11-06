@@ -45,10 +45,7 @@ export function ContributionManager({ contributions: initialContributions, summa
     const [showRecordModal, setShowRecordModal] = useState(false)
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(amount)
+        return `₵${amount.toLocaleString()}`
     }
 
     const getTypeColor = (type: string) => {
@@ -71,6 +68,8 @@ export function ContributionManager({ contributions: initialContributions, summa
         }
         return variants[method] || 'default'
     }
+
+
 
     return (
         <div className="space-y-6">

@@ -7,8 +7,10 @@ import { fetchAllGroups } from '@/lib/actions/group.actions'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { columns } from './_components/column'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+    await requirePermission('/dashboard/members')
     const [members, groups] = await Promise.all([
         fetchAllMembers(),
         fetchAllGroups()

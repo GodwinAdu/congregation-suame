@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, User, Mail, Lock, Users, Car, CalendarIcon, Plus, X, Crown } from "lucide-react"
+import { Loader2, User, Mail, Lock, Users, Car, CalendarIcon, Plus, X, Crown, MapPin } from "lucide-react"
 import MultiSelect from "@/components/commons/MultiSelect"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -38,7 +38,13 @@ const registrationSchema = z
             memberId: z.string(),
             relationship: z.string()
         })).optional(),
-        isFamilyHead: z.boolean().optional()
+        isFamilyHead: z.boolean().optional(),
+        location: z.object({
+            latitude: z.number().optional(),
+            longitude: z.number().optional(),
+            address: z.string().optional(),
+            isPublic: z.boolean().optional()
+        }).optional()
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match",
@@ -65,7 +71,13 @@ export default function UserRegistrationForm({ roles, groups, privileges, member
             groupId: "",
             privileges: [],
             familyRelationships: [],
-            isFamilyHead: false
+            isFamilyHead: false,
+            location: {
+                latitude: undefined,
+                longitude: undefined,
+                address: "",
+                isPublic: false
+            }
         },
     });
 
@@ -594,6 +606,99 @@ export default function UserRegistrationForm({ roles, groups, privileges, member
                                         </div>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* Location Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <MapPin className="w-5 h-5 text-primary" />
+                                    <h3 className="text-lg font-semibold text-foreground">Home Location (Optional)</h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="location.latitude"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-foreground font-medium">Latitude</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        step="any"
+                                                        placeholder="e.g., 6.6745"
+                                                        {...field}
+                                                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                                                        className="bg-input border-border focus:ring-primary"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="location.longitude"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-foreground font-medium">Longitude</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        step="any"
+                                                        placeholder="e.g., -1.5716"
+                                                        {...field}
+                                                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                                                        className="bg-input border-border focus:ring-primary"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                <FormField
+                                    control={form.control}
+                                    name="location.address"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-foreground font-medium">Location Address</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Specific location address (optional)"
+                                                    {...field}
+                                                    className="bg-input border-border focus:ring-primary"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="location.isPublic"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                            <div className="space-y-0.5">
+                                                <FormLabel className="text-base">Make location visible to elders</FormLabel>
+                                                <FormDescription>
+                                                    Allow elders and overseers to see this member's location for pastoral visits
+                                                </FormDescription>
+                                            </div>
+                                            <FormControl>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={field.value}
+                                                    onChange={field.onChange}
+                                                    className="h-4 w-4"
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
 
                             {/* Submit Button */}

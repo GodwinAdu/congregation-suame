@@ -11,8 +11,10 @@ import GroupAssistantAnalytics from './_components/GroupAssistantAnalytics'
 import Heading from '@/components/commons/Header'
 import { Separator } from '@/components/ui/separator'
 import UniversalAnalytics from './_components/UniversalAnalytics'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+  await requirePermission('/dashboard')
   const user = await currentUser()
 
   // Check user roles

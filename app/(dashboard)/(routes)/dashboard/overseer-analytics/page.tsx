@@ -1,4 +1,5 @@
 import OverseerAnalyticsGrid from './_components/OverseerAnalyticsGrid'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 export default function OverseerAnalyticsPage() {
     return (

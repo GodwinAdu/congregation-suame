@@ -4,8 +4,10 @@ import { GroupModal } from './_components/GroupModal'
 import { DataTable } from '@/components/table/data-table'
 import { columns } from './_components/column'
 import { fetchAllGroups } from '@/lib/actions/group.actions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
+    await requirePermission('/dashboard/config/group')
     const groups = await fetchAllGroups()
     return (
         <>

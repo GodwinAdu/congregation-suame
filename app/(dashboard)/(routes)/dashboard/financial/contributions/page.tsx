@@ -4,11 +4,13 @@ import { fetchContributions, fetchFinancialSummary } from '@/lib/actions/financi
 import { fetchAllMembers } from '@/lib/actions/user.actions'
 
 const page = async () => {
+    
     const [contributions, summary, members] = await Promise.all([
         fetchContributions(),
         fetchFinancialSummary(),
         fetchAllMembers()
     ])
+   
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background p-4">

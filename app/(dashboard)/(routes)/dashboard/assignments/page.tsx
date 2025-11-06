@@ -1,6 +1,7 @@
 import React from 'react'
 import { AssignmentManager } from './_components/assignment-manager'
 import { fetchAssignmentsByWeek, fetchMembers } from '@/lib/actions/assignment.actions'
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 interface PageProps {
     searchParams: Promise<{ week?: string }>
