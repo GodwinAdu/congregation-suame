@@ -20,7 +20,8 @@ import useClientRole from "@/lib/helpers/client-role"
 import { RoleDialog } from "./RoleModal"
 import { GroupDialog } from "./GroupModal"
 import { PrivilegeDialog } from "./PrivilegeModal"
-import { SimpleDutyModal } from "../../app/(dashboard)/(routes)/dashboard/members/_components/SimpleDutyModal"
+import { SimpleDutyModal } from "@/app/[locale]/(dashboard)/(routes)/dashboard/members/_components/SimpleDutyModal"
+
 
 interface ActionOption<T> {
     label: string

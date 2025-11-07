@@ -17,6 +17,7 @@ interface Member {
     phone?: string
     gender?: string
     dob?: string
+    baptizedDate?: string
     address?: string
     emergencyContact?: string
     role: string
@@ -156,20 +157,24 @@ export function PublisherRecordTracker({ member, reports }: PublisherRecordTrack
     }
 
     if (showExport) {
+        // Debug: Log member data to see what's available
+        console.log('Member data:', member);
+        console.log('Baptized date:', member.baptizedDate);
+        
         // Transform monthlyRecords to match expected format
         const exportData = {
             name: member.fullName,
-            dateOfBirth: member.dob || '',
-            dateOfBaptism: '',
+            dateOfBirth: member.dob ? new Date(member.dob).toLocaleDateString() : '',
+            dateOfBaptism: member.baptizedDate ? new Date(member.baptizedDate).toLocaleDateString() : '',
             gender: (member.gender === 'male' || member.gender === 'female') ? member.gender : '' as "male" | "female" | "",
             privileges: {
-                elder: false,
-                ministerialServant: false,
-                regularPioneer: false,
-                specialPioneer: false,
-                otherSheep: false,
-                anointed: false,
-                fieldMissionary: false,
+                elder: member.privileges?.some(p => p.name.toLowerCase().includes('elder')) || false,
+                ministerialServant: member.privileges?.some(p => p.name.toLowerCase().includes('ministerial servant')) || false,
+                regularPioneer: member.privileges?.some(p => p.name.toLowerCase().includes('regular pioneer')) || false,
+                specialPioneer: member.privileges?.some(p => p.name.toLowerCase().includes('special pioneer')) || false,
+                otherSheep: member.privileges?.some(p => p.name.toLowerCase().includes('other sheep')) || true,
+                anointed: member.privileges?.some(p => p.name.toLowerCase().includes('anointed')) || false,
+                fieldMissionary: member.privileges?.some(p => p.name.toLowerCase().includes('field missionary')) || false,
             },
             monthlyRecords: Object.fromEntries(
                 Object.entries(monthlyRecords).map(([month, record]) => [

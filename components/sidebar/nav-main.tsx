@@ -24,6 +24,7 @@ import {
   BarChart3
 } from "lucide-react"
 import { IRole } from "@/lib/models/role.models"
+import { useTranslations } from 'next-intl'
 import {
   Collapsible,
   CollapsibleContent,
@@ -61,44 +62,45 @@ interface NavMainProps {
 
 export function NavMain({ role, user }: NavMainProps) {
   const pathname = usePathname();
+  const t = useTranslations();
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
 
   const navMain: (NavItem | false)[] = [
     {
-      title: "Dashboard",
+      title: t('navigation.dashboard'),
       url: `/dashboard`,
       icon: LayoutDashboard,
       isActive: false,
       roleField: "dashboard"
     },
     {
-      title: "My Publisher Dashboard",
+      title: t('sidebar.myPublisherDashboard'),
       url: `/dashboard/publisher`,
       icon: TrendingUp,
       isActive: false,
       roleField: "publisherDashboard"
     },
     {
-      title: "Configuration",
+      title: t('sidebar.configuration'),
       url: "#",
       icon: Settings,
       roleField:"config",
       items: [
         {
-          title: "Groups",
+          title: t('sidebar.groups'),
           url: `/dashboard/config/group`,
         },
         {
-          title: "Privileges",
+          title: t('sidebar.privileges'),
           url: `/dashboard/config/privilege`,
         },
         {
-          title: "Roles",
+          title: t('sidebar.roles'),
           url: `/dashboard/config/role`
         },
         {
-          title: "Duties",
+          title: t('sidebar.duties'),
           url: `/dashboard/config/duties`,
         }
       ],
@@ -120,25 +122,25 @@ export function NavMain({ role, user }: NavMainProps) {
       ],
     },
     {
-      title: "Members",
+      title: t('navigation.members'),
       url: "#",
       icon: Users,
       roleField: "manageAllMembers",
       items: [
         {
-          title: "All Members",
+          title: t('sidebar.allMembers'),
           url: `/dashboard/members`,
         },
         {
-          title: "Families",
+          title: t('sidebar.families'),
           url: `/dashboard/members/families`,
         },
         {
-          title: "Analytics",
+          title: t('sidebar.analytics'),
           url: `/dashboard/members/analytics`,
         },
         {
-          title: "Location Map",
+          title: t('sidebar.locationMap'),
           url: `/dashboard/members/map`,
         }
       ],
@@ -180,6 +182,11 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Meeting Schedule",
           url: `/dashboard/field-service/meeting-schedule`,
+        },
+        {
+          title: "Generate Report",
+          url: `/dashboard/field-service/generate-report`,
+          roleField: "manageAllReport"
         }
       ],
     },
@@ -219,35 +226,63 @@ export function NavMain({ role, user }: NavMainProps) {
       roleField: "cleaning"
     },
     {
-      title: "Territory Management",
+      title: t('sidebar.territoryManagement'),
       url: "#",
       icon: MapPin,
       roleField: "territory",
       items: [
         {
-          title: "Territory Map",
+          title: t('territory.territoryMap'),
           url: `/dashboard/territories`,
           roleField: "territoryView"
         },
         {
-          title: "Territory List",
+          title: t('territory.territoryList'),
           url: `/dashboard/territories/list`,
           roleField: "territoryManage"
         },
         {
-          title: "Assignments",
+          title: t('territory.assignments'),
           url: `/dashboard/territories/assignments`,
           roleField: "territoryAssign"
         },
         {
-          title: "Analytics",
+          title: t('territory.analytics'),
           url: `/dashboard/territories/analytics`,
           roleField: "territoryAnalytics"
         },
         {
-          title: "Import KML",
+          title: t('territory.import'),
           url: `/dashboard/territories/import`,
           roleField: "territoryImport"
+        }
+      ],
+    },
+    {
+      title: t('sidebar.coVisitManagement'),
+      url: "#",
+      icon: UserCheck,
+      roleField: "coVisitView",
+      items: [
+        {
+          title: t('coVisit.visitSchedule'),
+          url: `/dashboard/co-visit`,
+          roleField: "coVisitView"
+        },
+        {
+          title: t('coVisit.manageVisits'),
+          url: `/dashboard/co-visit/manage`,
+          roleField: "coVisitManage"
+        },
+        {
+          title: t('coVisit.scheduleVisit'),
+          url: `/dashboard/co-visit/schedule`,
+          roleField: "coVisitSchedule"
+        },
+        {
+          title: "CO Reports",
+          url: `/dashboard/co-visit/reports`,
+          roleField: "coVisitView"
         }
       ],
     },

@@ -44,6 +44,9 @@ export interface IRole {
     territoryAssign: boolean;
     territoryAnalytics: boolean;
     territoryImport: boolean;
+    coVisitView: boolean;
+    coVisitManage: boolean;
+    coVisitSchedule: boolean;
     monthlyReportHelpNeeded: boolean;
     documentForms: boolean;
     financialAnalytics: boolean;
@@ -126,6 +129,11 @@ const RoleSchema = new Schema({
         territoryAssign: { type: Boolean, default: false },
         territoryAnalytics: { type: Boolean, default: false },
         territoryImport: { type: Boolean, default: false },
+        
+        // CO Visit Management
+        coVisitView: { type: Boolean, default: false },
+        coVisitManage: { type: Boolean, default: false },
+        coVisitSchedule: { type: Boolean, default: false },
         
         // Other Features
         cleaning: { type: Boolean, default: false },

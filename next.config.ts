@@ -1,7 +1,10 @@
 
 import withPWAInit from "@ducanh2912/next-pwa";
 import analyzer from '@next/bundle-analyzer';
+import createNextIntlPlugin from 'next-intl/plugin';
 const isProd = process.env.NODE_ENV === 'production';
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 const withBundleAnalyzer = analyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -53,4 +56,4 @@ const nextConfig = {
 
 };
 
-export default isProd ? withBundleAnalyzer(withPWA(nextConfig)) : nextConfig;
+export default isProd ? withNextIntl(withBundleAnalyzer(withPWA(nextConfig))) : withNextIntl(nextConfig);

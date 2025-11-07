@@ -96,6 +96,11 @@ const formSchema = z.object({
         territoryAnalytics: z.boolean().default(false),
         territoryImport: z.boolean().default(false),
         
+        // CO Visit Management
+        coVisitView: z.boolean().default(false),
+        coVisitManage: z.boolean().default(false),
+        coVisitSchedule: z.boolean().default(false),
+        
         // Other Features
         cleaning: z.boolean().default(false),
         transport: z.boolean().default(false),
@@ -201,6 +206,15 @@ const permissionGroups = [
             { key: "territoryAssign", label: "Territory Assignments", description: "Assign territories to publishers" },
             { key: "territoryAnalytics", label: "Territory Analytics", description: "View territory statistics and reports" },
             { key: "territoryImport", label: "Import Territories", description: "Import KML/KMZ files from Google Earth" }
+        ]
+    },
+    {
+        title: "CO Visit Management",
+        icon: Users,
+        permissions: [
+            { key: "coVisitView", label: "View CO Visits", description: "View circuit overseer visit schedules and details" },
+            { key: "coVisitManage", label: "Manage CO Visits", description: "Create and edit CO visit information" },
+            { key: "coVisitSchedule", label: "Schedule CO Visits", description: "Schedule meetings and activities for CO visits" }
         ]
     },
     {
@@ -349,6 +363,11 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                     territoryAssign: false,
                     territoryAnalytics: false,
                     territoryImport: false,
+                    
+                    // CO Visit Management
+                    coVisitView: false,
+                    coVisitManage: false,
+                    coVisitSchedule: false,
                     
                     // Other Features
                     cleaning: false,

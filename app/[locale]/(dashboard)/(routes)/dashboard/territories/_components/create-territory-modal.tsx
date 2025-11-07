@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ interface CreateTerritoryModalProps {
 }
 
 export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerritoryModalProps) {
+  const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     number: '',
@@ -107,7 +109,7 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create New Territory</DialogTitle>
+          <DialogTitle>{t('territory.create')}</DialogTitle>
           <DialogDescription>
             Add a new territory to the congregation's territory management system.
           </DialogDescription>
@@ -116,7 +118,7 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="number">Territory Number</Label>
+              <Label htmlFor="number">{t('territory.number')}</Label>
               <Input
                 id="number"
                 value={formData.number}
@@ -126,7 +128,7 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
               />
             </div>
             <div>
-              <Label htmlFor="name">Territory Name</Label>
+              <Label htmlFor="name">{t('territory.name')}</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -138,7 +140,7 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('territory.description')}</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -150,7 +152,7 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="type">Territory Type</Label>
+              <Label htmlFor="type">{t('territory.type')}</Label>
               <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -165,7 +167,7 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
               </Select>
             </div>
             <div>
-              <Label htmlFor="difficulty">Difficulty Level</Label>
+              <Label htmlFor="difficulty">{t('territory.difficulty')}</Label>
               <Select value={formData.difficulty} onValueChange={(value: any) => setFormData(prev => ({ ...prev, difficulty: value }))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -215,7 +217,7 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
                 disabled={loading}
               >
                 <Navigation className="h-4 w-4 mr-2" />
-                Use Current Location
+                {t('territory.useCurrentLocation')}
               </Button>
             </div>
             
@@ -254,10 +256,10 @@ export function CreateTerritoryModal({ open, onClose, onSuccess }: CreateTerrito
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Territory'}
+              {loading ? t('common.loading') : t('territory.create')}
             </Button>
           </DialogFooter>
         </form>

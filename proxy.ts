@@ -1,5 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { jwtVerify, SignJWT } from 'jose';
+import createMiddleware from 'next-intl/middleware';
+import {routing} from './i18n/routing';
+
+const intlMiddleware = createMiddleware(routing);
 
 const ACCESS_TOKEN_SECRET = process.env.TOKEN_SECRET_KEY;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
@@ -50,12 +54,32 @@ async function createNewAccessToken(payload: Record<string, unknown>): Promise<s
         .sign(accessTokenEncoder);
 }
 
-export async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
+    
+    // Handle API routes with auth
+    if (pathname.startsWith('/api')) {
+        return await authMiddleware(request);
+    }
+    
+    // Handle static files
+    if (pathname.startsWith('/_next') || pathname.includes('.')) {
+        return;
+    }
+    
+    // Handle internationalization for all other routes
+    return intlMiddleware(request);
+}
+
+async function authMiddleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    // Remove locale from pathname for route checking
+    const pathWithoutLocale = pathname.replace(/^\/(en|es|fr|de|pt)/, '') || '/';
+    
     // Check if the requested path is public
     const isPublic = publicRoutes.some((route) =>
-        route instanceof RegExp ? route.test(pathname) : route === pathname
+        route instanceof RegExp ? route.test(pathWithoutLocale) : route === pathWithoutLocale
     );
 
     if (isPublic) {
@@ -72,7 +96,8 @@ export async function proxy(request: NextRequest) {
 
         if (!refreshToken) {
             console.warn('No tokens found, redirecting to /sign-in');
-            return NextResponse.redirect(new URL('/sign-in', request.url));
+            const locale = pathname.match(/^\/(en|es|fr|de|pt)/)?.[1] || 'en';
+            return NextResponse.redirect(new URL(`/${locale}/sign-in`, request.url));
         }
 
         // Verify refresh token
@@ -110,9 +135,10 @@ export async function proxy(request: NextRequest) {
     const payload = await verifyToken(accessToken, accessTokenEncoder);
 
     // If user is authenticated and tries to access home page, redirect to dashboard
-    if (payload && pathname === '/') {
+    if (payload && pathWithoutLocale === '/') {
         const url = request.nextUrl.clone();
-        url.pathname = '/dashboard';
+        const locale = pathname.match(/^\/(en|es|fr|de|pt)/)?.[1] || 'en';
+        url.pathname = `/${locale}/dashboard`;
         return NextResponse.redirect(url);
     }
 
@@ -125,7 +151,8 @@ export async function proxy(request: NextRequest) {
 
         if (!refreshToken) {
             console.warn('Access token expired and no refresh token found, redirecting to /sign-in');
-            return NextResponse.redirect(new URL('/sign-in', request.url));
+            const locale = pathname.match(/^\/(en|es|fr|de|pt)/)?.[1] || 'en';
+            return NextResponse.redirect(new URL(`/${locale}/sign-in`, request.url));
         }
 
         // Verify refresh token
@@ -230,8 +257,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: [
-        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-        '/(api|trpc)(.*)',
-    ],
+  matcher: '/((?!api|trpc|_next|_vercel|.*\\..*).*)'
 };
