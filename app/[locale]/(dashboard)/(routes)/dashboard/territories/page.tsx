@@ -4,6 +4,7 @@ import { TerritoryList } from './_components/territory-list';
 import { TerritoryAssignment } from './_components/territory-assignment';
 import { TerritoryAnalytics } from './_components/territory-analytics';
 import { KMLImporter } from './_components/kml-importer';
+import { SimpleTerritoryForm } from './_components/simple-territory-form';
 import { getTerritories, getTerritoryAssignments } from '@/lib/actions/territory.actions';
 import { fetchAllMembers } from '@/lib/actions/user.actions';
 import { requirePermission } from '@/lib/helpers/server-permission-check';
@@ -47,6 +48,7 @@ export default async function TerritoriesPage() {
           </TabsContent>
 
           <TabsContent value="list" className="space-y-4">
+            <SimpleTerritoryForm />
             <TerritoryList territories={territories} assignments={assignments} />
           </TabsContent>
 

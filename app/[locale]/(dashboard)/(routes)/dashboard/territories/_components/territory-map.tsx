@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Loader2, Search, Maximize, Minimize, X, Users, Clock, Home } from 'lucide-react';
+import { MapPin, Loader2, Search, Maximize, Minimize, X, Users, Clock, Home, User } from 'lucide-react';
+import { getMembersInTerritory } from '@/lib/actions/territory.actions';
 
 // Dynamically import map components
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
@@ -15,6 +16,75 @@ const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLaye
 const Polygon = dynamic(() => import('react-leaflet').then(mod => mod.Polygon), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const CircleMarker = dynamic(() => import('react-leaflet').then(mod => mod.CircleMarker), { ssr: false });
+
+// Custom marker component with initials
+const MemberMarker = ({ member, mapRef }: { member: any; mapRef: any }) => {
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const createCustomIcon = () => {
+    if (typeof window === 'undefined') return null;
+    
+    const L = require('leaflet');
+    const initials = getInitials(member.fullName);
+    
+    const iconHtml = `
+      <div style="
+        width: 28px;
+        height: 28px;
+        background: #3b82f6;
+        border: 2px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        cursor: pointer;
+      ">${initials}</div>
+    `;
+    
+    return L.divIcon({
+      html: iconHtml,
+      className: 'custom-member-marker',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      popupAnchor: [0, -14]
+    });
+  };
+
+  const icon = createCustomIcon();
+  
+  if (!icon) return null;
+
+  return (
+    <Marker
+      position={[member.location.latitude, member.location.longitude]}
+      icon={icon}
+      eventHandlers={{
+        click: () => {
+          if (mapRef?.current) {
+            mapRef.current.setView([member.location.latitude, member.location.longitude], 16);
+          }
+        }
+      }}
+    >
+      <Popup>
+        <div className="p-2">
+          <h5 className="font-medium">{member.fullName}</h5>
+          <p className="text-xs text-gray-600">{member.role}</p>
+          {member.phone && (
+            <p className="text-xs">{member.phone}</p>
+          )}
+        </div>
+      </Popup>
+    </Marker>
+  );
+};
 
 interface Territory {
   _id: string;
@@ -67,6 +137,10 @@ export function TerritoryMap({ territories, assignments }: TerritoryMapProps) {
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedTerritory, setSelectedTerritory] = useState<Territory | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([6.6745, -1.5716]);
+  const [showMembers, setShowMembers] = useState(false);
+  const [territoryMembers, setTerritoryMembers] = useState<Record<string, any[]>>({});
+  const mapRef = useRef<any>(null);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -188,14 +262,25 @@ export function TerritoryMap({ territories, assignments }: TerritoryMapProps) {
                 </Select>
               </div>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="px-3"
-              >
-                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMembers(!showMembers)}
+                  className="px-3"
+                >
+                  <User className="h-4 w-4" />
+                  {showMembers ? 'Hide' : 'Show'} Members
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="px-3"
+                >
+                  {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             
             {/* Legend */}
@@ -220,6 +305,12 @@ export function TerritoryMap({ territories, assignments }: TerritoryMapProps) {
                 <div className="w-3 h-3 bg-red-500 rounded"></div>
                 <span>Overdue</span>
               </div>
+              {showMembers && (
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span>Members</span>
+                </div>
+              )}
             </div>
             
             <div className="text-sm text-muted-foreground">
@@ -234,6 +325,7 @@ export function TerritoryMap({ territories, assignments }: TerritoryMapProps) {
         <CardContent className="p-0">
           <div className={`${isFullscreen ? 'h-[calc(100vh-200px)]' : 'h-96 sm:h-[600px]'} rounded-lg overflow-hidden`}>
             <MapContainer
+              ref={mapRef}
               center={mapCenter}
               zoom={12}
               style={{ height: '100%', width: '100%' }}
@@ -247,80 +339,116 @@ export function TerritoryMap({ territories, assignments }: TerritoryMapProps) {
                 const color = getTerritoryColor(territory);
                 const status = getTerritoryStatus(territory);
                 const assignment = assignments.find(a => a.territoryId._id === territory._id && a.status === 'assigned');
+                const members = territoryMembers[territory._id] || [];
                 
                 return (
-                  <Polygon
-                    key={territory._id}
-                    positions={territory.boundaries.coordinates[0].map(coord => [coord[1], coord[0]])}
-                    pathOptions={{
-                      color: color,
-                      fillColor: color,
-                      fillOpacity: 0.3,
-                      weight: 2
-                    }}
-                    eventHandlers={{
-                      click: () => setSelectedTerritory(territory)
-                    }}
-                  >
-                    <Popup>
-                      <div className="p-3 min-w-64">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-bold text-lg">Territory {territory.number}</h4>
-                            <p className="text-sm text-gray-600">{territory.name}</p>
+                  <div key={territory._id}>
+                    <Polygon
+                      positions={territory.boundaries.coordinates[0].map(coord => [coord[1], coord[0]])}
+                      pathOptions={{
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.3,
+                        weight: 2
+                      }}
+                      eventHandlers={{
+                        click: async () => {
+                          setSelectedTerritory(territory);
+                          if (showMembers && !territoryMembers[territory._id]) {
+                            try {
+                              console.log('Fetching members for territory:', territory._id);
+                              const members = await getMembersInTerritory(territory._id);
+                              console.log('Found members:', members);
+                              setTerritoryMembers(prev => ({ ...prev, [territory._id]: members }));
+                            } catch (error) {
+                              console.error('Error fetching members:', error);
+                            }
+                          }
+                        }
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-3 min-w-64">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-bold text-lg">Territory {territory.number}</h4>
+                              <p className="text-sm text-gray-600">{territory.name}</p>
+                            </div>
+                            <Badge 
+                              variant={status === 'available' ? 'secondary' : status === 'overdue' ? 'destructive' : 'default'}
+                            >
+                              {status}
+                            </Badge>
                           </div>
-                          <Badge 
-                            variant={status === 'available' ? 'secondary' : status === 'overdue' ? 'destructive' : 'default'}
-                          >
-                            {status}
-                          </Badge>
-                        </div>
-                        
-                        {territory.description && (
-                          <p className="text-sm mb-2">{territory.description}</p>
-                        )}
-                        
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center gap-1">
-                            <Home className="h-3 w-3" />
-                            <span>{territory.type}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{territory.estimatedHours}h</span>
-                          </div>
-                          {territory.householdCount && (
+                          
+                          {territory.description && (
+                            <p className="text-sm mb-2">{territory.description}</p>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              <span>{territory.householdCount} homes</span>
+                              <Home className="h-3 w-3" />
+                              <span>{territory.type}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{territory.estimatedHours}h</span>
+                            </div>
+                            {territory.householdCount && (
+                              <div className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                <span>{territory.householdCount} homes</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full bg-${territory.difficulty === 'easy' ? 'green' : territory.difficulty === 'medium' ? 'blue' : 'purple'}-500`}></span>
+                              <span>{territory.difficulty}</span>
+                            </div>
+                          </div>
+                          
+                          {members.length > 0 && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded">
+                              <p className="text-xs font-medium mb-1">Members in territory ({members.length}):</p>
+                              {members.slice(0, 3).map((member: any) => (
+                                <p key={member._id} className="text-xs">{member.fullName}</p>
+                              ))}
+                              {members.length > 3 && (
+                                <p className="text-xs text-gray-500">+{members.length - 3} more</p>
+                              )}
                             </div>
                           )}
-                          <div className="flex items-center gap-1">
-                            <span className={`w-2 h-2 rounded-full bg-${territory.difficulty === 'easy' ? 'green' : territory.difficulty === 'medium' ? 'blue' : 'purple'}-500`}></span>
-                            <span>{territory.difficulty}</span>
-                          </div>
+                          
+                          {assignment && (
+                            <div className="mt-2 p-2 bg-gray-50 rounded">
+                              <p className="text-xs font-medium">Assigned to: {assignment.publisherId.fullName}</p>
+                              <p className="text-xs">Since: {new Date(assignment.assignedDate).toLocaleDateString()}</p>
+                              {assignment.dueDate && (
+                                <p className="text-xs">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          {territory.lastWorked && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              Last worked: {new Date(territory.lastWorked).toLocaleDateString()}
+                            </p>
+                          )}
                         </div>
-                        
-                        {assignment && (
-                          <div className="mt-2 p-2 bg-gray-50 rounded">
-                            <p className="text-xs font-medium">Assigned to: {assignment.publisherId.fullName}</p>
-                            <p className="text-xs">Since: {new Date(assignment.assignedDate).toLocaleDateString()}</p>
-                            {assignment.dueDate && (
-                              <p className="text-xs">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
-                            )}
-                          </div>
-                        )}
-                        
-                        {territory.lastWorked && (
-                          <p className="text-xs text-gray-500 mt-2">
-                            Last worked: {new Date(territory.lastWorked).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </Popup>
-                  </Polygon>
+                      </Popup>
+                    </Polygon>
+                    
+                    {showMembers && members.map((member: any) => (
+                      <MemberMarker
+                        key={member._id}
+                        member={member}
+                        mapRef={mapRef}
+                      />
+                    ))}
+                  </div>
                 );
               })}
+              
+
             </MapContainer>
           </div>
         </CardContent>

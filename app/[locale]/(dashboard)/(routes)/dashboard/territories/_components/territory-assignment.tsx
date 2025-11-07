@@ -168,14 +168,17 @@ export function TerritoryAssignment({ territories, publishers, assignments }: Te
                 <SelectContent>
                   {availableTerritories.map(territory => (
                     <SelectItem key={territory._id} value={territory._id}>
-                      <div className="flex items-center gap-2">
-                        <span>Territory {territory.number}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {territory.type}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {territory.difficulty}
-                        </Badge>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Territory {territory.number}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {territory.type}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {territory.difficulty}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{territory.name}</span>
                       </div>
                     </SelectItem>
                   ))}

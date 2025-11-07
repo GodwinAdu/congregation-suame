@@ -5,11 +5,11 @@ export interface ITerritory extends Document {
   number: string;
   name: string;
   description?: string;
-  boundaries: {
+  boundaries?: {
     type: 'Polygon' | 'MultiPolygon';
     coordinates: number[][][];
   };
-  center: {
+  center?: {
     latitude: number;
     longitude: number;
   };
@@ -51,12 +51,12 @@ const TerritorySchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
   boundaries: {
-    type: { type: String, enum: ['Polygon', 'MultiPolygon'], required: true },
-    coordinates: { type: [[[Number]]], required: true }
+    type: { type: String, enum: ['Polygon', 'MultiPolygon'] },
+    coordinates: { type: [[[Number]]] }
   },
   center: {
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true }
+    latitude: { type: Number },
+    longitude: { type: Number }
   },
   area: { type: Number },
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },

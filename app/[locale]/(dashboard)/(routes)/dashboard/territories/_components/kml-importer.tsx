@@ -37,8 +37,22 @@ export function KMLImporter() {
     setIsUploading(true);
 
     try {
+      console.log('Reading file:', selectedFile.name, 'Size:', selectedFile.size);
       const text = await selectedFile.text();
+      console.log('File content length:', text.length);
+      console.log('File preview:', text.substring(0, 500));
+      
+      if (!text.includes('<kml') && !text.includes('<KML')) {
+        throw new Error('File does not appear to be a valid KML file');
+      }
+      
       const parsed = await parseKMLFile(text);
+      console.log('Parsed territories:', parsed);
+      
+      if (!parsed || parsed.length === 0) {
+        throw new Error('No territories found in KML file. Make sure the file contains Placemark elements with Polygon geometries.');
+      }
+      
       setParsedTerritories(parsed);
       
       // Initialize territory data
@@ -58,9 +72,9 @@ export function KMLImporter() {
       setTerritoryData(initialData);
       
       toast.success(`Successfully parsed ${parsed.length} territories from KML file`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error parsing KML:', error);
-      toast.error('Failed to parse KML file. Please check the file format.');
+      toast.error(error.message || 'Failed to parse KML file. Please check the file format.');
     } finally {
       setIsUploading(false);
     }
@@ -87,7 +101,15 @@ export function KMLImporter() {
         const data = territoryData[i];
 
         try {
-          await createTerritory({
+          console.log(`Creating territory ${data.number} with coordinates:`, parsed.coordinates.length, 'points');
+          console.log('Territory data being sent:', {
+            number: data.number,
+            name: data.name,
+            boundaries: { type: 'Polygon', coordinates: [parsed.coordinates] },
+            center: parsed.center
+          });
+          
+          const result = await createTerritory({
             number: data.number,
             name: data.name,
             description: data.description,
@@ -103,9 +125,12 @@ export function KMLImporter() {
             notes: data.notes,
             kmlData: file ? await file.text() : undefined
           });
+          console.log(`Territory ${data.number} created successfully:`, result);
           successCount++;
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error creating territory ${data.number}:`, error);
+          console.error('Full error details:', error.message, error.stack);
+          toast.error(`Failed to create territory ${data.number}: ${error.message}`);
           errorCount++;
         }
       }
@@ -117,10 +142,13 @@ export function KMLImporter() {
         toast.error(`Failed to import ${errorCount} territories`);
       }
 
-      // Reset form
+      // Reset form and refresh page to show new territories
       setFile(null);
       setParsedTerritories([]);
       setTerritoryData({});
+      
+      // Refresh the page to show newly imported territories
+      window.location.reload();
     } catch (error) {
       toast.error('Failed to import territories');
     } finally {
