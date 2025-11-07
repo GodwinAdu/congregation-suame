@@ -67,6 +67,20 @@ export default async function middleware(request: NextRequest) {
         return;
     }
     
+    // Check if user is authenticated and redirect from auth pages
+    const accessToken = request.cookies.get('token')?.value;
+    if (accessToken) {
+        const payload = await verifyToken(accessToken, accessTokenEncoder);
+        if (payload && (typeof payload.exp !== 'number' || payload.exp >= Math.floor(Date.now() / 1000))) {
+            // User is authenticated, check if they're on auth pages or home
+            const pathWithoutLocale = pathname.replace(/^\/(en|tw)/, '') || '/';
+            if (pathWithoutLocale === '/' || pathWithoutLocale === '/sign-in' || pathWithoutLocale === '/signup') {
+                const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
+                return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+            }
+        }
+    }
+    
     // Handle internationalization for all other routes
     return intlMiddleware(request);
 }
@@ -133,14 +147,6 @@ async function authMiddleware(request: NextRequest) {
 
     // Verify access token
     const payload = await verifyToken(accessToken, accessTokenEncoder);
-
-    // If user is authenticated and tries to access home page, redirect to dashboard
-    if (payload && pathWithoutLocale === '/') {
-        const url = request.nextUrl.clone();
-        const locale = pathname.match(/^\/(en|es|fr|de|pt)/)?.[1] || 'en';
-        url.pathname = `/${locale}/dashboard`;
-        return NextResponse.redirect(url);
-    }
 
     // If access token is invalid or expired, try refresh token
     if (

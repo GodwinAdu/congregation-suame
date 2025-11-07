@@ -14,7 +14,7 @@ import UniversalAnalytics from './_components/UniversalAnalytics'
 import { requirePermission } from '@/lib/helpers/server-permission-check'
 
 const page = async () => {
-  await requirePermission('/dashboard')
+  await requirePermission('dashboard')
   const user = await currentUser()
 
   // Check user roles

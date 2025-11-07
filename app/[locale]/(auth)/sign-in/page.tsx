@@ -57,7 +57,7 @@ export default function SignInPage() {
       const user = await loginUser(values)
 
       form.reset();
-      router.push("/dashboard")
+      router.push("/en/dashboard")
 
       toast.success(`Welcome Back, ${user?.fullName}`, {
         description: "You'll be redirect to dashboard"
