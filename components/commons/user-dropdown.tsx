@@ -46,7 +46,7 @@ export default function UserDropdown({ username, avatarUrl, email, notificationC
 
   return (
     <div className="flex items-center space-x-3">
-      <div className="relative">
+      {/* <div className="relative">
         <Bell className="h-5 w-5 text-gray-300 hover:text-white cursor-pointer" />
         {notificationCount > 0 && (
           <Badge
@@ -55,7 +55,7 @@ export default function UserDropdown({ username, avatarUrl, email, notificationC
             {notificationCount}
           </Badge>
         )}
-      </div>
+      </div> */}
 
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger className="flex items-center space-x-2 focus:outline-hidden">
