@@ -295,25 +295,9 @@ export async function login(userId: string, role: string, rememberMe: boolean = 
  * Logout function - can be called from client components
  */
 export async function logout(redirectTo: string) {
-    const user = await currentUser();
     const cookieStore = await cookies();
 
-    console.log(user,"logout user")
-
-    // Log activity before clearing cookies
-    if (user) {
-        try {
-            await logActivity({
-                userId: user._id as string,
-                type: 'logout',
-                action: `${user.fullName} logged out of the system`,
-                details: { entityId: user._id as string, entityType: 'User' },
-            });
-        } catch (error) {
-            console.error('Failed to log logout activity:', error);
-        }
-    }
-
+    // Clear cookies immediately
     cookieStore.delete("token");
     cookieStore.delete("refreshToken");
 

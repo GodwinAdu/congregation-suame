@@ -4,10 +4,6 @@ import { SidebarTrigger } from "./ui/sidebar";
 import { Separator } from "./ui/separator";
 import UserDropdown from "./commons/user-dropdown";
 import FullScreenButton from "./commons/FullScreenButton";
-import { buttonVariants } from "./ui/button";
-import { Map, } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "./language-switcher";
 
 
@@ -26,10 +22,10 @@ const Navbar = ({ user }: { user: IEmployee }) => {
             </div>
 
             <div className="dashboard-stats flex gap-2 sm:gap-4 ml-auto items-center pr-2 sm:pr-10">
-                <div className="language-switcher hidden sm:block">
+                <div className="language-switcher">
                     <LanguageSwitcher />
                 </div>
-                <div className="fullscreen hidden sm:block">
+                <div className="fullscreen ">
                     <FullScreenButton />
                 </div>
                 <div className="profile">
