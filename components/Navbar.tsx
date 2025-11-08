@@ -25,7 +25,7 @@ const Navbar = ({ user }: { user: IEmployee }) => {
                 <div className="language-switcher">
                     <LanguageSwitcher />
                 </div>
-                <div className="fullscreen ">
+                <div className="fullscreen hidden sm:block">
                     <FullScreenButton />
                 </div>
                 <div className="profile">
