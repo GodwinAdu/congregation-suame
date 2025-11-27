@@ -273,7 +273,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                   </td>
                   <td style="text-align: center;">${report?.bibleStudies || ''}</td>
                   <td style="text-align: center;">
-                    <input type="checkbox" />
+                    <input type="checkbox" ${report?.auxiliaryPioneer ? 'checked' : ''} />
                   </td>
                   <td style="text-align: center;">${report?.hours || ''}</td>
                   <td>${report?.comments || ''}</td>
@@ -715,6 +715,48 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                     </div>
                   </div>
                   
+                  {/* Pioneer Totals Section */}
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <h4 className="text-lg font-semibold mb-4 text-center">Pioneer Totals</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+                        <h5 className="font-semibold text-green-700 mb-2">Regular Pioneers</h5>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div>
+                            <p className="text-2xl font-bold text-green-600">{reportData.summary.pioneerTotals.regularPioneers?.count}</p>
+                            <p className="text-xs text-gray-500">Publishers</p>
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-green-600">{reportData.summary.pioneerTotals.regularPioneers.totalHours}</p>
+                            <p className="text-xs text-gray-500">Total Hours</p>
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-green-600">{reportData.summary.pioneerTotals.regularPioneers.totalBibleStudies}</p>
+                            <p className="text-xs text-gray-500">Bible Studies</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
+                        <h5 className="font-semibold text-blue-700 mb-2">Auxiliary Pioneers</h5>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div>
+                            <p className="text-2xl font-bold text-blue-600">{reportData.summary.pioneerTotals.auxiliaryPioneers.count}</p>
+                            <p className="text-xs text-gray-500">Publishers</p>
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-blue-600">{reportData.summary.pioneerTotals.auxiliaryPioneers.totalHours}</p>
+                            <p className="text-xs text-gray-500">Total Hours</p>
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-blue-600">{reportData.summary.pioneerTotals.auxiliaryPioneers.totalBibleStudies}</p>
+                            <p className="text-xs text-gray-500">Bible Studies</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div className="text-center">
@@ -790,6 +832,10 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                             <strong>Regular pioneer</strong>
                           </div>
                           <div>
+                            <input type="checkbox" checked={memberReport.member.privileges.auxiliaryPioneer} readOnly className="mr-2" />
+                            <strong>Auxiliary pioneer</strong>
+                          </div>
+                          <div>
                             <input type="checkbox" checked={memberReport.member.privileges.specialPioneer} readOnly className="mr-2" />
                             <strong>Special pioneer</strong>
                           </div>
@@ -828,7 +874,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                                 </td>
                                 <td className="border border-black p-2 text-center">{report?.bibleStudies || ''}</td>
                                 <td className="border border-black p-2 text-center">
-                                  <input type="checkbox" readOnly />
+                                  <input type="checkbox" checked={report?.auxiliaryPioneer || false} readOnly />
                                 </td>
                                 <td className="border border-black p-2 text-center">{report?.hours || ''}</td>
                                 <td className="border border-black p-2">{report?.comments || ''}</td>

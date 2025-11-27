@@ -187,6 +187,11 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "Generate Report",
           url: `/dashboard/field-service/generate-report`,
           roleField: "manageAllReport"
+        },
+        {
+          title: "Pioneer Summary",
+          url: `/dashboard/field-service/pioneer-summary`,
+          roleField: "manageAllReport"
         }
       ],
     },

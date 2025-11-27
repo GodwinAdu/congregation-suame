@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { createRole, updateRole } from "@/lib/actions/role.actions"
 import { RoleType } from "./columns"
-import { Shield, Users, FileText, Calendar, Car, History, Trash, Settings, MapPin, DollarSign, MessageSquare, FolderOpen, Bot, Bell } from "lucide-react"
+import { Shield, Users, FileText, Calendar, Car, History, Trash, Settings, MapPin, DollarSign, MessageSquare, FolderOpen, Bot, Bell, Zap } from "lucide-react"
 import React from "react"
 
 const formSchema = z.object({
@@ -270,6 +270,269 @@ const permissionGroups = [
     }
 ]
 
+const presetRoles = [
+    {
+        name: "Elder",
+        description: "Full administrative access with all permissions",
+        permissions: {
+            dashboard: true,
+            publisherDashboard: true,
+            profile: true,
+            settings: true,
+            resetPassword: true,
+            config: true,
+            configDuties: true,
+            configGroup: true,
+            configPrivilege: true,
+            configRole: true,
+            updatePermissions: true,
+            manageAllMembers: true,
+            manageGroupMembers: true,
+            memberAnalytics: true,
+            memberFamilies: true,
+            manageAllReport: true,
+            manageGroupReport: true,
+            monthlyReport: true,
+            monthlyReportHelpNeeded: true,
+            overseerReports: true,
+            overseerAnalytics: true,
+            manageAttendance: true,
+            attendanceTracker: true,
+            assignments: true,
+            calendar: true,
+            fieldService: true,
+            fieldServiceMeetingSchedule: true,
+            fieldServicePublicWitnessing: true,
+            financial: true,
+            financialAnalytics: true,
+            financialBudget: true,
+            financialContributions: true,
+            financialExpenses: true,
+            communication: true,
+            communicationAnnouncements: true,
+            communicationBroadcasts: true,
+            communicationMessages: true,
+            territory: true,
+            territoryView: true,
+            territoryManage: true,
+            territoryAssign: true,
+            territoryAnalytics: true,
+            territoryImport: true,
+            coVisitView: true,
+            coVisitManage: true,
+            coVisitSchedule: true,
+            cleaning: true,
+            transport: true,
+            events: true,
+            documents: true,
+            documentForms: true,
+            notifications: true,
+            aiAssistant: true,
+            aiAnalytics: true,
+            aiAssignments: true,
+            aiInsights: true,
+            history: true,
+            trash: true,
+            manageUser: true
+        }
+    },
+    {
+        name: "Ministerial Servant",
+        description: "Moderate access for congregation responsibilities",
+        permissions: {
+            dashboard: true,
+            publisherDashboard: true,
+            profile: true,
+            settings: true,
+            resetPassword: true,
+            config: false,
+            configDuties: false,
+            configGroup: false,
+            configPrivilege: false,
+            configRole: false,
+            updatePermissions: false,
+            manageAllMembers: false,
+            manageGroupMembers: true,
+            memberAnalytics: false,
+            memberFamilies: false,
+            manageAllReport: false,
+            manageGroupReport: true,
+            monthlyReport: true,
+            monthlyReportHelpNeeded: true,
+            overseerReports: false,
+            overseerAnalytics: false,
+            manageAttendance: true,
+            attendanceTracker: true,
+            assignments: true,
+            calendar: true,
+            fieldService: true,
+            fieldServiceMeetingSchedule: true,
+            fieldServicePublicWitnessing: true,
+            financial: false,
+            financialAnalytics: false,
+            financialBudget: false,
+            financialContributions: false,
+            financialExpenses: false,
+            communication: false,
+            communicationAnnouncements: false,
+            communicationBroadcasts: false,
+            communicationMessages: true,
+            territory: true,
+            territoryView: true,
+            territoryManage: false,
+            territoryAssign: true,
+            territoryAnalytics: false,
+            territoryImport: false,
+            coVisitView: true,
+            coVisitManage: false,
+            coVisitSchedule: false,
+            cleaning: true,
+            transport: true,
+            events: true,
+            documents: true,
+            documentForms: false,
+            notifications: false,
+            aiAssistant: false,
+            aiAnalytics: false,
+            aiAssignments: false,
+            aiInsights: false,
+            history: false,
+            trash: false,
+            manageUser: false
+        }
+    },
+    {
+        name: "Group Overseer",
+        description: "Manage field service group and reports",
+        permissions: {
+            dashboard: true,
+            publisherDashboard: true,
+            profile: true,
+            settings: true,
+            resetPassword: true,
+            config: false,
+            configDuties: false,
+            configGroup: false,
+            configPrivilege: false,
+            configRole: false,
+            updatePermissions: false,
+            manageAllMembers: false,
+            manageGroupMembers: true,
+            memberAnalytics: false,
+            memberFamilies: false,
+            manageAllReport: false,
+            manageGroupReport: true,
+            monthlyReport: false,
+            monthlyReportHelpNeeded: true,
+            overseerReports: true,
+            overseerAnalytics: true,
+            manageAttendance: false,
+            attendanceTracker: false,
+            assignments: false,
+            calendar: true,
+            fieldService: true,
+            fieldServiceMeetingSchedule: true,
+            fieldServicePublicWitnessing: true,
+            financial: false,
+            financialAnalytics: false,
+            financialBudget: false,
+            financialContributions: false,
+            financialExpenses: false,
+            communication: false,
+            communicationAnnouncements: false,
+            communicationBroadcasts: false,
+            communicationMessages: true,
+            territory: true,
+            territoryView: true,
+            territoryManage: false,
+            territoryAssign: true,
+            territoryAnalytics: false,
+            territoryImport: false,
+            coVisitView: true,
+            coVisitManage: false,
+            coVisitSchedule: false,
+            cleaning: false,
+            transport: false,
+            events: false,
+            documents: false,
+            documentForms: false,
+            notifications: false,
+            aiAssistant: false,
+            aiAnalytics: false,
+            aiAssignments: false,
+            aiInsights: false,
+            history: false,
+            trash: false,
+            manageUser: false
+        }
+    },
+    {
+        name: "Publisher",
+        description: "Basic access for regular publishers",
+        permissions: {
+            dashboard: false,
+            publisherDashboard: true,
+            profile: true,
+            settings: true,
+            resetPassword: true,
+            config: false,
+            configDuties: false,
+            configGroup: false,
+            configPrivilege: false,
+            configRole: false,
+            updatePermissions: false,
+            manageAllMembers: false,
+            manageGroupMembers: false,
+            memberAnalytics: false,
+            memberFamilies: false,
+            manageAllReport: false,
+            manageGroupReport: false,
+            monthlyReport: false,
+            monthlyReportHelpNeeded: false,
+            overseerReports: false,
+            overseerAnalytics: false,
+            manageAttendance: false,
+            attendanceTracker: false,
+            assignments: false,
+            calendar: true,
+            fieldService: true,
+            fieldServiceMeetingSchedule: false,
+            fieldServicePublicWitnessing: false,
+            financial: false,
+            financialAnalytics: false,
+            financialBudget: false,
+            financialContributions: false,
+            financialExpenses: false,
+            communication: false,
+            communicationAnnouncements: false,
+            communicationBroadcasts: false,
+            communicationMessages: false,
+            territory: false,
+            territoryView: true,
+            territoryManage: false,
+            territoryAssign: false,
+            territoryAnalytics: false,
+            territoryImport: false,
+            coVisitView: false,
+            coVisitManage: false,
+            coVisitSchedule: false,
+            cleaning: false,
+            transport: false,
+            events: false,
+            documents: false,
+            documentForms: false,
+            notifications: false,
+            aiAssistant: false,
+            aiAnalytics: false,
+            aiAssignments: false,
+            aiInsights: false,
+            history: false,
+            trash: false,
+            manageUser: false
+        }
+    }
+]
+
 export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -451,6 +714,47 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                                 </FormItem>
                             )}
                         />
+
+                        {mode === "create" && (
+                            <>
+                                <Separator />
+                                
+                                {/* Preset Roles */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <Zap className="w-4 h-4 text-primary" />
+                                        <h3 className="text-sm font-medium">Quick Setup</h3>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Choose a preset role to automatically configure permissions
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {presetRoles.map((preset) => (
+                                            <Button
+                                                key={preset.name}
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-auto p-3 text-left justify-start"
+                                                onClick={() => {
+                                                    form.setValue("name", preset.name)
+                                                    Object.entries(preset.permissions).forEach(([key, value]) => {
+                                                        form.setValue(`permissions.${key as keyof typeof watchedPermissions}`, value)
+                                                    })
+                                                }}
+                                            >
+                                                <div>
+                                                    <div className="font-medium text-xs">{preset.name}</div>
+                                                    <div className="text-xs text-muted-foreground mt-1 hidden sm:block">
+                                                        {preset.description}
+                                                    </div>
+                                                </div>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         <Separator />
 

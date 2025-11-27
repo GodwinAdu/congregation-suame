@@ -23,9 +23,6 @@ const refreshTokenEncoder = new TextEncoder().encode(REFRESH_TOKEN_SECRET);
 const publicRoutes = [
     "/sign-in",
     "/",
-    // /^\/documentation\/.*/, // All API routes are public
-    // /^\/blog\/[^/]+$/, // Matches dynamic reset_password routes like /reset_password/abc123
-    // /^\/reset_password\/[^/]+$/, // Matches dynamic reset_password routes like /reset_password/abc123
     /^\/api\/.*/, // All API routes are public
 ];
 
@@ -69,15 +66,57 @@ export default async function proxy(request: NextRequest) {
     
     // Check if user is authenticated and redirect from auth pages
     const accessToken = request.cookies.get('token')?.value;
+    let isAuthenticated = false;
+    
     if (accessToken) {
         const payload = await verifyToken(accessToken, accessTokenEncoder);
         if (payload && (typeof payload.exp !== 'number' || payload.exp >= Math.floor(Date.now() / 1000))) {
-            // User is authenticated, check if they're on auth pages or home
-            const pathWithoutLocale = pathname.replace(/^\/(en|tw)/, '') || '/';
-            if (pathWithoutLocale === '/' || pathWithoutLocale === '/sign-in' || pathWithoutLocale === '/signup') {
-                const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
-                return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+            isAuthenticated = true;
+        }
+    }
+    
+    // If no valid access token, try refresh token
+    if (!isAuthenticated) {
+        const refreshToken = request.cookies.get('refreshToken')?.value;
+        if (refreshToken) {
+            const refreshPayload = await verifyToken(refreshToken, refreshTokenEncoder);
+            if (refreshPayload && (typeof refreshPayload.exp !== 'number' || refreshPayload.exp >= Math.floor(Date.now() / 1000))) {
+                // Create new access token
+                const newAccessToken = await createNewAccessToken(refreshPayload);
+                
+                // Create response and set new token
+                const response = intlMiddleware(request);
+                if (response) {
+                    response.cookies.set({
+                        name: 'token',
+                        value: newAccessToken,
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        maxAge: 60 * 60,
+                        path: '/',
+                        sameSite: 'strict'
+                    });
+                    
+                    // Check if on auth pages and redirect to dashboard
+                    const pathWithoutLocale = pathname.replace(/^\/(en|tw)/, '') || '/';
+                    if (pathWithoutLocale === '/' || pathWithoutLocale === '/sign-in' || pathWithoutLocale === '/signup') {
+                        const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
+                        return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+                    }
+                    
+                    return response;
+                }
+                isAuthenticated = true;
             }
+        }
+    }
+    
+    // If authenticated, redirect from auth pages
+    if (isAuthenticated) {
+        const pathWithoutLocale = pathname.replace(/^\/(en|tw)/, '') || '/';
+        if (pathWithoutLocale === '/' || pathWithoutLocale === '/sign-in' || pathWithoutLocale === '/signup') {
+            const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
+            return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
         }
     }
     
@@ -89,7 +128,7 @@ async function authMiddleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Remove locale from pathname for route checking
-    const pathWithoutLocale = pathname.replace(/^\/(en|es|fr|de|pt)/, '') || '/';
+    const pathWithoutLocale = pathname.replace(/^\/(en|tw)/, '') || '/';
     
     // Check if the requested path is public
     const isPublic = publicRoutes.some((route) =>
@@ -103,14 +142,13 @@ async function authMiddleware(request: NextRequest) {
     // Get the access token from cookies
     const accessToken = request.cookies.get('token')?.value;
 
-
     // If no access token, check for refresh token
     if (!accessToken) {
         const refreshToken = request.cookies.get('refreshToken')?.value;
 
         if (!refreshToken) {
             console.warn('No tokens found, redirecting to /sign-in');
-            const locale = pathname.match(/^\/(en|es|fr|de|pt)/)?.[1] || 'en';
+            const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
             return NextResponse.redirect(new URL(`/${locale}/sign-in`, request.url));
         }
 
@@ -122,7 +160,8 @@ async function authMiddleware(request: NextRequest) {
             (typeof refreshPayload.exp === 'number' && refreshPayload.exp < Math.floor(Date.now() / 1000))
         ) {
             console.warn('Invalid or expired refresh token, redirecting to /sign-in');
-            return NextResponse.redirect(new URL('/sign-in', request.url));
+            const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
+            return NextResponse.redirect(new URL(`/${locale}/sign-in`, request.url));
         }
 
         // Create new access token
@@ -157,7 +196,7 @@ async function authMiddleware(request: NextRequest) {
 
         if (!refreshToken) {
             console.warn('Access token expired and no refresh token found, redirecting to /sign-in');
-            const locale = pathname.match(/^\/(en|es|fr|de|pt)/)?.[1] || 'en';
+            const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
             return NextResponse.redirect(new URL(`/${locale}/sign-in`, request.url));
         }
 
@@ -169,7 +208,8 @@ async function authMiddleware(request: NextRequest) {
             (typeof refreshPayload.exp === 'number' && refreshPayload.exp < Math.floor(Date.now() / 1000))
         ) {
             console.warn('Invalid or expired refresh token, redirecting to /sign-in');
-            return NextResponse.redirect(new URL('/sign-in', request.url));
+            const locale = pathname.match(/^\/(en|tw)/)?.[1] || 'en';
+            return NextResponse.redirect(new URL(`/${locale}/sign-in`, request.url));
         }
 
         // Create new access token
@@ -189,35 +229,8 @@ async function authMiddleware(request: NextRequest) {
             sameSite: 'strict'
         });
 
-        // Use the refresh payload for authorization checks
-        // const userRole = refreshPayload.role;
-
-        // // Restrict access based on role
-        // if (
-        //     (rolePath === 'admin' && userRole === 'student' || userRole === "parent") ||
-        //     (rolePath === 'student' && userRole !== 'student') ||
-        //     (rolePath === 'parent' && userRole !== 'parent')
-        // ) {
-        //     console.warn(`Unauthorized access to ${rolePath}, redirecting to /not-authorized`);
-        //     return NextResponse.redirect(new URL('/not-authorized', request.url));
-        // }
-
         return response;
     }
-    // If access token is valid, proceed with role check
-    // const userRole = payload.role;
-
-    // // Restrict access based on role
-    // if (
-    //     (rolePath === 'admin' && userRole === 'student' || userRole === "parent") ||
-    //     (rolePath === 'student' && userRole !== 'student') ||
-    //     (rolePath === 'parent' && userRole !== 'parent')
-    // ) {
-    //     console.warn(`Unauthorized access to ${rolePath}, redirecting to /not-authorized`);
-    //     return NextResponse.redirect(new URL('/not-authorized', request.url));
-    // }
-
-
 
     // Check if token is about to expire (within 5 minutes)
     const tokenExpiresIn = typeof payload.exp === 'number' ? payload.exp * 1000 - Date.now() : 0;
@@ -263,5 +276,5 @@ async function authMiddleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/((?!api|trpc|_next|_vercel|.*\\..*).*)'
+  matcher: '/((?!api|trpc|_next|_vercel|.*\\..*).*)' 
 };

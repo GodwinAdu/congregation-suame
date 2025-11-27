@@ -95,6 +95,7 @@ export const createColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Rol
         header: "Actions",
         cell: ({ row }) => {
             const role = row.original
+            const isAdminRole = role.name.toLowerCase() === 'admin'
             
             return (
                 <div className="flex gap-2">
@@ -103,6 +104,7 @@ export const createColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Rol
                         size="sm"
                         onClick={() => onEdit(role)}
                         className="h-8"
+                        disabled={isAdminRole}
                     >
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
@@ -112,6 +114,7 @@ export const createColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Rol
                         size="sm"
                         onClick={() => onDelete(role)}
                         className="h-8 text-destructive hover:text-destructive"
+                        disabled={isAdminRole}
                     >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
