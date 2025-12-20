@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, Calendar, Users, BookOpen, AlertTriangle } from "lucide-react"
+import { Eye, Calendar, Users, BookOpen, AlertTriangle, Edit, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 
 export interface OverseerReportData {
@@ -157,37 +157,97 @@ export const createOverseerColumns = (): ColumnDef<OverseerReportData>[] => [
             return (
                 <div className="flex gap-1">
                     {status === 'scheduled' ? (
-                        <Button 
-                            variant="default" 
-                            size="sm" 
-                            className="gap-1"
-                            onClick={() => {
-                                // Extract groupId from the scheduled ID format
-                                const idParts = row.original._id.split('-')
-                                const groupId = idParts[1] // scheduled-{groupId}-{month}-{index}
-                                
-                                const event = new CustomEvent('createReport', {
-                                    detail: {
-                                        groupId: groupId,
-                                        groupName: row.original.groupName,
-                                        month: row.original.month,
-                                        scheduledDate: row.original.scheduledDate
-                                    }
-                                })
-                                window.dispatchEvent(event)
-                            }}
-                        >
-                            <Eye className="h-3 w-3" />
-                            Create Report
-                        </Button>
+                        <>
+                            <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="gap-1"
+                                onClick={() => {
+                                    // Extract groupId from the scheduled ID format
+                                    const idParts = row.original._id.split('-')
+                                    const groupId = idParts[1] // scheduled-{groupId}-{month}-{index}
+                                    
+                                    const event = new CustomEvent('createReport', {
+                                        detail: {
+                                            groupId: groupId,
+                                            groupName: row.original.groupName,
+                                            month: row.original.month,
+                                            scheduledDate: row.original.scheduledDate
+                                        }
+                                    })
+                                    window.dispatchEvent(event)
+                                }}
+                            >
+                                <Eye className="h-3 w-3" />
+                                Create Report
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-1 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                    const event = new CustomEvent('deleteSchedule', {
+                                        detail: { 
+                                            scheduleId: row.original._id, 
+                                            groupName: row.original.groupName,
+                                            month: row.original.month
+                                        }
+                                    })
+                                    window.dispatchEvent(event)
+                                }}
+                            >
+                                <Trash2 className="h-3 w-3" />
+                                <span className="hidden sm:inline">Delete</span>
+                            </Button>
+                        </>
                     ) : (
-                        <Button variant="ghost" size="sm" className="gap-1">
-                            <Eye className="h-3 w-3" />
-                            View
-                        </Button>
+                        <>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-1"
+                                onClick={() => {
+                                    const event = new CustomEvent('viewReport', {
+                                        detail: { reportId: row.original._id }
+                                    })
+                                    window.dispatchEvent(event)
+                                }}
+                            >
+                                <Eye className="h-3 w-3" />
+                                <span className="hidden sm:inline">View</span>
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-1"
+                                onClick={() => {
+                                    const event = new CustomEvent('editReport', {
+                                        detail: { reportId: row.original._id }
+                                    })
+                                    window.dispatchEvent(event)
+                                }}
+                            >
+                                <Edit className="h-3 w-3" />
+                                <span className="hidden sm:inline">Edit</span>
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-1 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                    const event = new CustomEvent('deleteReport', {
+                                        detail: { reportId: row.original._id, groupName: row.original.groupName }
+                                    })
+                                    window.dispatchEvent(event)
+                                }}
+                            >
+                                <Trash2 className="h-3 w-3" />
+                                <span className="hidden sm:inline">Delete</span>
+                            </Button>
+                        </>
                     )}
                 </div>
             )
         },
-    }
+    },
 ]

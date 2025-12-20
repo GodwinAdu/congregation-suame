@@ -6,12 +6,22 @@ import { Button } from '@/components/ui/button'
 import { Calendar, RefreshCw, AlertCircle, Plus } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import MonthSelection from '@/components/commons/MonthSelection'
 import { DataTable } from '@/components/table/data-table'
 import { createOverseerColumns, OverseerReportData } from './columns'
 import { OverseerReportModal } from './OverseerReportModal'
 import { OverseerScheduleModal } from './OverseerScheduleModal'
-import { getAllGroups } from '@/lib/actions/overseer.actions'
+import { getAllGroups, deleteGroupScheduleById } from '@/lib/actions/overseer.actions'
 import { getOverseerReportsForGrid } from '@/lib/actions/overseer.actions'
 
 const OverseerReportGrid = () => {
@@ -22,6 +32,7 @@ const OverseerReportGrid = () => {
     const [showReportModal, setShowReportModal] = useState(false)
     const [showScheduleModal, setShowScheduleModal] = useState(false)
     const [selectedGroupForReport, setSelectedGroupForReport] = useState<{groupId: string, month: string, scheduledDate?: string} | null>(null)
+    const [deleteDialog, setDeleteDialog] = useState<{open: boolean, scheduleId: string, groupName: string, month: string}>({open: false, scheduleId: '', groupName: '', month: ''})
 
     const fetchData = useCallback(async (monthDate: Date) => {
         setLoading(true)
@@ -43,6 +54,19 @@ const OverseerReportGrid = () => {
         fetchData(selectedMonth)
     }, [selectedMonth, fetchData])
     
+    const deleteSchedule = useCallback(async (scheduleId: string) => {
+        try {
+            // Extract actual schedule ID from the formatted ID
+            const actualScheduleId = scheduleId.startsWith('scheduled-') ? scheduleId.split('-')[1] : scheduleId
+            
+            await deleteGroupScheduleById(actualScheduleId)
+            handleRefresh()
+        } catch (error) {
+            console.error('Error deleting schedule:', error)
+            setError('Failed to delete schedule. Please try again.')
+        }
+    }, [fetchData, selectedMonth])
+    
     // Listen for create report events
     useEffect(() => {
         const handleCreateReport = (event: any) => {
@@ -51,9 +75,18 @@ const OverseerReportGrid = () => {
             setShowReportModal(true)
         }
         
+        const handleDeleteSchedule = (event: any) => {
+            const { scheduleId, groupName, month } = event.detail
+            setDeleteDialog({open: true, scheduleId, groupName, month})
+        }
+        
         window.addEventListener('createReport', handleCreateReport)
-        return () => window.removeEventListener('createReport', handleCreateReport)
-    }, [])
+        window.addEventListener('deleteSchedule', handleDeleteSchedule)
+        return () => {
+            window.removeEventListener('createReport', handleCreateReport)
+            window.removeEventListener('deleteSchedule', handleDeleteSchedule)
+        }
+    }, [deleteSchedule])
 
     const handleMonthChange = (date: Date) => {
         setSelectedMonth(date)
@@ -191,6 +224,29 @@ const OverseerReportGrid = () => {
                     handleRefresh()
                 }}
             />
+            
+            <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({...prev, open}))}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Scheduled Visit</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete the scheduled visit for {deleteDialog.groupName} in {deleteDialog.month}? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={() => {
+                                deleteSchedule(deleteDialog.scheduleId)
+                                setDeleteDialog({open: false, scheduleId: '', groupName: '', month: ''})
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

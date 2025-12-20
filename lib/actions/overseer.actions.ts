@@ -217,6 +217,126 @@ export const submitOverseerReport = await withAuth(async (user, reportData: Over
     }
 })
 
+export const updateOverseerReport = await withAuth(async (user, reportId: string, reportData: OverseerReportData) => {
+    if (!user) throw new Error('User not authenticated')
+    try {
+        await connectToDB()
+
+        // Find existing report
+        const existingReport = await OverseerReport.findById(reportId)
+        if (!existingReport) {
+            throw new Error("Report not found")
+        }
+
+        // Check if user owns this report
+        if (existingReport.overseerUserId.toString() !== user._id.toString()) {
+            throw new Error("Unauthorized to update this report")
+        }
+
+        // Update the report
+        const updatedReport = await OverseerReport.findByIdAndUpdate(
+            reportId,
+            { ...reportData, overseerUserId: user._id, overseerName: user.fullName },
+            { new: true }
+        )
+
+        // Log activity
+        await logActivity({
+            userId: user._id as string,
+            type: 'overseer_report',
+            action: `Updated overseer report for ${reportData.month}`,
+            details: { entityId: reportId, entityType: 'OverseerReport' },
+        })
+
+        revalidatePath('/dashboard/overseer-report')
+
+        return {
+            success: true,
+            message: "Overseer report updated successfully",
+            report: updatedReport
+        }
+    } catch (error) {
+        console.error('Error updating overseer report:', error)
+        throw new Error(error instanceof Error ? error.message : "Failed to update overseer report")
+    }
+})
+
+export const deleteOverseerReport = await withAuth(async (user, reportId: string) => {
+    if (!user) throw new Error('User not authenticated')
+    try {
+        await connectToDB()
+
+        // Find existing report
+        const existingReport = await OverseerReport.findById(reportId)
+        if (!existingReport) {
+            throw new Error("Report not found")
+        }
+
+        // Check if user owns this report
+        if (existingReport.overseerUserId.toString() !== user._id.toString()) {
+            throw new Error("Unauthorized to delete this report")
+        }
+
+        // Delete the report
+        await OverseerReport.findByIdAndDelete(reportId)
+
+        // Update group schedule status back to scheduled
+        await GroupSchedule.findOneAndUpdate(
+            { groupId: existingReport.groupId, month: existingReport.month },
+            { status: 'scheduled', $unset: { completedDate: 1 } }
+        )
+
+        // Log activity
+        await logActivity({
+            userId: user._id as string,
+            type: 'overseer_report',
+            action: `Deleted overseer report for ${existingReport.month}`,
+            details: { entityId: reportId, entityType: 'OverseerReport' },
+        })
+
+        revalidatePath('/dashboard/overseer-report')
+
+        return {
+            success: true,
+            message: "Overseer report deleted successfully"
+        }
+    } catch (error) {
+        console.error('Error deleting overseer report:', error)
+        throw new Error(error instanceof Error ? error.message : "Failed to delete overseer report")
+    }
+})
+
+export const getOverseerReport = await withAuth(async (user, reportId: string) => {
+    try {
+        await connectToDB()
+
+        const report = await OverseerReport.findById(reportId).lean()
+        if (!report) {
+            throw new Error("Report not found")
+        }
+
+        // Check if user owns this report
+        if (report.overseerUserId.toString() !== user._id.toString()) {
+            throw new Error("Unauthorized to view this report")
+        }
+
+        // Get group name
+        const group = await Group.findById(report.groupId).lean()
+        
+        return {
+            success: true,
+            report: {
+                ...report,
+                _id: report._id.toString(),
+                groupName: group?.name || 'Unknown Group'
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching overseer report:', error)
+        throw new Error(error instanceof Error ? error.message : "Failed to fetch overseer report")
+    }
+})
+
 export const updateGroupSchedule = await withAuth(async (user, schedules: GroupScheduleData[]) => {
     try {
         await connectToDB()
@@ -292,6 +412,45 @@ export const updateGroupSchedule = await withAuth(async (user, schedules: GroupS
     }
 })
 
+export const deleteGroupScheduleById = await withAuth(async (user, scheduleId: string) => {
+    try {
+        await connectToDB()
+        console.log(`Attempting to delete schedule with ID: ${scheduleId}`)
+
+        // Find and delete the schedule by ID - only allow creator to delete
+        const deletedSchedule = await GroupSchedule.findOneAndDelete({
+            _id: scheduleId,
+            overseerUserId: user._id
+        })
+        console.log('Deleted schedule:', deletedSchedule)
+
+        if (!deletedSchedule) {
+            throw new Error("Schedule not found or unauthorized")
+        }
+
+        // Get group name for logging
+        const group = await Group.findById(deletedSchedule.groupId).lean()
+        
+        // Log activity
+        await logActivity({
+            userId: user._id as string,
+            type: 'group_schedule',
+            action: `Deleted group visit schedule for ${group?.name || 'Unknown Group'} - ${deletedSchedule.month}`,
+            details: { groupId: deletedSchedule.groupId, month: deletedSchedule.month },
+        })
+
+        revalidatePath('/dashboard/overseer-report')
+
+        return {
+            success: true,
+            message: "Schedule deleted successfully"
+        }
+    } catch (error) {
+        console.error('Error deleting group schedule:', error)
+        throw new Error(error instanceof Error ? error.message : "Failed to delete schedule")
+    }
+})
+
 export const getOverseerReportsForGrid = await withAuth(async (user, month?: string) => {
     try {
         if (!user) {
@@ -348,7 +507,7 @@ export const getOverseerReportsForGrid = await withAuth(async (user, month?: str
                 }
             } else {
                 return {
-                    _id: `scheduled-${schedule.groupId}-${schedule.month}-${index}`,
+                    _id: `scheduled-${schedule._id}-${schedule.groupId}-${schedule.month}-${index}`,
                     groupName,
                     month: schedule.month,
                     visitDate: '',
@@ -489,7 +648,7 @@ export const getOverseerAnalytics = await withAuth(async (user, month?: string) 
         await connectToDB()
 
         // Build query
-        const query: any = { overseerUserId: user._id }
+        const query: any = {}
         if (month) {
             query.month = month
         }
@@ -502,10 +661,10 @@ export const getOverseerAnalytics = await withAuth(async (user, month?: string) 
         // Get group names
         const groupIds = [...new Set(reports.map(r => r.groupId))]
         const groups = await Group.find({ _id: { $in: groupIds } }).lean()
-        const groupMap = new Map(groups.map(g => [g._id.toString(), g.name]))
+        const groupMap = new Map(groups.map(g => [g._id, g.name]))
 
         return reports.map(report => ({
-            _id: report._id.toString(),
+            _id: report._id as string,
             groupName: groupMap.get(report.groupId) || 'Unknown Group',
             month: report.month,
             visitDate: report.visitDate,
@@ -536,8 +695,8 @@ export const getOverallMemberAnalytics = await withAuth(async (user, month?: str
     try {
         await connectToDB()
 
-        // Build query
-        const query: any = { overseerUserId: user._id }
+        // Build query }
+        const query: any = {}
         if (month) {
             query.month = month
         }
