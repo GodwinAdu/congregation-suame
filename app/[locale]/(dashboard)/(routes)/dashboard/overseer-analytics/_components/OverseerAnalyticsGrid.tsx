@@ -93,6 +93,8 @@ const OverseerAnalyticsGrid = () => {
         }
     }
 
+    console.log('Analytics Data:', analyticsData)
+
     const totalReports = analyticsData.length
     const avgAttendance = analyticsData.length > 0 ? 
         analyticsData.reduce((sum, report) => sum + report.presentCount, 0) / analyticsData.length : 0
@@ -366,7 +368,7 @@ const OverseerAnalyticsGrid = () => {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div>
-                                                <h3 className="font-medium">{report.groupName}</h3>
+                                                <h3 className="font-medium">{report.name}</h3>
                                                 <p className="text-sm text-muted-foreground">
                                                     {format(new Date(report.month), 'MMMM yyyy')} - {format(new Date(report.visitDate), 'MMM dd')}
                                                 </p>

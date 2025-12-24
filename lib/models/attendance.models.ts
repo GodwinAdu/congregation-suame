@@ -48,8 +48,6 @@ AttendanceSchema.pre('save', function (next) {
     const date = new Date(this.date);
     const dayOfMonth = date.getDate();
     this.week = Math.ceil(dayOfMonth / 7);
-
-    next();
 });
 
 

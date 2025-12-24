@@ -23,7 +23,6 @@ const transportConfigSchema = new mongoose.Schema({
 
 transportConfigSchema.pre('save', function(next) {
     this.updatedAt = new Date();
-    next();
 });
 
 const TransportConfig = mongoose.models.TransportConfig || mongoose.model("TransportConfig", transportConfigSchema);
