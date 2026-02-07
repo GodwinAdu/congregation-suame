@@ -12,13 +12,47 @@ import { sendInvitationEmail, sendPasswordResetEmail } from "../services/email.s
 
 interface MemberProps {
     fullName: string;
-    email: string;
+    email?: string;
     phone: string;
+    alternatePhone?: string;
     gender?: string;
     dob?: Date;
     baptizedDate?: Date;
     address?: string;
     emergencyContact?: string;
+    emergencyContacts?: Array<{
+        name: string;
+        relationship: string;
+        phone: string;
+        email?: string;
+        isPrimary: boolean;
+    }>;
+    pioneerStatus?: 'regular' | 'auxiliary' | 'special' | null;
+    pioneerStartDate?: Date;
+    medicalInfo?: {
+        bloodType?: string;
+        allergies?: string;
+        medications?: string;
+        conditions?: string;
+        noBloodCard?: boolean;
+        notes?: string;
+    };
+    servicePreferences?: {
+        availableDays?: string[];
+        preferredServiceTime?: string;
+        hasVehicle?: boolean;
+        canDrive?: boolean;
+        willingToConduct?: boolean;
+        languages?: string[];
+    };
+    notificationPreferences?: {
+        email?: boolean;
+        sms?: boolean;
+        push?: boolean;
+        assignments?: boolean;
+        announcements?: boolean;
+        emergencies?: boolean;
+    };
     password: string;
     role: string;
     groupId?: string;
@@ -53,11 +87,25 @@ async function _createMember(user: User, values: MemberProps) {
             fullName: values.fullName,
             email: values.email,
             phone: values.phone,
+            alternatePhone: values.alternatePhone,
             gender: values.gender,
             dob: values.dob,
             baptizedDate: values.baptizedDate,
             address: values.address,
             emergencyContact: values.emergencyContact,
+            emergencyContacts: values.emergencyContacts || [],
+            pioneerStatus: values.pioneerStatus,
+            pioneerStartDate: values.pioneerStartDate,
+            medicalInfo: values.medicalInfo,
+            servicePreferences: values.servicePreferences,
+            notificationPreferences: values.notificationPreferences || {
+                email: true,
+                sms: false,
+                push: true,
+                assignments: true,
+                announcements: true,
+                emergencies: true
+            },
             password: hashedPassword,
             role: values.role,
             groupId: values.groupId,
@@ -318,10 +366,10 @@ async function _updateMember(user: User, id: string, updateData: Partial<MemberP
                 lastModified: new Date(),
                 modifiedBy: user._id
             },
-            { new: true }
+            { new: true, runValidators: false }
         )
 
-        if (!updatedStaff) throw new Error("Staff not found")
+        if (!updatedStaff) throw new Error("Member not found")
 
         await logActivity({
             userId: user._id as string,
@@ -330,8 +378,8 @@ async function _updateMember(user: User, id: string, updateData: Partial<MemberP
             details: { entityId: id, entityType: 'Member' },
         });
 
-        revalidatePath('/dashboard/hr/staffs')
-        return { success: true, message: "Staff updated successfully" }
+        revalidatePath('/dashboard/members')
+        return { success: true, message: "Member updated successfully" }
     } catch (error) {
         console.error("Error updating user:", error)
         throw error
@@ -342,10 +390,50 @@ async function _updateProfile(user: User, updateData: {
     fullName?: string;
     email?: string;
     phone?: string;
+    alternatePhone?: string;
     gender?: string;
     dob?: Date;
     address?: string;
     emergencyContact?: string;
+    emergencyContacts?: Array<{
+        name: string;
+        relationship: string;
+        phone: string;
+        email?: string;
+        isPrimary: boolean;
+    }>;
+    pioneerStatus?: 'regular' | 'auxiliary' | 'special' | null;
+    pioneerStartDate?: Date;
+    medicalInfo?: {
+        bloodType?: string;
+        allergies?: string;
+        medications?: string;
+        conditions?: string;
+        noBloodCard?: boolean;
+        notes?: string;
+    };
+    servicePreferences?: {
+        availableDays?: string[];
+        preferredServiceTime?: string;
+        hasVehicle?: boolean;
+        canDrive?: boolean;
+        willingToConduct?: boolean;
+        languages?: string[];
+    };
+    notificationPreferences?: {
+        email?: boolean;
+        sms?: boolean;
+        push?: boolean;
+        assignments?: boolean;
+        announcements?: boolean;
+        emergencies?: boolean;
+    };
+    location?: {
+        latitude?: number;
+        longitude?: number;
+        address?: string;
+        isPublic?: boolean;
+    };
 }) {
     try {
         if (!user) throw new Error("User not authenticated");

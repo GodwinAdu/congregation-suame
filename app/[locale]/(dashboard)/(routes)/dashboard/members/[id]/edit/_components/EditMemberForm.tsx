@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { updateMember, fetchAllMembers } from '@/lib/actions/user.actions'
-import { Plus, X, Crown } from 'lucide-react'
+import { Plus, X, Crown, Phone, Heart } from 'lucide-react'
 import { useEffect } from 'react'
+import { EmergencyContactsSection } from '@/app/[locale]/(dashboard)/(routes)/dashboard/members/_components/EmergencyContactsSection'
+import { MedicalInfoSection } from '@/app/[locale]/(dashboard)/(routes)/dashboard/members/_components/MedicalInfoSection'
 
 interface EditMemberFormProps {
     member: any
@@ -25,15 +27,20 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
     const [loading, setLoading] = useState(false)
     const [familyRelationships, setFamilyRelationships] = useState<Array<{ memberId: string; memberName: string; relationship: string }>>([])
     const [isFamilyHead, setIsFamilyHead] = useState(false)
+    const [emergencyContacts, setEmergencyContacts] = useState<Array<{ name: string; relationship: string; phone: string; email?: string; isPrimary: boolean }>>([])
+    const [medicalInfo, setMedicalInfo] = useState<any>({})
     const [formData, setFormData] = useState({
         fullName: member.fullName || '',
         email: member.email || '',
         phone: member.phone || '',
+        alternatePhone: member.alternatePhone || '',
         gender: member.gender || '',
         dob: member.dob ? new Date(member.dob).toISOString().split('T')[0] : '',
         baptizedDate: member.baptizedDate ? new Date(member.baptizedDate).toISOString().split('T')[0] : '',
         address: member.address || '',
         emergencyContact: member.emergencyContact || '',
+        pioneerStatus: member.pioneerStatus || null,
+        pioneerStartDate: member.pioneerStartDate ? new Date(member.pioneerStartDate).toISOString().split('T')[0] : '',
         role: member.role || 'publisher',
         groupId: member.groupId?._id || 'none',
         privileges: member.privileges?.map((p: any) => p._id) || []
@@ -48,6 +55,8 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
             })))
         }
         setIsFamilyHead(member.isFamilyHead || false)
+        setEmergencyContacts(member.emergencyContacts || [])
+        setMedicalInfo(member.medicalInfo || {})
     }, [member, members])
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +69,9 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
                 groupId: formData.groupId === 'none' ? null : formData.groupId,
                 dob: formData.dob ? new Date(formData.dob) : undefined,
                 baptizedDate: formData.baptizedDate ? new Date(formData.baptizedDate) : undefined,
+                pioneerStartDate: formData.pioneerStartDate ? new Date(formData.pioneerStartDate) : undefined,
+                emergencyContacts,
+                medicalInfo,
                 familyRelationships: familyRelationships.filter(r => r.memberId).map(r => ({
                     memberId: r.memberId,
                     relationship: r.relationship
@@ -68,8 +80,8 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
             })
             toast.success('Member updated successfully')
             router.push('/dashboard/members')
-        } catch (error) {
-            toast.error(error.message ?? 'Failed to update member')
+        } catch (error: any) {
+            toast.error(error?.message ?? 'Failed to update member')
         } finally {
             setLoading(false)
         }
@@ -80,7 +92,7 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
             ...prev,
             privileges: checked
                 ? [...prev.privileges, privilegeId]
-                : prev.privileges.filter(id => id !== privilegeId)
+                : prev.privileges.filter((id: string) => id !== privilegeId)
         }))
     }
 
@@ -120,6 +132,14 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
                             />
                         </div>
                         <div>
+                            <Label htmlFor="alternatePhone">Alternate Phone</Label>
+                            <Input
+                                id="alternatePhone"
+                                value={formData.alternatePhone}
+                                onChange={(e) => setFormData(prev => ({ ...prev, alternatePhone: e.target.value }))}
+                            />
+                        </div>
+                        <div>
                             <Label htmlFor="gender">Gender *</Label>
                             <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
                                 <SelectTrigger>
@@ -155,6 +175,31 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
                                 id="emergencyContact"
                                 value={formData.emergencyContact}
                                 onChange={(e) => setFormData(prev => ({ ...prev, emergencyContact: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="pioneerStatus">Pioneer Status</Label>
+                            <Select value={formData.pioneerStatus || 'none'} onValueChange={(value) => setFormData(prev => ({ ...prev, pioneerStatus: value === 'none' ? null : value }))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select pioneer status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="regular">Regular Pioneer</SelectItem>
+                                    <SelectItem value="auxiliary">Auxiliary Pioneer</SelectItem>
+                                    <SelectItem value="special">Special Pioneer</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="pioneerStartDate">Pioneer Start Date</Label>
+                            <Input
+                                id="pioneerStartDate"
+                                type="date"
+                                value={formData.pioneerStartDate}
+                                onChange={(e) => setFormData(prev => ({ ...prev, pioneerStartDate: e.target.value }))}
                             />
                         </div>
                     </div>
@@ -226,6 +271,36 @@ export function EditMemberForm({ member, groups, privileges, members }: EditMemb
                             ))}
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Phone className="h-5 w-5" />
+                        Emergency Contacts
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <EmergencyContactsSection
+                        contacts={emergencyContacts}
+                        onChange={setEmergencyContacts}
+                    />
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Heart className="h-5 w-5" />
+                        Medical Information
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <MedicalInfoSection
+                        medicalInfo={medicalInfo}
+                        onChange={setMedicalInfo}
+                    />
                 </CardContent>
             </Card>
 

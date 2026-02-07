@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, User, Mail, Lock, Users, Car, CalendarIcon, Plus, X, Crown, MapPin } from "lucide-react"
+import { Loader2, User, Mail, Lock, Users, Car, CalendarIcon, Plus, X, Crown, MapPin, Heart, Phone } from "lucide-react"
 import MultiSelect from "@/components/commons/MultiSelect"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -17,6 +17,8 @@ import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { toast } from "sonner"
 import { createMember } from "@/lib/actions/user.actions"
+import { EmergencyContactsSection } from "./EmergencyContactsSection"
+import { MedicalInfoSection } from "./MedicalInfoSection"
 
 // Form validation schema
 const registrationSchema = z
@@ -24,11 +26,29 @@ const registrationSchema = z
         fullName: z.string().min(2, "Full name must be at least 2 characters"),
         email: z.string().optional(),
         phone: z.string().min(10, "Phone number must be at least 10 digits"),
+        alternatePhone: z.string().optional(),
         gender: z.string().min(2, "Gender is required"),
         dob: z.date().optional(),
         baptizedDate: z.date().optional(),
         address: z.string().optional(),
         emergencyContact: z.string().optional(),
+        emergencyContacts: z.array(z.object({
+            name: z.string(),
+            relationship: z.string(),
+            phone: z.string(),
+            email: z.string().optional(),
+            isPrimary: z.boolean()
+        })).optional(),
+        pioneerStatus: z.enum(['regular', 'auxiliary', 'special']).nullable().optional(),
+        pioneerStartDate: z.date().optional(),
+        medicalInfo: z.object({
+            bloodType: z.string().optional(),
+            allergies: z.string().optional(),
+            medications: z.string().optional(),
+            conditions: z.string().optional(),
+            noBloodCard: z.boolean().optional(),
+            notes: z.string().optional()
+        }).optional(),
         password: z.string().min(6, "Password must be at least 6 characters"),
         confirmPassword: z.string(),
         role: z.string().min(1, "Please select a role"),
@@ -65,11 +85,15 @@ export default function UserRegistrationForm({ roles, groups, privileges, member
             fullName: "",
             email: "",
             phone: "",
+            alternatePhone: "",
             password: "111111",
             confirmPassword: "111111",
             role: "",
             groupId: "",
             privileges: [],
+            emergencyContacts: [],
+            pioneerStatus: null,
+            medicalInfo: {},
             familyRelationships: [],
             isFamilyHead: false,
             location: {
@@ -245,6 +269,25 @@ export default function UserRegistrationForm({ roles, groups, privileges, member
 
                                     <FormField
                                         control={form.control}
+                                        name="alternatePhone"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-foreground font-medium">Alternate Phone</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="tel"
+                                                        placeholder="(555) 987-6543"
+                                                        {...field}
+                                                        className="bg-input border-border focus:ring-primary"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
                                         name="gender"
                                         render={({ field }) => (
                                             <FormItem>
@@ -378,12 +421,127 @@ export default function UserRegistrationForm({ roles, groups, privileges, member
                                     name="emergencyContact"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-foreground font-medium">Emergency Contact</FormLabel>
+                                            <FormLabel className="text-foreground font-medium">Emergency Contact (Legacy)</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     placeholder="Emergency contact number"
                                                     {...field}
                                                     className="bg-input border-border focus:ring-primary"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Emergency Contacts Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Phone className="w-5 h-5 text-primary" />
+                                    <h3 className="text-lg font-semibold text-foreground">Emergency Contacts</h3>
+                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="emergencyContacts"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <EmergencyContactsSection
+                                                    contacts={field.value || []}
+                                                    onChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Pioneer Status Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Users className="w-5 h-5 text-primary" />
+                                    <h3 className="text-lg font-semibold text-foreground">Pioneer Status</h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="pioneerStatus"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-foreground font-medium">Pioneer Type</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="bg-input border-border focus:ring-primary">
+                                                            <SelectValue placeholder="Select pioneer status" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="regular">Regular Pioneer</SelectItem>
+                                                        <SelectItem value="auxiliary">Auxiliary Pioneer</SelectItem>
+                                                        <SelectItem value="special">Special Pioneer</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="pioneerStartDate"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col">
+                                                <FormLabel>Pioneer Start Date</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                            <Button
+                                                                variant={"outline"}
+                                                                className={cn(
+                                                                    "w-full pl-3 text-left font-normal",
+                                                                    !field.value && "text-muted-foreground"
+                                                                )}
+                                                            >
+                                                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={field.value}
+                                                            onSelect={field.onChange}
+                                                            disabled={(date) => date > new Date()}
+                                                            captionLayout="dropdown"
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Medical Information Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Heart className="w-5 h-5 text-primary" />
+                                    <h3 className="text-lg font-semibold text-foreground">Medical Information (Optional)</h3>
+                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="medicalInfo"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <MedicalInfoSection
+                                                    medicalInfo={field.value || {}}
+                                                    onChange={field.onChange}
                                                 />
                                             </FormControl>
                                             <FormMessage />

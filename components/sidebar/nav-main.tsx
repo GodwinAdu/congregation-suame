@@ -21,7 +21,16 @@ import {
   Bot,
   Bell,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Heart,
+  ClipboardList,
+  GraduationCap,
+  Target,
+  FileCheck,
+  Package,
+  School,
+  AlertTriangle,
+  Receipt
 } from "lucide-react"
 import { IRole } from "@/lib/models/role.models"
 import { useTranslations } from 'next-intl'
@@ -76,10 +85,20 @@ export function NavMain({ role, user }: NavMainProps) {
     },
     {
       title: t('sidebar.myPublisherDashboard'),
-      url: `/dashboard/publisher`,
+      url: "#",
       icon: TrendingUp,
-      isActive: false,
-      roleField: "publisherDashboard"
+      roleField: "publisherDashboard",
+      items: [
+        {
+          title: "Dashboard",
+          url: `/dashboard/publisher`,
+        },
+        {
+          title: "My Goals",
+          url: `/dashboard/publisher/goals`,
+          roleField: "publisherGoals"
+        }
+      ],
     },
     {
       title: t('sidebar.configuration'),
@@ -118,6 +137,11 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Attendance Tracker",
           url: `/dashboard/attendance/attendance-tracker`,
+        },
+        {
+          title: "Analytics",
+          url: `/dashboard/attendance/analytics`,
+          roleField: "manageAttendance"
         }
       ],
     },
@@ -192,6 +216,11 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "Pioneer Summary",
           url: `/dashboard/field-service/pioneer-summary`,
           roleField: "manageAllReport"
+        },
+        {
+          title: "Activity Summary",
+          url: `/dashboard/field-service/summary`,
+          roleField: "manageAllReport"
         }
       ],
     },
@@ -210,6 +239,48 @@ export function NavMain({ role, user }: NavMainProps) {
       roleField: "manageGroupReport"
     },
     {
+      title: "Shepherding Calls",
+      url: `/dashboard/shepherding`,
+      icon: Heart,
+      isActive: false,
+      roleField: "shepherdingView"
+    },
+    {
+      title: "Bible Studies",
+      url: `/dashboard/bible-studies`,
+      icon: GraduationCap,
+      isActive: false,
+      roleField: "bibleStudyView"
+    },
+    {
+      title: "Publisher Records",
+      url: `/dashboard/publisher-records`,
+      icon: FileCheck,
+      isActive: false,
+      roleField: "publisherRecords"
+    },
+    {
+      title: "Literature Inventory",
+      url: `/dashboard/literature`,
+      icon: Package,
+      isActive: false,
+      roleField: "literature"
+    },
+    {
+      title: "Theocratic School",
+      url: `/dashboard/theocratic-school`,
+      icon: School,
+      isActive: false,
+      roleField: "theocraticSchool"
+    },
+    {
+      title: "Emergency System",
+      url: `/dashboard/emergency`,
+      icon: AlertTriangle,
+      isActive: false,
+      roleField: "emergency"
+    },
+    {
       title: "Transport",
       url: `/dashboard/transport`,
       icon: Car,
@@ -218,10 +289,20 @@ export function NavMain({ role, user }: NavMainProps) {
     },
     {
       title: "Meeting Assignments",
-      url: `/dashboard/assignments`,
+      url: "#",
       icon: BookOpen,
-      isActive: false,
-      roleField: "assignments"
+      roleField: "assignments",
+      items: [
+        {
+          title: "Assignments",
+          url: `/dashboard/assignments`,
+        },
+        {
+          title: "Assignment History",
+          url: `/dashboard/assignments/history`,
+          roleField: "assignmentHistoryView"
+        }
+      ],
     },
     {
       title: "Kingdom Hall Management",

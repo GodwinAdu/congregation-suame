@@ -10,9 +10,12 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { generateFieldServiceReport } from '@/lib/actions/field-service-report.actions'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, Check, ChevronsUpDown } from 'lucide-react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 const reportSchema = z.object({
   startMonth: z.string().min(1, 'Start month is required'),
@@ -33,6 +36,7 @@ interface ReportGeneratorProps {
 export function ReportGenerator({ roles, groups, privileges, members }: ReportGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [reportData, setReportData] = useState<any>(null)
+  const [openMemberCombo, setOpenMemberCombo] = useState(false)
   
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<ReportFormData>({
     resolver: zodResolver(reportSchema),
@@ -627,25 +631,58 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
               {filterType !== 'all' && (
                 <div>
                   <Label htmlFor="filterValue">Select {filterType}</Label>
-                  <Select onValueChange={(value) => setValue('filterValue', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filterType === 'role' && roles.map(role => (
-                        <SelectItem key={role._id} value={role._id}>{role.name}</SelectItem>
-                      ))}
-                      {filterType === 'group' && groups.map(group => (
-                        <SelectItem key={group._id} value={group._id}>{group.name}</SelectItem>
-                      ))}
-                      {filterType === 'privilege' && privileges.map(privilege => (
-                        <SelectItem key={privilege._id} value={privilege._id}>{privilege.name}</SelectItem>
-                      ))}
-                      {filterType === 'member' && members.map(member => (
-                        <SelectItem key={member._id} value={member._id}>{member.fullName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {filterType === 'member' ? (
+                    <Popover open={openMemberCombo} onOpenChange={setOpenMemberCombo}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" className="w-full justify-between">
+                          {watch('filterValue')
+                            ? members.find(m => m._id === watch('filterValue'))?.fullName || 'Select member...'
+                            : "Select member..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search member..." />
+                          <CommandList>
+                            <CommandEmpty>No member found.</CommandEmpty>
+                            <CommandGroup>
+                              {members.map((member: any) => (
+                                <CommandItem
+                                  key={member._id}
+                                  value={member.fullName}
+                                  onSelect={() => {
+                                    setValue('filterValue', member._id);
+                                    setOpenMemberCombo(false);
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", watch('filterValue') === member._id ? "opacity-100" : "opacity-0")} />
+                                  {member.fullName}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <Select onValueChange={(value) => setValue('filterValue', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filterType === 'role' && roles.map(role => (
+                          <SelectItem key={role._id} value={role._id}>{role.name}</SelectItem>
+                        ))}
+                        {filterType === 'group' && groups.map(group => (
+                          <SelectItem key={group._id} value={group._id}>{group.name}</SelectItem>
+                        ))}
+                        {filterType === 'privilege' && privileges.map(privilege => (
+                          <SelectItem key={privilege._id} value={privilege._id}>{privilege.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
             </div>

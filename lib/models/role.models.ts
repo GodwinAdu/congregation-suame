@@ -47,6 +47,18 @@ export interface IRole {
     coVisitView: boolean;
     coVisitManage: boolean;
     coVisitSchedule: boolean;
+    shepherdingView: boolean;
+    shepherdingManage: boolean;
+    assignmentHistoryView: boolean;
+    assignmentHistoryManage: boolean;
+    bibleStudyView: boolean;
+    bibleStudyManage: boolean;
+    publisherGoals: boolean;
+    publisherRecords: boolean;
+    literature: boolean;
+    theocraticSchool: boolean;
+    emergency: boolean;
+    expenses: boolean;
     monthlyReportHelpNeeded: boolean;
     documentForms: boolean;
     financialAnalytics: boolean;
@@ -134,6 +146,36 @@ const RoleSchema = new Schema({
         coVisitView: { type: Boolean, default: false },
         coVisitManage: { type: Boolean, default: false },
         coVisitSchedule: { type: Boolean, default: false },
+        
+        // Shepherding
+        shepherdingView: { type: Boolean, default: false },
+        shepherdingManage: { type: Boolean, default: false },
+        
+        // Assignment History
+        assignmentHistoryView: { type: Boolean, default: false },
+        assignmentHistoryManage: { type: Boolean, default: false },
+        
+        // Bible Study Tracker
+        bibleStudyView: { type: Boolean, default: false },
+        bibleStudyManage: { type: Boolean, default: false },
+        
+        // Publisher Goals
+        publisherGoals: { type: Boolean, default: true },
+        
+        // Publisher Records (S-21)
+        publisherRecords: { type: Boolean, default: false },
+        
+        // Literature Inventory
+        literature: { type: Boolean, default: false },
+        
+        // Theocratic School
+        theocraticSchool: { type: Boolean, default: false },
+        
+        // Emergency System
+        emergency: { type: Boolean, default: false },
+        
+        // Expense Management
+        expenses: { type: Boolean, default: false },
         
         // Other Features
         cleaning: { type: Boolean, default: false },

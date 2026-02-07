@@ -103,10 +103,17 @@ async function _fetchMembers(user: User) {
         await connectToDB();
 
         const members = await Member.find({})
-            .select('fullName gender')
+            .populate('privileges')
+            .select('fullName gender privileges')
             .sort({ fullName: 1 });
 
-        return JSON.parse(JSON.stringify(members));
+        // Filter out members with privileges that exclude them from activities
+        const filteredMembers = members.filter(member => {
+            if (!member.privileges || member.privileges.length === 0) return true;
+            return !member.privileges.some((priv: any) => priv.excludeFromActivities === true);
+        });
+
+        return JSON.parse(JSON.stringify(filteredMembers));
     } catch (error) {
         console.log("Error fetching members:", error);
         throw error;

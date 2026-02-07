@@ -22,6 +22,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { PlusCircle, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,6 +34,7 @@ const formSchema = z.object({
     name: z.string().min(2, {
         message: "name must be at least 2 characters.",
     }),
+    excludeFromActivities: z.boolean().default(false),
 });
 
 interface PrivilegeModalProps {
@@ -49,6 +51,7 @@ export function PrivilegeModal({ privilege }: PrivilegeModalProps) {
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: privilege?.name || "",
+            excludeFromActivities: privilege?.excludeFromActivities || false,
         },
     });
 
@@ -116,33 +119,28 @@ export function PrivilegeModal({ privilege }: PrivilegeModalProps) {
                                     </FormItem>
                                 )}
                             />
-                            {/* <FormField
+                            <FormField
                                 control={form.control}
-                                name="roomIds"
-                                defaultValue={[]} // Initialize as an empty array
+                                name="excludeFromActivities"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Mark Distribution</FormLabel>
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                         <FormControl>
-                                            <MultiSelect
-                                                placeholder="Mark Distributions"
-                                                data={rooms}
-                                                value={field.value || []} // Ensure value is an array
-                                                onChange={(room) =>
-                                                    field.onChange([...field.value, room])
-                                                }
-                                                onRemove={(idToRemove) =>
-                                                    field.onChange(field.value.filter(
-                                                        (roomId) => roomId !== idToRemove
-                                                    ))
-                                                }
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
                                             />
                                         </FormControl>
-                                        <FormMessage className="text-red-1" />
+                                        <div className="space-y-1 leading-none">
+                                            <FormLabel>
+                                                Exclude from Activities
+                                            </FormLabel>
+                                            <p className="text-sm text-muted-foreground">
+                                                Members with this privilege will not appear in assignment lists (e.g., for children)
+                                            </p>
+                                        </div>
                                     </FormItem>
                                 )}
-                            /> */}
-
+                            />
                             <Button disabled={isSubmitting} type="submit">
                                 {isSubmitting ? (isEditing ? "Updating..." : "Creating...") : "Submit"}
                             </Button>

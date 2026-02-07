@@ -42,6 +42,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         fullName: user.fullName || "",
         email: user.email || "",
         phone: user.phone || "",
+        alternatePhone: user.alternatePhone || "",
         gender: user.gender || "",
         dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : "",
         address: user.address || "",
@@ -76,6 +77,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
             fullName: user.fullName || "",
             email: user.email || "",
             phone: user.phone || "",
+            alternatePhone: user.alternatePhone || "",
             gender: user.gender || "",
             dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : "",
             address: user.address || "",
@@ -234,6 +236,19 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                 />
                             ) : (
                                 <p className="text-sm py-2">{user.phone || "Not provided"}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="alternatePhone">Alternate Phone</Label>
+                            {isEditing ? (
+                                <Input
+                                    id="alternatePhone"
+                                    value={formData.alternatePhone}
+                                    onChange={(e) => handleInputChange("alternatePhone", e.target.value)}
+                                />
+                            ) : (
+                                <p className="text-sm py-2">{user.alternatePhone || "Not provided"}</p>
                             )}
                         </div>
 
