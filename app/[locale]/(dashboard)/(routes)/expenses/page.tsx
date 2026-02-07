@@ -1,20 +1,19 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
 import { getExpenses, getPendingApprovals, getExpenseStats } from '@/lib/actions/expense.actions';
 import ExpensesClient from './ExpensesClient';
 
 export default async function ExpensesPage() {
-  const session = await getServerSession(authOptions);
+  const user = await currentUser();
   
-  if (!session?.user?.congregationId) {
-    redirect('/auth/signin');
+  if (!user) {
+    redirect('/sign-in');
   }
 
   const [expensesResult, pendingResult, statsResult] = await Promise.all([
-    getExpenses(session.user.congregationId),
-    getPendingApprovals(session.user.id, session.user.congregationId),
-    getExpenseStats(session.user.congregationId)
+    getExpenses(''),
+    getPendingApprovals(user._id as string, ''),
+    getExpenseStats('')
   ]);
 
   return (
@@ -22,8 +21,8 @@ export default async function ExpensesPage() {
       expenses={expensesResult.expenses || []}
       pendingApprovals={pendingResult.expenses || []}
       stats={statsResult.stats || { pending: 0, approved: 0, rejected: 0, paid: 0, monthlyTotal: 0 }}
-      userId={session.user.id}
-      congregationId={session.user.congregationId}
+      userId={user._id as string}
+      congregationId={''}
     />
   );
 }

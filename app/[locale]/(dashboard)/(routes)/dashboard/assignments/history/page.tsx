@@ -1,25 +1,19 @@
-import { auth } from '@clerk/nextjs/server';
+import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
-import { getUserByClerkId } from '@/lib/actions/user.actions';
 import { getAssignmentHistory, getAssignmentFrequency, getMembersWithoutRecentAssignments, getAssignmentStats } from '@/lib/actions/assignment-history.actions';
-import { getMembers } from '@/lib/actions/member.actions';
+import { fetchAllMembers } from '@/lib/actions/user.actions';
 import { AssignmentHistoryClient } from './_components/AssignmentHistoryClient';
 
 export default async function AssignmentHistoryPage() {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
-
-  const user = await getUserByClerkId(userId);
-  if (!user?.success) redirect('/sign-in');
-
-  const congregationId = user.data.congregationId;
+  const user = await currentUser();
+  if (!user) redirect('/sign-in');
 
   const [historyRes, frequencyRes, membersRes, statsRes, allMembersRes] = await Promise.all([
-    getAssignmentHistory(congregationId),
-    getAssignmentFrequency(congregationId, 6),
-    getMembersWithoutRecentAssignments(congregationId, 90),
-    getAssignmentStats(congregationId),
-    getMembers(congregationId)
+    getAssignmentHistory(''),
+    getAssignmentFrequency('', 6),
+    getMembersWithoutRecentAssignments('', 90),
+    getAssignmentStats(''),
+    fetchAllMembers()
   ]);
 
   return (
@@ -34,7 +28,7 @@ export default async function AssignmentHistoryPage() {
         frequency={frequencyRes.data || []}
         membersWithoutAssignments={membersRes.data || []}
         stats={statsRes.data || {}}
-        allMembers={allMembersRes.data || []}
+        allMembers={allMembersRes || []}
       />
     </div>
   );
