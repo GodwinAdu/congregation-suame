@@ -12,6 +12,7 @@ import Heading from '@/components/commons/Header'
 import { Separator } from '@/components/ui/separator'
 import UniversalAnalytics from './_components/UniversalAnalytics'
 import { requirePermission } from '@/lib/helpers/server-permission-check'
+import { BackupModal } from './_components/BackupModal'
 
 const page = async () => {
   await requirePermission('dashboard')
@@ -89,9 +90,12 @@ const page = async () => {
     <>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <Heading title={getDashboardTitle()} />
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-          <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-          {isAdmin ? "Full insights" : isGroupAssistant ? "Group insights" : "Attendance insights"}
+        <div className="flex items-center gap-2">
+          {isAdmin && <BackupModal />}
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+            {isAdmin ? "Full insights" : isGroupAssistant ? "Group insights" : "Attendance insights"}
+          </div>
         </div>
       </div>
       <Separator />

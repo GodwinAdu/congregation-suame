@@ -1,6 +1,7 @@
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { BackupModal } from "./(dashboard)/(routes)/dashboard/_components/BackupModal"
 
 export default async function HomePage() {
 
@@ -45,6 +46,8 @@ export default async function HomePage() {
               >
                 Request Access
               </Button>
+
+              <BackupModal />
             </div>
 
             {/* Feature Cards */}

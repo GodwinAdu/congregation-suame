@@ -30,7 +30,8 @@ import {
   Package,
   School,
   AlertTriangle,
-  Receipt
+  Receipt,
+  Database
 } from "lucide-react"
 import { IRole } from "@/lib/models/role.models"
 import { useTranslations } from 'next-intl'
@@ -512,6 +513,11 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Notifications",
           url: `/dashboard/settings/notifications`,
+        },
+        {
+          title: "Backup & Restore",
+          url: `/dashboard/backup`,
+          roleField: "config"
         },
         {
           title: "Reset Password",
