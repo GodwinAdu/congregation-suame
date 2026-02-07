@@ -46,7 +46,7 @@ async function _createTerritory(user: User, territoryData: TerritoryData) {
     });
 
     await logActivity({
-      userId: user._id,
+      userId: user._id as string,
       type: 'territory_create',
       action: `${user.fullName} created territory ${territoryData.number}`,
       details: { entityId: territory._id, entityType: 'Territory' },
@@ -77,7 +77,7 @@ async function _updateTerritory(user: User, territoryId: string, territoryData: 
     if (!territory) throw new Error("Territory not found");
 
     await logActivity({
-      userId: user._id,
+      userId: user._id as string,
       type: 'territory_update',
       action: `${user.fullName} updated territory ${territory.number}`,
       details: { entityId: territoryId, entityType: 'Territory' },
@@ -131,7 +131,7 @@ async function _assignTerritory(user: User, assignmentData: AssignmentData) {
     });
 
     await logActivity({
-      userId: user._id,
+      userId: user._id as string,
       type: 'territory_assign',
       action: `${user.fullName} assigned territory to publisher`,
       details: { entityId: assignment._id, entityType: 'TerritoryAssignment' },
@@ -188,7 +188,7 @@ async function _returnTerritory(user: User, assignmentId: string, returnData: { 
     });
 
     await logActivity({
-      userId: user._id,
+      userId: user._id as string,
       type: 'territory_return',
       action: `${user.fullName} returned territory`,
       details: { entityId: assignmentId, entityType: 'TerritoryAssignment' },
@@ -208,29 +208,29 @@ async function _parseKMLFile(user: User, kmlContent: string) {
 
     console.log('Parsing KML content, length:', kmlContent.length);
     const territories = [];
-    
+
     // More comprehensive KML parsing
-    const placemarkRegex = /<Placemark[^>]*>(.*?)<\/Placemark>/gs;
-    const nameRegex = /<name><!\[CDATA\[(.*?)\]\]><\/name>|<name>(.*?)<\/name>/;
-    const coordinatesRegex = /<coordinates>\s*(.*?)\s*<\/coordinates>/s;
-    const polygonRegex = /<Polygon[^>]*>(.*?)<\/Polygon>/s;
-    const linearRingRegex = /<LinearRing[^>]*>(.*?)<\/LinearRing>/s;
-    
+    const placemarkRegex = /<Placemark[^>]*>([\s\S]*?)<\/Placemark>/gi;
+    const nameRegex = /<name><!\[CDATA\[([\s\S]*?)\]\]><\/name>|<name>([\s\S]*?)<\/name>/i;
+    const coordinatesRegex = /<coordinates>\s*([\s\S]*?)\s*<\/coordinates>/i;
+    const polygonRegex = /<Polygon[^>]*>([\s\S]*?)<\/Polygon>/i;
+    const linearRingRegex = /<LinearRing[^>]*>([\s\S]*?)<\/LinearRing>/i;
+
     let match;
     let territoryCount = 0;
-    
+
     while ((match = placemarkRegex.exec(kmlContent)) !== null) {
       const placemark = match[1];
       console.log(`Processing placemark ${territoryCount + 1}`);
-      
+
       // Extract name (handle CDATA)
       const nameMatch = nameRegex.exec(placemark);
       const name = nameMatch ? (nameMatch[1] || nameMatch[2] || `Territory ${territoryCount + 1}`).trim() : `Territory ${territoryCount + 1}`;
-      
+
       // Look for polygon coordinates
       const polygonMatch = polygonRegex.exec(placemark);
       let coordsText = '';
-      
+
       if (polygonMatch) {
         const linearRingMatch = linearRingRegex.exec(polygonMatch[1]);
         if (linearRingMatch) {
@@ -246,15 +246,15 @@ async function _parseKMLFile(user: User, kmlContent: string) {
           coordsText = coordsMatch[1].trim();
         }
       }
-      
+
       if (coordsText) {
         console.log(`Found coordinates for ${name}:`, coordsText.substring(0, 100) + '...');
-        
+
         // Parse coordinates (longitude,latitude,altitude format in KML)
         // Handle different coordinate formats
         const coordLines = coordsText.split(/[\n\r]+/).filter(line => line.trim());
         const allCoords = coordLines.join(' ').split(/\s+/).filter(coord => coord.trim());
-        
+
         const coords = [];
         for (const coord of allCoords) {
           const parts = coord.split(',');
@@ -266,9 +266,9 @@ async function _parseKMLFile(user: User, kmlContent: string) {
             }
           }
         }
-        
+
         console.log(`Parsed ${coords.length} coordinate points for ${name}`);
-        
+
         if (coords.length >= 3) {
           // Ensure polygon is closed
           const first = coords[0];
@@ -276,17 +276,17 @@ async function _parseKMLFile(user: User, kmlContent: string) {
           if (first[0] !== last[0] || first[1] !== last[1]) {
             coords.push([first[0], first[1]]);
           }
-          
+
           // Calculate center point
           const centerLat = coords.reduce((sum, coord) => sum + coord[1], 0) / coords.length;
           const centerLng = coords.reduce((sum, coord) => sum + coord[0], 0) / coords.length;
-          
+
           territories.push({
             name,
             coordinates: coords,
             center: { latitude: centerLat, longitude: centerLng }
           });
-          
+
           territoryCount++;
           console.log(`Successfully parsed territory: ${name}`);
         } else {
@@ -296,10 +296,10 @@ async function _parseKMLFile(user: User, kmlContent: string) {
         console.log(`No coordinates found for placemark: ${name}`);
       }
     }
-    
+
     console.log(`Total territories parsed: ${territories.length}`);
     return territories;
-  } catch (error) {
+  } catch (error: any) {
     console.log("Error parsing KML:", error);
     throw new Error(`Failed to parse KML file: ${error.message}`);
   }
@@ -346,16 +346,16 @@ async function _getMembersInTerritory(user: User, territoryId: string) {
 function isPointInPolygon(point: number[], polygon: number[][]) {
   const [x, y] = point;
   let inside = false;
-  
+
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const [xi, yi] = polygon[i];
     const [xj, yj] = polygon[j];
-    
+
     if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
       inside = !inside;
     }
   }
-  
+
   return inside;
 }
 

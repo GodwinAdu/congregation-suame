@@ -12,6 +12,7 @@ async function _getAssignmentSuggestions(
     excludeMembers: string[] = []
 ) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const suggestions = await AIAssistantService.suggestAssignments(
@@ -36,6 +37,7 @@ async function _getAssignmentSuggestions(
 
 async function _predictMemberEngagement(user: User, memberId: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const prediction = await AIAssistantService.predictEngagement(memberId)
@@ -56,6 +58,7 @@ async function _predictMemberEngagement(user: User, memberId: string) {
 
 async function _detectSchedulingConflicts(user: User, week: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const conflicts = await AIAssistantService.detectConflicts(week)
@@ -76,6 +79,7 @@ async function _detectSchedulingConflicts(user: User, week: string) {
 
 async function _generateInsights(user: User, type: 'attendance' | 'field-service' | 'assignments') {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         // Basic insights generation - can be expanded with more sophisticated AI

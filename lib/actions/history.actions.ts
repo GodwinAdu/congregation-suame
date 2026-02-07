@@ -12,7 +12,7 @@ async function _fetchAllHistories(user: User, lastId: string | null, limit: numb
         await connectToDB();
 
         const query: { _id?: { $lt: string } } = {};
-        
+
         if (lastId) {
             query._id = { $lt: lastId };
         }
@@ -49,7 +49,7 @@ async function _fetchAllHistories(user: User, lastId: string | null, limit: numb
 async function _deleteHistory(user: User, id: string) {
     try {
         if (!user) throw new Error('User not logged in');
-        
+
         await connectToDB();
 
         const deletedActivity = await Activity.findByIdAndDelete(id);
@@ -59,12 +59,12 @@ async function _deleteHistory(user: User, id: string) {
         }
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'history_delete',
             action: `${user.fullName} deleted activity record`,
             details: { entityId: id, entityType: 'Activity' },
         });
-        
+
         return { success: true, message: "Activity record deleted successfully" };
 
     } catch (error) {
@@ -76,13 +76,13 @@ async function _deleteHistory(user: User, id: string) {
 async function _bulkDeleteHistory(user: User, ids: string[]) {
     try {
         if (!user) throw new Error('User not logged in');
-        
+
         await connectToDB();
 
         const result = await Activity.deleteMany({ _id: { $in: ids } });
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'history_bulk_delete',
             action: `${user.fullName} deleted ${result.deletedCount} activity records`,
             details: { entityType: 'Activity', metadata: { deletedCount: result.deletedCount } },
@@ -98,14 +98,14 @@ async function _bulkDeleteHistory(user: User, ids: string[]) {
 async function _clearAllHistory(user: User) {
     try {
         if (!user) throw new Error('User not logged in');
-        
+
         await connectToDB();
 
         const count = await Activity.countDocuments({});
         await Activity.deleteMany({});
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'history_clear_all',
             action: `${user.fullName} cleared all activity history (${count} records)`,
             details: { entityType: 'Activity', metadata: { clearedCount: count } },

@@ -210,7 +210,7 @@ export const submitOverseerReport = await withAuth(async (user, reportData: Over
             userId: user._id as string,
             type: 'overseer_report',
             action: `Failed to submit overseer report: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            details: { error: error instanceof Error ? error.message : 'Unknown error' },
+            details: { entityType: 'OverseerReport', metadata: { error: error instanceof Error ? error.message : 'Unknown error' } },
         })
 
         throw new Error(error instanceof Error ? error.message : "Failed to submit overseer report")
@@ -229,7 +229,7 @@ export const updateOverseerReport = await withAuth(async (user, reportId: string
         }
 
         // Check if user owns this report
-        if (existingReport.overseerUserId.toString() !== user._id.toString()) {
+        if (existingReport.overseerUserId.toString() !== user._id?.toString()) {
             throw new Error("Unauthorized to update this report")
         }
 
@@ -273,7 +273,7 @@ export const deleteOverseerReport = await withAuth(async (user, reportId: string
         }
 
         // Check if user owns this report
-        if (existingReport.overseerUserId.toString() !== user._id.toString()) {
+        if (existingReport.overseerUserId.toString() !== user._id?.toString()) {
             throw new Error("Unauthorized to delete this report")
         }
 
@@ -308,6 +308,7 @@ export const deleteOverseerReport = await withAuth(async (user, reportId: string
 
 export const getOverseerReport = await withAuth(async (user, reportId: string) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const report = await OverseerReport.findById(reportId).lean()
@@ -316,7 +317,7 @@ export const getOverseerReport = await withAuth(async (user, reportId: string) =
         }
 
         // Check if user owns this report
-        if (report.overseerUserId.toString() !== user._id.toString()) {
+        if (report.overseerUserId.toString() !== user._id?.toString()) {
             throw new Error("Unauthorized to view this report")
         }
 
@@ -339,6 +340,7 @@ export const getOverseerReport = await withAuth(async (user, reportId: string) =
 
 export const updateGroupSchedule = await withAuth(async (user, schedules: GroupScheduleData[]) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         console.log('Received schedules to update:', schedules) // Debug log
@@ -388,7 +390,7 @@ export const updateGroupSchedule = await withAuth(async (user, schedules: GroupS
             userId: user._id as string,
             type: 'group_schedule',
             action: `Updated group visit schedules for ${schedules.length} groups: ${groupNames}`,
-            details: { schedulesCount: schedules.length, groups: groupNames },
+            details: { entityType: 'GroupSchedule', metadata: { schedulesCount: schedules.length, groups: groupNames } },
         })
 
         revalidatePath('/dashboard/overseer-report')
@@ -401,12 +403,14 @@ export const updateGroupSchedule = await withAuth(async (user, schedules: GroupS
         console.error('Error updating group schedules:', error)
 
         // Log failed activity
-        await logActivity({
-            userId: user._id as string,
-            type: 'group_schedule',
-            action: `Failed to update group schedules: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        })
+        if (user) {
+            await logActivity({
+                userId: user._id as string,
+                type: 'group_schedule',
+                action: `Failed to update group schedules: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                details: { entityType: 'GroupSchedule', metadata: { error: error instanceof Error ? error.message : 'Unknown error' } },
+            })
+        }
 
         throw new Error(error instanceof Error ? error.message : "Failed to update group schedules")
     }
@@ -414,6 +418,7 @@ export const updateGroupSchedule = await withAuth(async (user, schedules: GroupS
 
 export const deleteGroupScheduleById = await withAuth(async (user, scheduleId: string) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
         console.log(`Attempting to delete schedule with ID: ${scheduleId}`)
 
@@ -436,7 +441,7 @@ export const deleteGroupScheduleById = await withAuth(async (user, scheduleId: s
             userId: user._id as string,
             type: 'group_schedule',
             action: `Deleted group visit schedule for ${group?.name || 'Unknown Group'} - ${deletedSchedule.month}`,
-            details: { groupId: deletedSchedule.groupId, month: deletedSchedule.month },
+            details: { entityType: 'GroupSchedule', metadata: { groupId: deletedSchedule.groupId, month: deletedSchedule.month } },
         })
 
         revalidatePath('/dashboard/overseer-report')
@@ -497,10 +502,10 @@ export const getOverseerReportsForGrid = await withAuth(async (user, month?: str
                     month: report.month,
                     visitDate: report.visitDate,
                     status: 'completed' as const,
-                    presentCount: report.members?.filter(m => m.present).length || 0,
+                    presentCount: report.members?.filter((m: any) => m.present).length || 0,
                     totalMembers: report.members?.length || 0,
-                    studyCount: report.members?.filter(m => m.hasStudy).length || 0,
-                    ministryActive: report.members?.filter(m => m.participatesInMinistry).length || 0,
+                    studyCount: report.members?.filter((m: any) => m.hasStudy).length || 0,
+                    ministryActive: report.members?.filter((m: any) => m.participatesInMinistry).length || 0,
                     followUpNeeded: report.followUpNeeded || false,
                     createdAt: report.createdAt,
                     scheduledDate: schedule.scheduledDate
@@ -532,6 +537,7 @@ export const getOverseerReportsForGrid = await withAuth(async (user, month?: str
 
 const _getGroupSchedulesForModal = async (user: any) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         // Get all groups
@@ -571,6 +577,7 @@ export const getGroupSchedulesForModal = await withAuth(_getGroupSchedulesForMod
 
 export const getGroupSchedules = await withAuth(async (user, month?: string) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         // Build query
@@ -606,6 +613,7 @@ export const getGroupSchedules = await withAuth(async (user, month?: string) => 
 
 export const getOverseerReports = await withAuth(async (user, filters?: { month?: string, groupId?: string }) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         // Build query
@@ -668,16 +676,16 @@ export const getOverseerAnalytics = await withAuth(async (user, month?: string) 
             groupName: groupMap.get(report.groupId) || 'Unknown Group',
             month: report.month,
             visitDate: report.visitDate,
-            presentCount: report.members?.filter(m => m.present).length || 0,
+            presentCount: report.members?.filter((m: any) => m.present).length || 0,
             totalMembers: report.members?.length || 0,
-            studyCount: report.members?.filter(m => m.hasStudy).length || 0,
-            ministryActive: report.members?.filter(m => m.participatesInMinistry).length || 0,
+            studyCount: report.members?.filter((m: any) => m.hasStudy).length || 0,
+            ministryActive: report.members?.filter((m: any) => m.participatesInMinistry).length || 0,
             followUpNeeded: report.followUpNeeded || false,
             meetingAttendance: report.meetingAttendance,
             generalObservations: report.generalObservations,
             encouragement: report.encouragement,
             recommendations: report.recommendations,
-            members: report.members?.map(member => ({
+            members: report.members?.map((member: any) => ({
                 id: member.id,
                 name: member.name,
                 present: member.present,
@@ -708,7 +716,7 @@ export const getOverallMemberAnalytics = await withAuth(async (user, month?: str
         const memberStats = new Map()
         
         reports.forEach(report => {
-            report.members?.forEach(member => {
+            report.members?.forEach((member: any) => {
                 if (!memberStats.has(member.id)) {
                     memberStats.set(member.id, {
                         id: member.id,
@@ -730,12 +738,12 @@ export const getOverallMemberAnalytics = await withAuth(async (user, month?: str
         const allMembers = Array.from(memberStats.values())
         
         // Categorize members
-        const presentMembers = allMembers.filter(m => m.wasPresent)
-        const absentMembers = allMembers.filter(m => !m.wasPresent)
-        const membersWithStudy = allMembers.filter(m => m.hasStudy)
-        const membersWithoutStudy = allMembers.filter(m => !m.hasStudy)
-        const membersInMinistry = allMembers.filter(m => m.participatesInMinistry)
-        const membersNotInMinistry = allMembers.filter(m => !m.participatesInMinistry)
+        const presentMembers = allMembers.filter((m: any) => m.wasPresent)
+        const absentMembers = allMembers.filter((m: any) => !m.wasPresent)
+        const membersWithStudy = allMembers.filter((m: any) => m.hasStudy)
+        const membersWithoutStudy = allMembers.filter((m: any) => !m.hasStudy)
+        const membersInMinistry = allMembers.filter((m: any) => m.participatesInMinistry)
+        const membersNotInMinistry = allMembers.filter((m: any) => !m.participatesInMinistry)
 
         return {
             totalMembers: allMembers.length,

@@ -101,7 +101,11 @@ export class AIAssistantService {
         const assignments = await Assignment.find({ week })
             .populate('assignedTo assistant')
 
-        const conflicts = []
+        const conflicts: Array<{
+            type: string
+            members: string[]
+            description: string
+        }> = []
 
         // Check for double bookings
         const memberAssignments = new Map()

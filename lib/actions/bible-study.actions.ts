@@ -156,7 +156,7 @@ export async function getBibleStudyStats(congregationId: string) {
 
     const totalSessions = studies.reduce((sum, s) => sum + (s.sessions?.length || 0), 0);
     const attendedSessions = studies.reduce((sum, s) => 
-      sum + (s.sessions?.filter(sess => sess.attended).length || 0), 0
+      sum + (s.sessions?.filter((sess: any) => sess.attended).length || 0), 0
     );
     const attendanceRate = totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0;
 
@@ -187,12 +187,12 @@ export async function getStudyEffectivenessReport(congregationId: string) {
     const report = studies.map(study => {
       const sessions = study.sessions || [];
       const totalSessions = sessions.length;
-      const attendedSessions = sessions.filter(s => s.attended).length;
+      const attendedSessions = sessions.filter((s: any) => s.attended).length;
       const attendanceRate = totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0;
       
       const engagementScores = sessions
-        .filter(s => s.engagement)
-        .map(s => {
+        .filter((s: any) => s.engagement)
+        .map((s: any) => {
           switch(s.engagement) {
             case 'excellent': return 4;
             case 'good': return 3;
@@ -203,11 +203,11 @@ export async function getStudyEffectivenessReport(congregationId: string) {
         });
       
       const avgEngagement = engagementScores.length > 0
-        ? engagementScores.reduce((a, b) => a + b, 0) / engagementScores.length
+        ? engagementScores.reduce((a: number, b: number) => a + b, 0) / engagementScores.length
         : 0;
 
       const progress = (study.currentLesson / study.totalLessons) * 100;
-      const completedGoals = study.goals?.filter(g => g.completed).length || 0;
+      const completedGoals = study.goals?.filter((g: any) => g.completed).length || 0;
       const totalGoals = study.goals?.length || 0;
 
       return {

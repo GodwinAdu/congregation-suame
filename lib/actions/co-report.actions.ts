@@ -1,12 +1,13 @@
 "use server";
 
 import { COReport } from "@/lib/models/co-report.models";
-import { withAuth } from "@/lib/helpers/auth";
+import { User, withAuth } from "@/lib/helpers/auth";
 import { connectToDB } from "../mongoose";
 
 // Create CO Report
-const _createCOReport = async (user: IEmployee, reportData: any) => {
+const _createCOReport = async (user: User, reportData: any) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const report = new COReport({
@@ -23,8 +24,9 @@ const _createCOReport = async (user: IEmployee, reportData: any) => {
 };
 
 // Get all CO reports
-const _getCOReports = async (user: IEmployee) => {
+const _getCOReports = async (user: User) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const reports = await COReport.find()
@@ -41,8 +43,9 @@ const _getCOReports = async (user: IEmployee) => {
 };
 
 // Get CO report by ID
-const _getCOReportById = async (user: IEmployee, reportId: string) => {
+const _getCOReportById = async (user: User, reportId: string) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const report = await COReport.findById(reportId)
@@ -58,8 +61,9 @@ const _getCOReportById = async (user: IEmployee, reportId: string) => {
 };
 
 // Update CO Report
-const _updateCOReport = async (user: IEmployee, reportId: string, updateData: any) => {
+const _updateCOReport = async (user: User, reportId: string, updateData: any) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const report = await COReport.findByIdAndUpdate(
@@ -76,8 +80,9 @@ const _updateCOReport = async (user: IEmployee, reportId: string, updateData: an
 };
 
 // Approve CO Report
-const _approveCOReport = async (user: IEmployee, reportId: string) => {
+const _approveCOReport = async (user: User, reportId: string) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const report = await COReport.findByIdAndUpdate(
@@ -99,8 +104,9 @@ const _approveCOReport = async (user: IEmployee, reportId: string) => {
 };
 
 // Submit to CO
-const _submitToCO = async (user: IEmployee, reportId: string) => {
+const _submitToCO = async (user: User, reportId: string) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const report = await COReport.findByIdAndUpdate(
@@ -121,8 +127,9 @@ const _submitToCO = async (user: IEmployee, reportId: string) => {
 };
 
 // Delete CO Report
-const _deleteCOReport = async (user: IEmployee, reportId: string) => {
+const _deleteCOReport = async (user: User, reportId: string) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     await COReport.findByIdAndDelete(reportId);

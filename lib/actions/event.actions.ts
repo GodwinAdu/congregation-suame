@@ -18,6 +18,7 @@ async function _createEvent(user: User, data: {
     registrationDeadline?: Date
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const event = new Event({
@@ -49,6 +50,7 @@ async function _fetchEvents(user: User, filters?: {
     endDate?: Date
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         let query: any = { status: { $ne: 'cancelled' } }
@@ -84,6 +86,7 @@ async function _updateEvent(user: User, eventId: string, data: {
     status?: 'draft' | 'published' | 'cancelled' | 'completed'
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const event = await Event.findByIdAndUpdate(
@@ -112,6 +115,7 @@ async function _updateEvent(user: User, eventId: string, data: {
 
 async function _deleteEvent(user: User, eventId: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const event = await Event.findByIdAndUpdate(
@@ -140,6 +144,7 @@ async function _deleteEvent(user: User, eventId: string) {
 
 async function _registerForEvent(user: User, eventId: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const event = await Event.findById(eventId)
@@ -173,6 +178,7 @@ async function _registerForEvent(user: User, eventId: string) {
 
 async function _getCalendarEvents(user: User, month: number, year: number) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const startDate = new Date(year, month - 1, 1)

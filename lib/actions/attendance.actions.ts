@@ -118,7 +118,12 @@ async function _fetchAttendanceByServiceYear(user: User, serviceYear: number) {
         }).sort({ date: 1 });
 
         // Group by month and calculate statistics
-        const monthlyData = {};
+        const monthlyData: Record<string, {
+            month: string;
+            numberOfMeetings: number;
+            totalAttendance: number;
+            averageAttendance: number;
+        }> = {};
         const months = [
             "September", "October", "November", "December",
             "January", "February", "March", "April",
@@ -211,7 +216,7 @@ async function _updateMonthlyAttendance(user: User, month: string, serviceYear: 
             userId: user._id as string,
             type: 'attendance_update',
             action: `${user.fullName} updated ${month} attendance data`,
-            details: { month, serviceYear, values },
+            details: { entityType: 'Attendance', metadata: { month, serviceYear, values } },
         });
 
         revalidatePath('/dashboard/attendance/attendance-tracker');
@@ -240,7 +245,19 @@ async function _fetchAttendanceByServiceYearSeparated(user: User, serviceYear: n
         }).sort({ date: 1 });
 
         // Group by month and meeting type separately
-        const monthlyData = {};
+        const monthlyData: Record<string, {
+            month: string;
+            midweek: {
+                numberOfMeetings: number;
+                totalAttendance: number;
+                averageAttendance: number;
+            };
+            weekend: {
+                numberOfMeetings: number;
+                totalAttendance: number;
+                averageAttendance: number;
+            };
+        }> = {};
         const months = [
             "September", "October", "November", "December",
             "January", "February", "March", "April",

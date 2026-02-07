@@ -98,6 +98,7 @@ export const fetchAllTrashes = await withAuth(_fetchAllTrashes)
 export async function restoreDocument(trashId: string) {
     try {
         const user = await currentUser();
+        if (!user) throw new Error("User not authorized");
         const userId = user._id
         // Connect to the database
         await connectToDB();

@@ -1,6 +1,6 @@
 "use server"
 
-import {  withAuth } from "../helpers/auth"
+import { withAuth } from "../helpers/auth"
 import { connectToDB } from "../mongoose"
 import { revalidatePath } from "next/cache"
 import { logActivity } from "../utils/activity-logger"
@@ -9,6 +9,7 @@ import Member from "../models/user.models"
 
 export const createShepherdingCall = await withAuth(async (user, data: any) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const newCall = new ShepherdingCall({
@@ -35,6 +36,7 @@ export const createShepherdingCall = await withAuth(async (user, data: any) => {
 
 export const updateShepherdingCall = await withAuth(async (user, callId: string, data: any) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const updatedCall = await ShepherdingCall.findByIdAndUpdate(
@@ -62,6 +64,7 @@ export const updateShepherdingCall = await withAuth(async (user, callId: string,
 
 export const deleteShepherdingCall = await withAuth(async (user, callId: string) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         await ShepherdingCall.findByIdAndDelete(callId)
@@ -83,10 +86,11 @@ export const deleteShepherdingCall = await withAuth(async (user, callId: string)
 
 export const getShepherdingCalls = await withAuth(async (user, filters?: any) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const query: any = {}
-        
+
         if (filters?.memberId) query.memberId = filters.memberId
         if (filters?.status) query.status = filters.status
         if (filters?.followUpNeeded) query.followUpNeeded = true
@@ -110,6 +114,7 @@ export const getShepherdingCalls = await withAuth(async (user, filters?: any) =>
 
 export const getOverdueFollowUps = await withAuth(async (user) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const today = new Date()
@@ -132,6 +137,7 @@ export const getOverdueFollowUps = await withAuth(async (user) => {
 
 export const getShepherdingStats = await withAuth(async (user, startDate?: string, endDate?: string) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const query: any = {}
@@ -140,7 +146,7 @@ export const getShepherdingStats = await withAuth(async (user, startDate?: strin
         }
 
         const calls = await ShepherdingCall.find(query).lean()
-        
+
         const stats = {
             total: calls.length,
             completed: calls.filter(c => c.status === 'completed').length,
@@ -166,6 +172,7 @@ export const getShepherdingStats = await withAuth(async (user, startDate?: strin
 
 export const getMembersNeedingShepherding = await withAuth(async (user) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         // Get all members
@@ -199,7 +206,7 @@ export const getMembersNeedingShepherding = await withAuth(async (user) => {
 
         const membersWithStatus = activeMembers.map(member => {
             const lastCall = callMap.get(member._id.toString())
-            const daysSinceLastCall = lastCall 
+            const daysSinceLastCall = lastCall
                 ? Math.floor((Date.now() - new Date(lastCall.visitDate).getTime()) / (1000 * 60 * 60 * 24))
                 : null
 
@@ -227,6 +234,7 @@ export const getMembersNeedingShepherding = await withAuth(async (user) => {
 
 export const getEldersAndMS = await withAuth(async (user) => {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const members = await Member.find({})
@@ -236,7 +244,7 @@ export const getEldersAndMS = await withAuth(async (user) => {
 
         const shepherds = members.filter(member => {
             if (!member.privileges || member.privileges.length === 0) return false
-            return member.privileges.some((priv: any) => 
+            return member.privileges.some((priv: any) =>
                 priv.name.toLowerCase() === 'elder' || priv.name.toLowerCase() === 'ministerial servant'
             )
         })

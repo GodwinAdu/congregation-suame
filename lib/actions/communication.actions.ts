@@ -3,7 +3,6 @@
 import { User, withAuth } from "../helpers/auth"
 import { Message, Broadcast } from "../models/communication.models"
 import { Announcement } from "../models/event.models"
-import { NotificationService } from "../services/notification.service"
 import { connectToDB } from "../mongoose"
 import { revalidatePath } from "next/cache"
 import { logActivity } from "../utils/activity-logger"
@@ -23,6 +22,7 @@ async function _sendMessage(user: User, data: {
     isEmergency?: boolean
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const message = new Message({
@@ -30,20 +30,6 @@ async function _sendMessage(user: User, data: {
             from: user._id
         })
         await message.save()
-
-        // Send notifications to recipients
-        for (const recipientId of data.to) {
-            await NotificationService.sendNotification({
-                userId: recipientId,
-                type: data.isEmergency ? 'emergency' : 'announcement',
-                title: data.subject,
-                message: data.content,
-                priority: data.priority,
-                metadata: { messageId: message._id }
-            })
-            
-
-        }
 
         await logActivity({
             userId: user._id as string,
@@ -73,6 +59,7 @@ async function _createBroadcast(user: User, data: {
     deliveryMethod: ('email' | 'sms')[]
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         // Get target recipients
@@ -107,7 +94,7 @@ async function _createBroadcast(user: User, data: {
 
         const broadcast = new Broadcast({
             ...data,
-            sender: user?._id,
+            sender: user._id,
             recipients,
             status: data.scheduledFor ? 'scheduled' : 'sent'
         })
@@ -145,6 +132,7 @@ async function _createAnnouncement(user: User, data: {
     expiresAt?: Date
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const announcement = new Announcement({
@@ -153,22 +141,6 @@ async function _createAnnouncement(user: User, data: {
             status: 'published'
         })
         await announcement.save()
-
-        // Get target recipients for notifications
-        let recipients = []
-        
-        if (data.targetAudience.type === 'all') {
-            const allMembers = await Member.find({ }).select('_id')
-            recipients = allMembers.map(m => m._id.toString())
-        } else if (data.targetAudience.roles) {
-            const roleMembers = await Member.find({
-                status: 'active',
-                role: { $in: data.targetAudience.roles }
-            }).select('_id')
-            recipients = roleMembers.map(m => m._id.toString())
-        }
-
-        // Notifications removed - focusing on email/SMS only
 
         await logActivity({
             userId: user._id as string,
@@ -219,18 +191,25 @@ async function _fetchMessages(user: User, type?: 'sent' | 'received') {
 
 async function _fetchAnnouncements(user: User) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const announcements = await Announcement.find({
             status: 'published',
-            $or: [
-                { 'targetAudience.type': 'all' },
-                { 'targetAudience.roles': { $in: user.privileges || [] } },
-                { 'targetAudience.groups': user.groupId }
-            ],
-            $or: [
-                { expiresAt: { $exists: false } },
-                { expiresAt: { $gt: new Date() } }
+            $and: [
+                {
+                    $or: [
+                        { 'targetAudience.type': 'all' },
+                        { 'targetAudience.roles': { $in: user.privileges || [] } },
+                        { 'targetAudience.groups': user.groupId }
+                    ]
+                },
+                {
+                    $or: [
+                        { expiresAt: { $exists: false } },
+                        { expiresAt: { $gt: new Date() } }
+                    ]
+                }
             ]
         })
         .populate('author', 'fullName')
@@ -245,6 +224,7 @@ async function _fetchAnnouncements(user: User) {
 
 async function _fetchBroadcasts(user: User) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const broadcasts = await Broadcast.find({
@@ -262,6 +242,7 @@ async function _fetchBroadcasts(user: User) {
 
 async function _markMessageAsRead(user: User, messageId: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const message = await Message.findById(messageId)
@@ -270,13 +251,13 @@ async function _markMessageAsRead(user: User, messageId: string) {
         }
 
         // Check if user is recipient
-        const isRecipient = message.to.some((id: any) => id.toString() === user._id.toString())
+        const isRecipient = message.to.some((id: any) => id.toString() === user._id)
         if (!isRecipient) {
             throw new Error('Unauthorized to mark this message as read')
         }
 
         // Check if already marked as read
-        const alreadyRead = message.readBy.some((read: any) => read.userId.toString() === user._id.toString())
+        const alreadyRead = message.readBy.some((read: any) => read.userId.toString() === user._id)
         if (alreadyRead) {
             return { success: true, message: 'Already marked as read' }
         }
@@ -305,6 +286,7 @@ async function _markMessageAsRead(user: User, messageId: string) {
 
 async function _deleteMessage(user: User, messageId: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const message = await Message.findById(messageId)
@@ -313,8 +295,8 @@ async function _deleteMessage(user: User, messageId: string) {
         }
 
         // Check if user is sender or recipient
-        const isSender = message.from.toString() === user._id.toString()
-        const isRecipient = message.to.some((id: any) => id.toString() === user._id.toString())
+        const isSender = message.from.toString() === user._id?.toString()
+        const isRecipient = message.to.some((id: any) => id.toString() === user._id?.toString())
         
         if (!isSender && !isRecipient) {
             throw new Error('Unauthorized to delete this message')
@@ -374,19 +356,19 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
         console.log('Broadcast recipients:', recipients.length, 'members found')
         console.log('Target audience:', broadcast.targetAudience)
 
-        // In-app notifications
-        if (deliveryMethods.includes('in-app')) {
-            await NotificationService.sendBulkNotifications(
-                recipients.map(r => r._id.toString()),
-                {
-                    type: 'announcement',
-                    title: broadcast.title,
-                    message: broadcast.content,
-                    priority: 'medium',
-                    metadata: { broadcastId }
-                }
-            )
-        }
+        // In-app notifications (commented out - NotificationService not available)
+        // if (deliveryMethods.includes('in-app')) {
+        //     await NotificationService.sendBulkNotifications(
+        //         recipients.map(r => r._id.toString()),
+        //         {
+        //             type: 'announcement',
+        //             title: broadcast.title,
+        //             message: broadcast.content,
+        //             priority: 'medium',
+        //             metadata: { broadcastId }
+        //         }
+        //     )
+        // }
 
         // Email notifications
         if (deliveryMethods.includes('email')) {
@@ -501,7 +483,7 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
                     // Update last used timestamp
                     subscription.lastUsed = new Date()
                     await subscription.save()
-                } catch (error) {
+                } catch (error: any) {
                     console.error('Push notification error:', error)
                     
                     // Handle expired subscriptions
@@ -554,7 +536,7 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
             console.log(`SMS delivery complete: ${smsSent} sent, ${smsFailed} failed`)
         }
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error delivering broadcast:', error)
         throw error
     }
@@ -573,6 +555,7 @@ async function _updateBroadcast(user: User, broadcastId: string, data: {
     deliveryMethod: ('email' | 'sms')[]
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const broadcast = await Broadcast.findById(broadcastId)
@@ -581,7 +564,7 @@ async function _updateBroadcast(user: User, broadcastId: string, data: {
         }
 
         // Check if user is sender
-        if (broadcast.sender.toString() !== user._id.toString()) {
+        if (broadcast.sender.toString() !== user._id?.toString()) {
             throw new Error('Unauthorized to edit this broadcast')
         }
 
@@ -643,6 +626,7 @@ async function _updateBroadcast(user: User, broadcastId: string, data: {
 
 async function _deleteBroadcast(user: User, broadcastId: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const broadcast = await Broadcast.findById(broadcastId)
@@ -651,7 +635,7 @@ async function _deleteBroadcast(user: User, broadcastId: string) {
         }
 
         // Check if user is sender
-        if (broadcast.sender.toString() !== user._id.toString()) {
+        if (broadcast.sender.toString() !== user._id?.toString()) {
             throw new Error('Unauthorized to delete this broadcast')
         }
 
@@ -674,6 +658,7 @@ async function _deleteBroadcast(user: User, broadcastId: string) {
 
 async function _getRolesAndPrivileges(user: User) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const [roles, privileges] = await Promise.all([

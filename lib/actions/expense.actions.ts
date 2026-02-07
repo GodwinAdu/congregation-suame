@@ -2,7 +2,6 @@
 
 import { connectToDB } from '@/lib/mongoose';
 import Expense from '@/lib/models/expense.models';
-import Member from '@/lib/models/member.models';
 import { revalidatePath } from 'next/cache';
 
 export async function createExpense(data: {

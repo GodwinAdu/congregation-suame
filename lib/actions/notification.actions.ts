@@ -2,13 +2,14 @@
 
 import { User, withAuth } from "../helpers/auth"
 import { Notification, NotificationPreferences } from "../models/notification.models"
-import { NotificationService } from "../services/notification.service"
+import { sendPushNotification } from "../services/notification.service"
 import { connectToDB } from "../mongoose"
 import { revalidatePath } from "next/cache"
 import { logActivity } from "../utils/activity-logger"
 
 async function _fetchNotifications(user: User, status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed') {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         let query: any = { userId: user._id }
@@ -29,6 +30,7 @@ async function _fetchNotifications(user: User, status?: 'pending' | 'sent' | 'de
 
 async function _markNotificationAsRead(user: User, notificationId: string) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const notification = await Notification.findOneAndUpdate(
@@ -66,6 +68,7 @@ async function _updateNotificationPreferences(user: User, preferences: {
     }
 }) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const updatedPreferences = await NotificationPreferences.findOneAndUpdate(
@@ -91,6 +94,7 @@ async function _updateNotificationPreferences(user: User, preferences: {
 
 async function _fetchNotificationPreferences(user: User) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         let preferences = await NotificationPreferences.findOne({ userId: user._id })
@@ -123,10 +127,10 @@ async function _fetchNotificationPreferences(user: User) {
 
 async function _sendTestNotification(user: User) {
     try {
-        await NotificationService.sendNotification({
+        if (!user) throw new Error("User not authorized")
+        await sendPushNotification({
             userId: user._id as string,
-            type: 'announcement',
-            title: 'Test Notification',
+            to: user._id as string,
             message: 'This is a test notification to verify your notification settings are working correctly.',
             priority: 'low'
         })
@@ -147,6 +151,7 @@ async function _sendTestNotification(user: User) {
 
 async function _getNotificationStats(user: User) {
     try {
+        if (!user) throw new Error("User not authorized")
         await connectToDB()
         
         const [total, unread, byType, byPriority] = await Promise.all([

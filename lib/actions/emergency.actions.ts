@@ -109,8 +109,8 @@ export async function getMedicalAlerts(congregationId: string) {
 
     const members = await Member.find({
       $or: [
-        { 'medicalInfo.allergies': { $ne: null, $ne: '' } },
-        { 'medicalInfo.conditions': { $ne: null, $ne: '' } },
+        { 'medicalInfo.allergies': { $nin: [null, ''] } },
+        { 'medicalInfo.conditions': { $nin: [null, ''] } },
         { 'medicalInfo.noBloodCard': true }
       ]
     })
@@ -140,9 +140,9 @@ export async function getEmergencyStats(congregationId: string) {
     
     const withMedicalInfo = await Member.countDocuments({
       $or: [
-        { 'medicalInfo.bloodType': { $ne: null, $ne: '' } },
-        { 'medicalInfo.allergies': { $ne: null, $ne: '' } },
-        { 'medicalInfo.conditions': { $ne: null, $ne: '' } }
+        { 'medicalInfo.bloodType': { $nin: [null, ''] } },
+        { 'medicalInfo.allergies': { $nin: [null, ''] } },
+        { 'medicalInfo.conditions': { $nin: [null, ''] } }
       ]
     });
     

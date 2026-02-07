@@ -2,7 +2,7 @@
 
 import { connectToDB } from '@/lib/mongoose';
 import AssignmentHistory from '@/lib/models/assignment-history.models';
-import Member from '@/lib/models/member.models';
+import Member from '@/lib/models/user.models';
 import { revalidatePath } from 'next/cache';
 import mongoose from 'mongoose';
 
@@ -23,7 +23,6 @@ export async function createAssignmentHistory(data: {
 
     const history = await AssignmentHistory.create({
       ...data,
-      congregationId: member.congregationId,
       completed: false
     });
 
@@ -81,7 +80,7 @@ export async function getAssignmentHistory(congregationId: string, filters?: {
   try {
     await connectToDB();
 
-    const query: any = { congregationId };
+    const query: any = {};
     if (filters?.memberId) query.memberId = filters.memberId;
     if (filters?.meetingType) query.meetingType = filters.meetingType;
     if (filters?.startDate || filters?.endDate) {
@@ -91,7 +90,7 @@ export async function getAssignmentHistory(congregationId: string, filters?: {
     }
 
     const history = await AssignmentHistory.find(query)
-      .populate('memberId', 'firstName lastName')
+      .populate('memberId', 'fullName firstName lastName')
       .sort({ assignmentDate: -1 })
       .lean();
 
@@ -111,7 +110,6 @@ export async function getAssignmentFrequency(congregationId: string, months: num
     const frequency = await AssignmentHistory.aggregate([
       {
         $match: {
-          congregationId: new mongoose.Types.ObjectId(congregationId),
           assignmentDate: { $gte: startDate }
         }
       },
@@ -141,7 +139,7 @@ export async function getAssignmentFrequency(congregationId: string, months: num
       {
         $project: {
           memberId: '$_id',
-          memberName: { $concat: ['$member.firstName', ' ', '$member.lastName'] },
+          memberName: { $ifNull: ['$member.fullName', { $concat: ['$member.firstName', ' ', '$member.lastName'] }] },
           totalAssignments: 1,
           midweekCount: 1,
           weekendCount: 1,
@@ -172,24 +170,20 @@ export async function getMembersWithoutRecentAssignments(congregationId: string,
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     const recentAssignments = await AssignmentHistory.find({
-      congregationId,
       assignmentDate: { $gte: cutoffDate }
     }).distinct('memberId');
 
     const members = await Member.find({
-      congregationId,
-      isActive: true,
       _id: { $nin: recentAssignments }
     })
       .populate('privileges')
-      .select('firstName lastName email phone privileges')
+      .select('fullName firstName lastName email phone privileges')
       .lean();
 
     const membersWithLastAssignment = await Promise.all(
       members.map(async (member) => {
         const lastAssignment = await AssignmentHistory.findOne({
-          memberId: member._id,
-          congregationId
+          memberId: member._id
         })
           .sort({ assignmentDate: -1 })
           .select('assignmentDate assignmentType')
@@ -222,15 +216,15 @@ export async function getAssignmentStats(congregationId: string) {
     const last6Months = new Date(now.getFullYear(), now.getMonth() - 6, 1);
 
     const [totalAssignments, lastMonthCount, last3MonthsCount, last6MonthsCount, uniqueMembers] = await Promise.all([
-      AssignmentHistory.countDocuments({ congregationId }),
-      AssignmentHistory.countDocuments({ congregationId, assignmentDate: { $gte: lastMonth } }),
-      AssignmentHistory.countDocuments({ congregationId, assignmentDate: { $gte: last3Months } }),
-      AssignmentHistory.countDocuments({ congregationId, assignmentDate: { $gte: last6Months } }),
-      AssignmentHistory.distinct('memberId', { congregationId, assignmentDate: { $gte: last6Months } })
+      AssignmentHistory.countDocuments({}),
+      AssignmentHistory.countDocuments({ assignmentDate: { $gte: lastMonth } }),
+      AssignmentHistory.countDocuments({ assignmentDate: { $gte: last3Months } }),
+      AssignmentHistory.countDocuments({ assignmentDate: { $gte: last6Months } }),
+      AssignmentHistory.distinct('memberId', { assignmentDate: { $gte: last6Months } })
     ]);
 
     const typeDistribution = await AssignmentHistory.aggregate([
-      { $match: { congregationId: new mongoose.Types.ObjectId(congregationId), assignmentDate: { $gte: last6Months } } },
+      { $match: { assignmentDate: { $gte: last6Months } } },
       { $group: { _id: '$assignmentType', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);

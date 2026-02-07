@@ -156,6 +156,10 @@ export function NavMain({ role, user }: NavMainProps) {
           url: `/dashboard/members`,
         },
         {
+          title: "Group Assignment",
+          url: `/dashboard/members/group-assignment`,
+        },
+        {
           title: t('sidebar.families'),
           url: `/dashboard/members/families`,
         },
@@ -325,6 +329,11 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: t('territory.territoryList'),
           url: `/dashboard/territories/list`,
+          roleField: "territoryManage"
+        },
+        {
+          title: "Territory Management",
+          url: `/dashboard/territories/manage`,
           roleField: "territoryManage"
         },
         {

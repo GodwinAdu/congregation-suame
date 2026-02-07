@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { fetchUserById } from "../actions/user.actions";
-import { logActivity } from "../utils/activity-logger";
+
 
 
 

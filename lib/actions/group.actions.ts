@@ -24,8 +24,8 @@ async function _createGroup(user: User, values: { name: string }) {
         await logActivity({
             userId: user._id as string,
             type: 'group_created',
-            action: `${user.fullName} `,
-            details: { entityId: newReport._id, entityType: 'FieldServiceReport' },
+            action: `${user.fullName} created group: ${values.name}`,
+            details: { entityId: newGroup._id, entityType: 'Group' },
         });
 
 

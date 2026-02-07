@@ -33,7 +33,7 @@ async function _updateMemberLocation(user: User, memberId: string, locationData:
         if (!member) throw new Error("Member not found");
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'location_update',
             action: `${user.fullName} updated location for ${member.fullName}`,
             details: { entityId: memberId, entityType: 'Member' },
@@ -75,7 +75,7 @@ async function _updateMyLocation(user: User, locationData: LocationData) {
         await connectToDB();
 
         const member = await Member.findByIdAndUpdate(
-            user._id,
+            user._id as string,
             {
                 location: {
                     ...locationData,
@@ -88,10 +88,10 @@ async function _updateMyLocation(user: User, locationData: LocationData) {
         if (!member) throw new Error("Member not found");
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'location_update',
             action: `${user.fullName} updated their location`,
-            details: { entityId: user._id, entityType: 'Member' },
+            details: { entityId: user._id as string, entityType: 'Member' },
         });
 
         revalidatePath('/dashboard/profile');

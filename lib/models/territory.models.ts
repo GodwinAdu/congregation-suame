@@ -1,7 +1,6 @@
 import { Document, model, Schema, models } from "mongoose";
 
 export interface ITerritory extends Document {
-  _id: string;
   number: string;
   name: string;
   description?: string;
@@ -23,13 +22,13 @@ export interface ITerritory extends Document {
   householdCount?: number;
   notes?: string;
   kmlData?: string; // Original KML/KMZ data
+  assignedGroup?: Schema.Types.ObjectId;
   createdBy: Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ITerritoryAssignment extends Document {
-  _id: string;
   territoryId: Schema.Types.ObjectId;
   publisherId: Schema.Types.ObjectId;
   assignedDate: Date;
@@ -68,6 +67,7 @@ const TerritorySchema = new Schema({
   householdCount: { type: Number },
   notes: { type: String },
   kmlData: { type: String },
+  assignedGroup: { type: Schema.Types.ObjectId, ref: "Group" },
   createdBy: { type: Schema.Types.ObjectId, ref: "Member", required: true }
 }, { timestamps: true });
 

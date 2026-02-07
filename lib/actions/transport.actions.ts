@@ -59,7 +59,7 @@ async function _updateMemberTransportStatus(user: User, memberId: string, carSta
         if (!updatedMember) throw new Error("Member not found");
         
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_status',
             action: `${user.fullName} ${carStatus ? 'enrolled' : 'removed'} ${updatedMember.fullName} in transport`,
             details: { entityId: memberId, entityType: 'Member' },
@@ -109,7 +109,7 @@ async function _addPayment(user: User, memberId: string, paymentAmount: number) 
         );
         
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_payment',
             action: `${user.fullName} recorded ₵${paymentAmount} transport payment for ${member.fullName}`,
             details: { entityId: memberId, entityType: 'Member' },
@@ -188,7 +188,7 @@ async function _setGlobalTransportAmount(user: User, totalAmount: number) {
         await Promise.all(updatePromises);
         
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_config',
             action: `${user.fullName} set global transport amount to ₵${totalAmount}`,
             details: { entityType: 'TransportConfig' },
@@ -239,7 +239,7 @@ async function _resetAllTransportData(user: User) {
         await TransportConfig.deleteMany({});
         
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_reset',
             action: `${user.fullName} reset all transport data`,
             details: { entityType: 'TransportConfig' },

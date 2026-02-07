@@ -60,7 +60,7 @@ async function _assignDutyToMember(user: User, memberId: string, dutyName: strin
             userId: user._id as string,
             type: 'duty_assignment',
             action: `${user.fullName} assigned ${dutyName} to ${member.fullName}`,
-            details: { memberId, dutyName, category }
+            details: { entityId: memberId, entityType: 'Member', metadata: { dutyName, category } }
         })
 
         return { success: true, message: "Duty assigned successfully" }
@@ -93,7 +93,7 @@ async function _removeDutyFromMember(user: User, memberId: string, dutyName: str
             userId: user._id as string,
             type: 'duty_assignment',
             action: `${user.fullName} removed ${dutyName} from ${member.fullName}`,
-            details: { memberId, dutyName }
+            details: { entityId: memberId, entityType: 'Member', metadata: { dutyName } }
         })
 
         return { success: true, message: "Duty removed successfully" }

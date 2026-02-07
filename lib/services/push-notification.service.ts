@@ -45,9 +45,10 @@ export class PushNotificationService {
       
       if (!subscription) {
         // Subscribe to push notifications
+        const applicationServerKey = this.urlBase64ToUint8Array(this.vapidKeys.publicKey)
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: this.urlBase64ToUint8Array(this.vapidKeys.publicKey)
+          applicationServerKey: applicationServerKey.buffer as ArrayBuffer
         })
       }
 
@@ -108,7 +109,6 @@ export class PushNotificationService {
         body: payload.body,
         icon: payload.icon || '/icon-192x192.png',
         badge: payload.badge || '/icon-192x192.png',
-        image: payload.image,
         data: payload.data,
         tag: payload.tag,
         requireInteraction: payload.requireInteraction,

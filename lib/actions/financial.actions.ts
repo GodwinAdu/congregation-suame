@@ -82,12 +82,15 @@ async function _approveExpense(user: User, expenseId: string, approved: boolean,
         if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
+        const existingExpense = await Expense.findById(expenseId)
+        if (!existingExpense) throw new Error('Expense not found')
+
         const expense = await Expense.findByIdAndUpdate(
             expenseId,
             {
                 status: approved ? 'approved' : 'rejected',
                 approvedBy: user._id,
-                notes: notes || expense.notes
+                notes: notes || existingExpense.notes
             },
             { new: true }
         )
@@ -109,6 +112,7 @@ async function _approveExpense(user: User, expenseId: string, approved: boolean,
 
 async function _markExpensePaid(user: User, expenseId: string, paymentDate: Date) {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const expense = await Expense.findByIdAndUpdate(
@@ -248,6 +252,7 @@ async function _createBudget(user: User, data: {
 
 async function _generateMonthlyReport(user: User, year: number, month: number) {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const startDate = new Date(year, month - 1, 1)
@@ -400,6 +405,7 @@ async function _fetchExpenses(user: User, filters?: {
     status?: string
 }) {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         let query: any = {}
@@ -430,6 +436,7 @@ async function _fetchExpenses(user: User, filters?: {
 
 async function _deleteExpense(user: User, expenseId: string) {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         const expense = await Expense.findById(expenseId)
@@ -461,6 +468,7 @@ async function _deleteExpense(user: User, expenseId: string) {
 
 async function _fetchBudgets(user: User, year?: number) {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
 
         let query: any = {}
@@ -486,6 +494,7 @@ async function _setOpeningBalance(user: User, data: {
     notes?: string
 }) {
     try {
+        if (!user) throw new Error('User not authenticated')
         await connectToDB()
         
         const existingBalance = await OpeningBalance.findOne({ year: data.year, month: data.month })

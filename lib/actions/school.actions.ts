@@ -105,13 +105,13 @@ export async function getUpcomingAssignments(congregationId: string) {
 
     const upcoming = students.flatMap(student => 
       (student.assignments || [])
-        .filter(a => a.status === 'scheduled' && new Date(a.scheduledDate) >= new Date())
-        .map(a => ({
+        .filter((a: any) => a.status === 'scheduled' && new Date(a.scheduledDate) >= new Date())
+        .map((a: any) => ({
           ...a,
           student: student.memberId,
           studentId: student._id
         }))
-    ).sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+    ).sort((a: any, b: any) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
 
     return { success: true, data: JSON.parse(JSON.stringify(upcoming)) };
   } catch (error: any) {

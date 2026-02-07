@@ -2,7 +2,6 @@
 
 import { connectToDB } from '@/lib/mongoose';
 import Literature from '@/lib/models/literature.models';
-import Member from '@/lib/models/member.models';
 import { revalidatePath } from 'next/cache';
 
 export async function createLiterature(data: any) {
@@ -175,11 +174,11 @@ export async function getLiteratureStats(congregationId: string) {
     const lowStockCount = literature.filter(l => l.stockQuantity <= l.reorderLevel).length;
     
     const totalPlacements = literature.reduce((sum, l) => 
-      sum + (l.placements?.reduce((s, p) => s + p.quantity, 0) || 0), 0
+      sum + (l.placements?.reduce((s: number, p: any) => s + p.quantity, 0) || 0), 0
     );
     
     const totalContributions = literature.reduce((sum, l) => 
-      sum + (l.contributions?.reduce((s, c) => s + c.amount, 0) || 0), 0
+      sum + (l.contributions?.reduce((s: number, c: any) => s + c.amount, 0) || 0), 0
     );
 
     const totalCost = literature.reduce((sum, l) => 

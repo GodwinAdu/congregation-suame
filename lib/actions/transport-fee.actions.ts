@@ -43,7 +43,7 @@ async function _createTransportFee(user: User, values: {
         await MemberFeePayment.insertMany(paymentRecords);
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_fee_create',
             action: `${user.fullName} created transport fee: ${values.name}`,
             details: { entityId: newFee._id, entityType: 'TransportFee' },
@@ -172,7 +172,7 @@ async function _addFeePayment(user: User, memberId: string, feeId: string, payme
         await payment.save();
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_payment',
             action: `${user.fullName} recorded ₵${paymentAmount} payment for ${member.fullName} - ${fee.name}`,
             details: { entityId: payment._id, entityType: 'MemberFeePayment' },
@@ -222,7 +222,7 @@ async function _updateTransportFee(user: User, feeId: string, values: {
         }
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_fee_update',
             action: `${user.fullName} updated transport fee: ${updatedFee.name}`,
             details: { entityId: feeId, entityType: 'TransportFee' },
@@ -252,7 +252,7 @@ async function _deleteTransportFee(user: User, feeId: string) {
         await TransportFee.findByIdAndDelete(feeId);
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_fee_delete',
             action: `${user.fullName} deleted transport fee: ${fee.name}`,
             details: { entityId: feeId, entityType: 'TransportFee' },
@@ -299,7 +299,7 @@ async function _toggleMemberJoinStatus(user: User, memberId: string, feeId: stri
         await payment.save();
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_join_status',
             action: `${user.fullName} ${isJoined ? 'enrolled' : 'removed'} ${member.fullName} ${isJoined ? 'in' : 'from'} ${fee.name}`,
             details: { entityId: payment._id, entityType: 'MemberFeePayment' },
@@ -327,7 +327,7 @@ async function _resetAllTransportData(user: User) {
         ]);
 
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'transport_reset',
             action: `${user.fullName} reset all transport data`,
             details: { entityType: 'TransportFee' },

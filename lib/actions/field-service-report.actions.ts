@@ -1,8 +1,8 @@
 "use server";
 
 import { connectToDB } from "../mongoose";
-import { withAuth } from "@/lib/helpers/auth";
-import Member, { IUser } from "@/lib/models/user.models";
+import {User, withAuth } from "@/lib/helpers/auth";
+import Member from "@/lib/models/user.models";
 import FieldServiceReport from "@/lib/models/field-service.models";
 import Role from "@/lib/models/role.models";
 import Group from "@/lib/models/group.models";
@@ -15,8 +15,9 @@ interface ReportFilters {
   filterValue?: string;
 }
 
-const _generateFieldServiceReport = async (user: IUser, filters: ReportFilters) => {
+const _generateFieldServiceReport = async (user: User, filters: ReportFilters) => {
   try {
+    if (!user) throw new Error("User not authorized")
     await connectToDB();
 
     const startDate = new Date(filters.startMonth + '-01');
@@ -82,7 +83,7 @@ const _generateFieldServiceReport = async (user: IUser, filters: ReportFilters) 
     const memberReports = members.map(member => {
       const memberReports = reports.filter(r => r.publisher._id.toString() === member._id.toString());
       
-      const isRegularPioneer = member.privileges?.some(p => p.name.toLowerCase().includes('regular pioneer')) || false;
+      const isRegularPioneer = member.privileges?.some((p: any) => p.name.toLowerCase().includes('regular pioneer')) || false;
       const hasAuxiliaryPioneerReports = memberReports.some(r => r.auxiliaryPioneer === true);
       
       const memberTotals = {
@@ -113,14 +114,14 @@ const _generateFieldServiceReport = async (user: IUser, filters: ReportFilters) 
           role: member.role || 'Publisher',
           group: member.groupId?.name || 'Unassigned',
           privileges: {
-            elder: member.privileges?.some(p => p.name.toLowerCase().includes('elder')) || false,
-            ministerialServant: member.privileges?.some(p => p.name.toLowerCase().includes('ministerial servant')) || false,
+            elder: member.privileges?.some((p: any) => p.name.toLowerCase().includes('elder')) || false,
+            ministerialServant: member.privileges?.some((p: any) => p.name.toLowerCase().includes('ministerial servant')) || false,
             regularPioneer: isRegularPioneer,
             auxiliaryPioneer: hasAuxiliaryPioneerReports,
-            specialPioneer: member.privileges?.some(p => p.name.toLowerCase().includes('special pioneer')) || false,
-            otherSheep: member.privileges?.some(p => p.name.toLowerCase().includes('other sheep')) || true,
-            anointed: member.privileges?.some(p => p.name.toLowerCase().includes('anointed')) || false,
-            fieldMissionary: member.privileges?.some(p => p.name.toLowerCase().includes('field missionary')) || false
+            specialPioneer: member.privileges?.some((p: any) => p.name.toLowerCase().includes('special pioneer')) || false,
+            otherSheep: member.privileges?.some((p: any) => p.name.toLowerCase().includes('other sheep')) || true,
+            anointed: member.privileges?.some((p: any) => p.name.toLowerCase().includes('anointed')) || false,
+            fieldMissionary: member.privileges?.some((p: any) => p.name.toLowerCase().includes('field missionary')) || false
           }
         },
         reports: memberReports.map(r => ({
@@ -149,8 +150,9 @@ const _generateFieldServiceReport = async (user: IUser, filters: ReportFilters) 
 };
 
 // Get filter options for report generation
-const _getReportFilterOptions = async (user: IEmployee) => {
+const _getReportFilterOptions = async (user: User) => {
   try {
+    if (!user) throw new Error("User not authorized")
     await connectToDB();
     
     const [roles, groups, privileges, members] = await Promise.all([
@@ -173,8 +175,9 @@ const _getReportFilterOptions = async (user: IEmployee) => {
 };
 
 // Generate pioneer summary report
-const _generatePioneerSummaryReport = async (user: IEmployee, filters: { startMonth: string; endMonth: string }) => {
+const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: string; endMonth: string }) => {
   try {
+    if (!user) throw new Error("User not authorized")
     await connectToDB();
 
     // Get regular pioneer privilege ID first
@@ -207,7 +210,7 @@ const _generatePioneerSummaryReport = async (user: IEmployee, filters: { startMo
       const monthReports = reports.filter(r => r.month === monthKey);
       
       const regularPioneerReports = monthReports.filter(r => 
-        r.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('regular pioneer'))
+        r.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('regular pioneer'))
       );
       
       const auxiliaryPioneerReports = monthReports.filter(r => r.auxiliaryPioneer === true);
@@ -243,7 +246,7 @@ const _generatePioneerSummaryReport = async (user: IEmployee, filters: { startMo
     };
 
     // Generate S-21 records for regular pioneers
-    const regularPioneerReports = [];
+    const regularPioneerReports: any[] = [];
     for (const pioneer of regularPioneers) {
       const pioneerReports = reports.filter(r => r.publisher._id.toString() === pioneer._id.toString());
       
@@ -257,14 +260,14 @@ const _generatePioneerSummaryReport = async (user: IEmployee, filters: { startMo
           role: pioneer.role || 'Publisher',
           group: pioneer.groupId?.name || 'Unassigned',
           privileges: {
-            elder: pioneer.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('elder')) || false,
-            ministerialServant: pioneer.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('ministerial servant')) || false,
+            elder: pioneer.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('elder')) || false,
+            ministerialServant: pioneer.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('ministerial servant')) || false,
             regularPioneer: true,
             auxiliaryPioneer: false,
-            specialPioneer: pioneer.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('special pioneer')) || false,
-            otherSheep: pioneer.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('other sheep')) || true,
-            anointed: pioneer.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('anointed')) || false,
-            fieldMissionary: pioneer.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('field missionary')) || false
+            specialPioneer: pioneer.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('special pioneer')) || false,
+            otherSheep: pioneer.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('other sheep')) || true,
+            anointed: pioneer.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('anointed')) || false,
+            fieldMissionary: pioneer.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('field missionary')) || false
           }
         },
         reports: pioneerReports.map(r => ({
@@ -282,7 +285,7 @@ const _generatePioneerSummaryReport = async (user: IEmployee, filters: { startMo
     }
 
     // Generate S-21 records for auxiliary pioneers
-    const auxiliaryPioneerReports = [];
+    const auxiliaryPioneerReports: any[] = [];
     const auxiliaryPioneerIds = new Set();
     
     reports.forEach(report => {
@@ -301,14 +304,14 @@ const _generatePioneerSummaryReport = async (user: IEmployee, filters: { startMo
             role: report.publisher.role || 'Publisher',
             group: report.publisher.groupId?.name || 'Unassigned',
             privileges: {
-              elder: report.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('elder')) || false,
-              ministerialServant: report.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('ministerial servant')) || false,
-              regularPioneer: report.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('regular pioneer')) || false,
+              elder: report.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('elder')) || false,
+              ministerialServant: report.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('ministerial servant')) || false,
+              regularPioneer: report.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('regular pioneer')) || false,
               auxiliaryPioneer: true,
-              specialPioneer: report.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('special pioneer')) || false,
-              otherSheep: report.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('other sheep')) || true,
-              anointed: report.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('anointed')) || false,
-              fieldMissionary: report.publisher.privileges?.some(p => p && p.name && p.name.toLowerCase().includes('field missionary')) || false
+              specialPioneer: report.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('special pioneer')) || false,
+              otherSheep: report.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('other sheep')) || true,
+              anointed: report.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('anointed')) || false,
+              fieldMissionary: report.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('field missionary')) || false
             }
           },
           reports: memberReports.map(r => ({

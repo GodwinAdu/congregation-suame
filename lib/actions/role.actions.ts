@@ -100,7 +100,7 @@ async function _createRole(user: User, roleData: RoleData) {
         const role = await Role.create(roleData);
         
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'role_create',
             action: `${user.fullName} created new role: ${roleData.name}`,
             details: { entityId: role._id, entityType: 'Role' },
@@ -152,7 +152,7 @@ async function _updateRole(user: User, roleId: string, roleData: RoleData) {
         if (!role) throw new Error("Role not found");
         
         await logActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'role_update',
             action: `${user.fullName} updated role: ${roleData.name}`,
             details: { entityId: roleId, entityType: 'Role' },

@@ -1,6 +1,6 @@
 import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
-import { getOrCreatePublisherRecord } from '@/lib/actions/publisher-record.actions';
+import { getPublisherRecordData } from '@/lib/actions/publisher-record.actions';
 import { PublisherRecordClient } from './_components/PublisherRecordClient';
 
 export default async function PublisherRecordPage({ params }: { params: Promise<{ id: string }> }) {
@@ -8,12 +8,12 @@ export default async function PublisherRecordPage({ params }: { params: Promise<
   const user = await currentUser();
   if (!user) redirect('/sign-in');
 
-  const recordRes = await getOrCreatePublisherRecord(id);
+  const recordRes = await getPublisherRecordData(id);
 
   return (
     <div className="p-6 space-y-6">
       <PublisherRecordClient
-        record={recordRes.data || {}}
+        data={recordRes.data || {}}
         memberId={id}
         currentUserId={user._id as string}
       />

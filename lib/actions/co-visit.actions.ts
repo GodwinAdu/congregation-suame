@@ -1,18 +1,20 @@
+
 "use server";
 
 
 import { COVisit } from "@/lib/models/co-visit.models";
-import { withAuth } from "@/lib/helpers/auth";
+import { User, withAuth } from "@/lib/helpers/auth";
 import { connectToDB } from "../mongoose";
 
 // Create CO Visit
-const _createCOVisit = async (user: IEmployee, visitData: any) => {
+const _createCOVisit = async (user: User, visitData: any) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const visit = new COVisit({
       ...visitData,
-      createdBy: user._id
+      createdBy: user._id as string
     });
 
     await visit.save();
@@ -24,8 +26,9 @@ const _createCOVisit = async (user: IEmployee, visitData: any) => {
 };
 
 // Get all CO visits
-const _getCOVisits = async (user: IEmployee) => {
+const _getCOVisits = async (user: User) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const visits = await COVisit.find()
@@ -42,8 +45,9 @@ const _getCOVisits = async (user: IEmployee) => {
 };
 
 // Get CO visit by ID
-const _getCOVisitById = async (user: IEmployee, visitId: string) => {
+const _getCOVisitById = async (user: User, visitId: string) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const visit = await COVisit.findById(visitId)
@@ -59,8 +63,9 @@ const _getCOVisitById = async (user: IEmployee, visitId: string) => {
 };
 
 // Update CO Visit
-const _updateCOVisit = async (user: IEmployee, visitId: string, updateData: any) => {
+const _updateCOVisit = async (user: User, visitId: string, updateData: any) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const visit = await COVisit.findByIdAndUpdate(
@@ -77,8 +82,9 @@ const _updateCOVisit = async (user: IEmployee, visitId: string, updateData: any)
 };
 
 // Add shepherding call
-const _addShepherdingCall = async (user: IEmployee, visitId: string, callData: any) => {
+const _addShepherdingCall = async (user: User, visitId: string, callData: any) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const visit = await COVisit.findByIdAndUpdate(
@@ -98,8 +104,9 @@ const _addShepherdingCall = async (user: IEmployee, visitId: string, callData: a
 };
 
 // Update shepherding call
-const _updateShepherdingCall = async (user: IEmployee, visitId: string, callId: string, updateData: any) => {
+const _updateShepherdingCall = async (user: User, visitId: string, callId: string, updateData: any) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const visit = await COVisit.findOneAndUpdate(
@@ -121,8 +128,9 @@ const _updateShepherdingCall = async (user: IEmployee, visitId: string, callId: 
 };
 
 // Add appointment recommendation
-const _addAppointment = async (user: IEmployee, visitId: string, appointmentData: any) => {
+const _addAppointment = async (user: User, visitId: string, appointmentData: any) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     const visit = await COVisit.findByIdAndUpdate(
@@ -142,8 +150,9 @@ const _addAppointment = async (user: IEmployee, visitId: string, appointmentData
 };
 
 // Delete CO Visit
-const _deleteCOVisit = async (user: IEmployee, visitId: string) => {
+const _deleteCOVisit = async (user: User, visitId: string) => {
   try {
+    if (!user) throw new Error("User not authorized");
     await connectToDB();
 
     await COVisit.findByIdAndDelete(visitId);

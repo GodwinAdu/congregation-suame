@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { currentUserRole } from '@/lib/helpers/get-user-role'
-import { useAuth } from '@/lib/hooks/useAuth'
+import { IRole } from '@/lib/models/role.models'
 
 interface RoleContextType {
   role: IRole | undefined

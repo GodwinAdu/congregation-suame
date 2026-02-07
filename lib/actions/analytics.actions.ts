@@ -198,7 +198,13 @@ async function _getDashboardAnalytics(user: User) {
         const approvedReports = fieldServiceReports.filter(report => report.check).length;
 
         // Transport analytics - differentiate by transport fee types
-        const transportByFee = {};
+        const transportByFee: Record<string, {
+            feeName: string;
+            feeAmount: number;
+            participating: Set<string>;
+            fullyPaid: Set<string>;
+            totalPaid: number;
+        }> = {};
         
         // Group payments by transport fee
         memberFeePayments.forEach(payment => {
@@ -226,7 +232,7 @@ async function _getDashboardAnalytics(user: User) {
         });
         
         // Convert sets to counts and create summary
-        const transportSummary = Object.values(transportByFee).map((fee: any) => ({
+        const transportSummary = Object.values(transportByFee).map((fee) => ({
             feeName: fee.feeName,
             feeAmount: fee.feeAmount,
             participating: fee.participating.size,
