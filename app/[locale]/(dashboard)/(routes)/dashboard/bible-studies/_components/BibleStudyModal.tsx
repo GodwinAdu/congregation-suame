@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,28 +13,59 @@ import { toast } from 'sonner';
 interface BibleStudyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  members: any[];
   editData?: any;
 }
 
-export function BibleStudyModal({ open, onOpenChange, members, editData }: BibleStudyModalProps) {
+export function BibleStudyModal({ open, onOpenChange, editData }: BibleStudyModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    studentName: editData?.studentName || '',
-    studentEmail: editData?.studentEmail || '',
-    studentPhone: editData?.studentPhone || '',
-    studentAddress: editData?.studentAddress || '',
-    conductorId: editData?.conductorId?._id || '',
-    assistantId: editData?.assistantId?._id || '',
-    publication: editData?.publication || '',
-    totalLessons: editData?.totalLessons || '',
-    startDate: editData?.startDate ? new Date(editData.startDate).toISOString().split('T')[0] : '',
-    studyDay: editData?.studyDay || '',
-    studyTime: editData?.studyTime || '',
-    location: editData?.location || '',
-    status: editData?.status || 'active',
-    notes: editData?.notes || ''
+    studentName: '',
+    studentEmail: '',
+    studentPhone: '',
+    studentAddress: '',
+    publication: '',
+    totalLessons: '',
+    startDate: '',
+    studyDay: '',
+    studyTime: '',
+    location: '',
+    status: 'active',
+    notes: ''
   });
+
+  useEffect(() => {
+    if (editData) {
+      setFormData({
+        studentName: editData.studentName || '',
+        studentEmail: editData.studentEmail || '',
+        studentPhone: editData.studentPhone || '',
+        studentAddress: editData.studentAddress || '',
+        publication: editData.publication || '',
+        totalLessons: editData.totalLessons || '',
+        startDate: editData.startDate ? new Date(editData.startDate).toISOString().split('T')[0] : '',
+        studyDay: editData.studyDay || '',
+        studyTime: editData.studyTime || '',
+        location: editData.location || '',
+        status: editData.status || 'active',
+        notes: editData.notes || ''
+      });
+    } else {
+      setFormData({
+        studentName: '',
+        studentEmail: '',
+        studentPhone: '',
+        studentAddress: '',
+        publication: '',
+        totalLessons: '',
+        startDate: '',
+        studyDay: '',
+        studyTime: '',
+        location: '',
+        status: 'active',
+        notes: ''
+      });
+    }
+  }, [editData, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +73,8 @@ export function BibleStudyModal({ open, onOpenChange, members, editData }: Bible
 
     const data = {
       ...formData,
-      totalLessons: Number(formData.totalLessons),
-      startDate: new Date(formData.startDate),
-      assistantId: formData.assistantId || undefined
+      totalLessons: formData.totalLessons ? Number(formData.totalLessons) : undefined,
+      startDate: formData.startDate ? new Date(formData.startDate) : undefined
     };
 
     const result = editData
@@ -67,17 +97,15 @@ export function BibleStudyModal({ open, onOpenChange, members, editData }: Bible
           <DialogTitle>{editData ? 'Edit Bible Study' : 'New Bible Study'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Student Name *</Label>
-              <Input value={formData.studentName} onChange={(e) => setFormData({ ...formData, studentName: e.target.value })} required />
-            </div>
+          <div>
+            <Label>Student Name *</Label>
+            <Input value={formData.studentName} onChange={(e) => setFormData({ ...formData, studentName: e.target.value })} required />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label>Email</Label>
               <Input type="email" value={formData.studentEmail} onChange={(e) => setFormData({ ...formData, studentEmail: e.target.value })} />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Phone</Label>
               <Input value={formData.studentPhone} onChange={(e) => setFormData({ ...formData, studentPhone: e.target.value })} />
@@ -89,53 +117,24 @@ export function BibleStudyModal({ open, onOpenChange, members, editData }: Bible
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Conductor *</Label>
-              <Select value={formData.conductorId} onValueChange={(v) => setFormData({ ...formData, conductorId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select conductor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((m) => (
-                    <SelectItem key={m._id} value={m._id}>{m.firstName} {m.lastName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Publication</Label>
+              <Input value={formData.publication} onChange={(e) => setFormData({ ...formData, publication: e.target.value })} placeholder="e.g., Enjoy Life Forever" />
             </div>
             <div>
-              <Label>Assistant</Label>
-              <Select value={formData.assistantId} onValueChange={(v) => setFormData({ ...formData, assistantId: v === 'none' ? '' : v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select assistant (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {members.map((m) => (
-                    <SelectItem key={m._id} value={m._id}>{m.firstName} {m.lastName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Publication *</Label>
-              <Input value={formData.publication} onChange={(e) => setFormData({ ...formData, publication: e.target.value })} placeholder="e.g., Enjoy Life Forever" required />
-            </div>
-            <div>
-              <Label>Total Lessons *</Label>
-              <Input type="number" value={formData.totalLessons} onChange={(e) => setFormData({ ...formData, totalLessons: e.target.value })} required />
+              <Label>Total Lessons</Label>
+              <Input type="number" value={formData.totalLessons} onChange={(e) => setFormData({ ...formData, totalLessons: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label>Start Date *</Label>
-              <Input type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} required />
+              <Label>Start Date</Label>
+              <Input type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
             </div>
             <div>
-              <Label>Study Day *</Label>
+              <Label>Study Day</Label>
               <Select value={formData.studyDay} onValueChange={(v) => setFormData({ ...formData, studyDay: v })}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select day" />
                 </SelectTrigger>
                 <SelectContent>
                   {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
@@ -145,14 +144,14 @@ export function BibleStudyModal({ open, onOpenChange, members, editData }: Bible
               </Select>
             </div>
             <div>
-              <Label>Study Time *</Label>
-              <Input type="time" value={formData.studyTime} onChange={(e) => setFormData({ ...formData, studyTime: e.target.value })} required />
+              <Label>Study Time</Label>
+              <Input type="time" value={formData.studyTime} onChange={(e) => setFormData({ ...formData, studyTime: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Location *</Label>
-              <Input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="e.g., Student's home" required />
+              <Label>Location</Label>
+              <Input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="e.g., Student's home" />
             </div>
             <div>
               <Label>Status</Label>

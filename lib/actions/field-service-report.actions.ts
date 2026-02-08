@@ -210,7 +210,7 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
       const monthReports = reports.filter(r => r.month === monthKey);
       
       const regularPioneerReports = monthReports.filter(r => 
-        r.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('regular pioneer'))
+        r.publisher && r.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('regular pioneer'))
       );
       
       const auxiliaryPioneerReports = monthReports.filter(r => r.auxiliaryPioneer === true);
@@ -248,7 +248,7 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
     // Generate S-21 records for regular pioneers
     const regularPioneerReports: any[] = [];
     for (const pioneer of regularPioneers) {
-      const pioneerReports = reports.filter(r => r.publisher._id.toString() === pioneer._id.toString());
+      const pioneerReports = reports.filter(r => r.publisher && r.publisher._id && r.publisher._id.toString() === pioneer._id.toString());
       
       regularPioneerReports.push({
         member: {
@@ -289,10 +289,10 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
     const auxiliaryPioneerIds = new Set();
     
     reports.forEach(report => {
-      if (report.auxiliaryPioneer && !auxiliaryPioneerIds.has(report.publisher._id.toString())) {
+      if (report.auxiliaryPioneer && report.publisher && report.publisher._id && !auxiliaryPioneerIds.has(report.publisher._id.toString())) {
         auxiliaryPioneerIds.add(report.publisher._id.toString());
         
-        const memberReports = reports.filter(r => r.publisher._id.toString() === report.publisher._id.toString());
+        const memberReports = reports.filter(r => r.publisher && r.publisher._id && r.publisher._id.toString() === report.publisher._id.toString());
         
         auxiliaryPioneerReports.push({
           member: {
@@ -332,8 +332,8 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
     return {
       months,
       totals,
-      regularPioneerReports,
-      auxiliaryPioneerReports,
+      regularPioneerReports:JSON.parse(JSON.stringify(regularPioneerReports)),
+      auxiliaryPioneerReports: JSON.parse(JSON.stringify(auxiliaryPioneerReports)),
       filters,
       generatedAt: new Date(),
       generatedBy: user.fullName

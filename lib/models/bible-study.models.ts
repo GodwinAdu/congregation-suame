@@ -5,8 +5,7 @@ export interface IBibleStudy extends Document {
   studentEmail?: string;
   studentPhone?: string;
   studentAddress?: string;
-  conductorId: mongoose.Types.ObjectId;
-  assistantId?: mongoose.Types.ObjectId;
+  conductorId: mongoose.Types.ObjectId; // The member who conducts
   publication: string;
   currentLesson: number;
   totalLessons: number;
@@ -37,7 +36,6 @@ export interface IBibleStudy extends Document {
     engagement: 'excellent' | 'good' | 'fair' | 'poor';
   }>;
   notes?: string;
-  congregationId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,14 +47,13 @@ const BibleStudySchema = new Schema<IBibleStudy>(
     studentPhone: { type: String },
     studentAddress: { type: String },
     conductorId: { type: Schema.Types.ObjectId, ref: 'Member', required: true },
-    assistantId: { type: Schema.Types.ObjectId, ref: 'Member' },
-    publication: { type: String, required: true },
+    publication: { type: String },
     currentLesson: { type: Number, default: 1 },
-    totalLessons: { type: Number, required: true },
-    startDate: { type: Date, required: true },
-    studyDay: { type: String, required: true },
-    studyTime: { type: String, required: true },
-    location: { type: String, required: true },
+    totalLessons: { type: Number },
+    startDate: { type: Date },
+    studyDay: { type: String },
+    studyTime: { type: String },
+    location: { type: String },
     status: { type: String, enum: ['active', 'inactive', 'completed', 'discontinued'], default: 'active' },
     goals: [{
       description: String,
@@ -79,13 +76,11 @@ const BibleStudySchema = new Schema<IBibleStudy>(
       notes: String,
       engagement: { type: String, enum: ['excellent', 'good', 'fair', 'poor'] }
     }],
-    notes: { type: String },
-    congregationId: { type: Schema.Types.ObjectId, ref: 'Congregation', required: true }
+    notes: { type: String }
   },
   { timestamps: true }
 );
 
 BibleStudySchema.index({ conductorId: 1, status: 1 });
-BibleStudySchema.index({ congregationId: 1, status: 1 });
 
 export default mongoose.models.BibleStudy || mongoose.model<IBibleStudy>('BibleStudy', BibleStudySchema);

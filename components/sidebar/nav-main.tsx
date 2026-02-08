@@ -49,6 +49,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -73,8 +74,15 @@ interface NavMainProps {
 export function NavMain({ role, user }: NavMainProps) {
   const pathname = usePathname();
   const t = useTranslations();
+  const { setOpenMobile, isMobile } = useSidebar();
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const navMain: (NavItem | false)[] = [
     {
@@ -93,6 +101,10 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Dashboard",
           url: `/dashboard/publisher`,
+        },
+        {
+          title: "Daily Reports",
+          url: `/dashboard/daily-reports`,
         },
         {
           title: "My Goals",
@@ -606,7 +618,7 @@ export function NavMain({ role, user }: NavMainProps) {
                                 isActive(subItem.url) && "bg-primary/10 text-primary font-medium",
                               )}
                             >
-                              <Link href={subItem.url}>
+                              <Link href={subItem.url} onClick={handleLinkClick}>
                                 <span>{subItem.title}</span>
                               </Link>
                             </SidebarMenuSubButton>
@@ -626,7 +638,7 @@ export function NavMain({ role, user }: NavMainProps) {
                     isActive(item.url) && "bg-primary text-white font-medium",
                   )}
                 >
-                  <Link href={item.url}>
+                  <Link href={item.url} onClick={handleLinkClick}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>

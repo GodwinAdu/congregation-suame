@@ -1,18 +1,16 @@
 import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
 import { getBibleStudies, getBibleStudyStats, getStudyEffectivenessReport } from '@/lib/actions/bible-study.actions';
-import { fetchAllMembers } from '@/lib/actions/user.actions';
 import { BibleStudiesClient } from './_components/BibleStudiesClient';
 
 export default async function BibleStudiesPage() {
   const user = await currentUser();
   if (!user) redirect('/sign-in');
 
-  const [studiesRes, statsRes, reportRes, membersRes] = await Promise.all([
+  const [studiesRes, statsRes, reportRes] = await Promise.all([
     getBibleStudies(''),
     getBibleStudyStats(''),
-    getStudyEffectivenessReport(''),
-    fetchAllMembers()
+    getStudyEffectivenessReport('')
   ]);
 
   return (
@@ -26,7 +24,6 @@ export default async function BibleStudiesPage() {
         studies={studiesRes.data || []}
         stats={statsRes.data || {}}
         report={reportRes.data || []}
-        members={membersRes || []}
       />
     </div>
   );

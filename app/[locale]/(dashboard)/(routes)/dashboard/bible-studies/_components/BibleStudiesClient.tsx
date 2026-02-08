@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,10 +17,10 @@ interface BibleStudiesClientProps {
   studies: any[];
   stats: any;
   report: any[];
-  members: any[];
 }
 
-export function BibleStudiesClient({ studies, stats, report, members }: BibleStudiesClientProps) {
+export function BibleStudiesClient({ studies, stats, report }: BibleStudiesClientProps) {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
@@ -42,10 +43,19 @@ export function BibleStudiesClient({ studies, stats, report, members }: BibleStu
     const result = await deleteBibleStudy(deleteId);
     if (result.success) {
       toast.success('Bible study deleted');
+      router.refresh();
     } else {
       toast.error(result.error);
     }
     setDeleteId(null);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setModalOpen(open);
+    if (!open) {
+      setEditData(null);
+      router.refresh();
+    }
   };
 
   const filteredStudies = statusFilter === 'all' ? studies : studies.filter(s => s.status === statusFilter);
@@ -251,8 +261,7 @@ export function BibleStudiesClient({ studies, stats, report, members }: BibleStu
 
       <BibleStudyModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
-        members={members}
+        onOpenChange={handleModalClose}
         editData={editData}
       />
 

@@ -4,19 +4,19 @@ import { connectToDB } from '@/lib/mongoose';
 import BibleStudy from '@/lib/models/bible-study.models';
 import Member from '@/lib/models/user.models';
 import { revalidatePath } from 'next/cache';
+import { currentUser } from '@/lib/helpers/session';
 
 export async function createBibleStudy(data: any) {
   try {
     await connectToDB();
+    const user = await currentUser();
+    if (!user) throw new Error('Unauthorized');
 
-    const conductor = await Member.findById(data.conductorId);
-    if (!conductor) throw new Error('Conductor not found');
 
     const study = await BibleStudy.create({
       ...data,
-      congregationId: conductor.congregationId
+      conductorId: user._id
     });
-
 
     revalidatePath('/dashboard/bible-studies');
     return { success: true, data: JSON.parse(JSON.stringify(study)) };
@@ -54,18 +54,18 @@ export async function deleteBibleStudy(id: string) {
   }
 }
 
-export async function getBibleStudies(congregationId: string, filters?: { status?: string; conductorId?: string }) {
+export async function getBibleStudies(congregationId?: string, filters?: { status?: string; conductorId?: string }) {
   try {
     await connectToDB();
 
-    const query: any = { congregationId };
+    const query: any = {};
+    if (congregationId) query.congregationId = congregationId;
     if (filters?.status) query.status = filters.status;
     if (filters?.conductorId) query.conductorId = filters.conductorId;
 
     const studies = await BibleStudy.find(query)
       .populate('conductorId', 'firstName lastName')
-      .populate('assistantId', 'firstName lastName')
-      .sort({ startDate: -1 })
+      .sort({ createdAt: -1 })
       .lean();
 
     return { success: true, data: JSON.parse(JSON.stringify(studies)) };
@@ -137,18 +137,21 @@ export async function addMilestone(studyId: string, milestone: any) {
   }
 }
 
-export async function getBibleStudyStats(congregationId: string) {
+export async function getBibleStudyStats(congregationId?: string) {
   try {
     await connectToDB();
 
+    const query: any = {};
+    if (congregationId) query.congregationId = congregationId;
+
     const [total, active, completed, discontinued] = await Promise.all([
-      BibleStudy.countDocuments({ congregationId }),
-      BibleStudy.countDocuments({ congregationId, status: 'active' }),
-      BibleStudy.countDocuments({ congregationId, status: 'completed' }),
-      BibleStudy.countDocuments({ congregationId, status: 'discontinued' })
+      BibleStudy.countDocuments(query),
+      BibleStudy.countDocuments({ ...query, status: 'active' }),
+      BibleStudy.countDocuments({ ...query, status: 'completed' }),
+      BibleStudy.countDocuments({ ...query, status: 'discontinued' })
     ]);
 
-    const studies = await BibleStudy.find({ congregationId, status: 'active' }).lean();
+    const studies = await BibleStudy.find({ ...query, status: 'active' }).lean();
     
     const avgProgress = studies.length > 0
       ? studies.reduce((sum, s) => sum + (s.currentLesson / s.totalLessons) * 100, 0) / studies.length
@@ -176,11 +179,14 @@ export async function getBibleStudyStats(congregationId: string) {
   }
 }
 
-export async function getStudyEffectivenessReport(congregationId: string) {
+export async function getStudyEffectivenessReport(congregationId?: string) {
   try {
     await connectToDB();
 
-    const studies = await BibleStudy.find({ congregationId })
+    const query: any = {};
+    if (congregationId) query.congregationId = congregationId;
+
+    const studies = await BibleStudy.find(query)
       .populate('conductorId', 'firstName lastName')
       .lean();
 

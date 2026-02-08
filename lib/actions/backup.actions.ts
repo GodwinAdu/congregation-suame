@@ -37,6 +37,7 @@ import ShepherdingCall from '@/lib/models/shepherding-call.models';
 import Tash from '@/lib/models/tash.models';
 import TransportConfig from '@/lib/models/transport-config.models';
 import {TransportFee, MemberFeePayment} from '@/lib/models/transport-fee.models';
+import DailyFieldServiceReport from '@/lib/models/daily-field-service.models';
 import { currentUser } from '@/lib/helpers/session';
 
 export async function createBackup() {
@@ -54,7 +55,7 @@ export async function createBackup() {
       contributions, budgets, monthlyReports, openingBalances, groupSchedules, histories, literatures, notifications,
       overseerReports, privileges, publicWitnessings, publisherGoals, publisherRecords,
       pushSubscriptions, roles, schoolStudents, shepherdingCalls, tashes,
-      transportConfigs, transportFees, memberFeePayments
+      transportConfigs, transportFees, memberFeePayments, dailyFieldServiceReports
     ] = await Promise.all([
       Member.find({}).lean(),
       Group.find({}).lean(),
@@ -97,7 +98,8 @@ export async function createBackup() {
       Tash.find({}).lean(),
       TransportConfig.find({}).lean(),
       TransportFee.find({}).lean(),
-      MemberFeePayment.find({}).lean()
+      MemberFeePayment.find({}).lean(),
+      DailyFieldServiceReport.find({}).lean()
     ]);
 
     const backup = {
@@ -145,13 +147,14 @@ export async function createBackup() {
         tashes,
         transportConfigs,
         transportFees,
-        memberFeePayments
+        memberFeePayments,
+        dailyFieldServiceReports
       },
       metadata: {
         totalMembers: members.length,
         totalGroups: groups.length,
         totalTerritories: territories.length,
-        totalRecords: members.length + groups.length + territories.length + territoryAssignments.length + fieldServiceReports.length + activities.length + assignmentHistories.length + assignments.length + attendances.length + bibleStudies.length + cleaningTasks.length + coReports.length + coVisits.length + messages.length + broadcasts.length + documents.length + duties.length + events.length + expenses.length + families.length + fieldServiceMeetings.length + contributions.length + budgets.length + monthlyReports.length + openingBalances.length + groupSchedules.length + histories.length + literatures.length + notifications.length + overseerReports.length + privileges.length + publicWitnessings.length + publisherGoals.length + publisherRecords.length + pushSubscriptions.length + roles.length + schoolStudents.length + shepherdingCalls.length + tashes.length + transportConfigs.length + transportFees.length + memberFeePayments.length,
+        totalRecords: members.length + groups.length + territories.length + territoryAssignments.length + fieldServiceReports.length + activities.length + assignmentHistories.length + assignments.length + attendances.length + bibleStudies.length + cleaningTasks.length + coReports.length + coVisits.length + messages.length + broadcasts.length + documents.length + duties.length + events.length + expenses.length + families.length + fieldServiceMeetings.length + contributions.length + budgets.length + monthlyReports.length + openingBalances.length + groupSchedules.length + histories.length + literatures.length + notifications.length + overseerReports.length + privileges.length + publicWitnessings.length + publisherGoals.length + publisherRecords.length + pushSubscriptions.length + roles.length + schoolStudents.length + shepherdingCalls.length + tashes.length + transportConfigs.length + transportFees.length + memberFeePayments.length + dailyFieldServiceReports.length,
         createdBy: user._id
       }
     };
@@ -209,7 +212,8 @@ export async function restoreBackup(backupData: any) {
       Tash.deleteMany({}),
       TransportConfig.deleteMany({}),
       TransportFee.deleteMany({}),
-      MemberFeePayment.deleteMany({})
+      MemberFeePayment.deleteMany({}),
+      DailyFieldServiceReport.deleteMany({})
     ]);
 
     // Restore data with validation disabled
@@ -258,6 +262,7 @@ export async function restoreBackup(backupData: any) {
     if (backupData.data.transportConfigs?.length) restorePromises.push(TransportConfig.insertMany(backupData.data.transportConfigs, insertOptions));
     if (backupData.data.transportFees?.length) restorePromises.push(TransportFee.insertMany(backupData.data.transportFees, insertOptions));
     if (backupData.data.memberFeePayments?.length) restorePromises.push(MemberFeePayment.insertMany(backupData.data.memberFeePayments, insertOptions));
+    if (backupData.data.dailyFieldServiceReports?.length) restorePromises.push(DailyFieldServiceReport.insertMany(backupData.data.dailyFieldServiceReports, insertOptions));
     
     // Support old backup format (v1.0)
     if (backupData.data.assignments && !backupData.data.territoryAssignments) {
