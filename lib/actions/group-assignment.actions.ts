@@ -151,8 +151,8 @@ async function balanceSimple(members: any[], groups: any[]) {
 }
 
 async function balanceByGender(members: any[], groups: any[]) {
-  const males = members.filter(m => m.gender === "Male");
-  const females = members.filter(m => m.gender === "Female");
+  const males = members.filter(m => m.gender?.toLowerCase() === "male");
+  const females = members.filter(m => m.gender?.toLowerCase() === "female");
   
   let groupIndex = 0;
   
@@ -188,8 +188,12 @@ async function balanceByPioneer(members: any[], groups: any[]) {
 }
 
 async function balanceByPrivilege(members: any[], groups: any[]) {
-  const elders = members.filter(m => m.privileges?.some((p: any) => p.name === "Elder"));
-  const ms = members.filter(m => m.privileges?.some((p: any) => p.name === "Ministerial Servant"));
+  const elders = members.filter(m => 
+    m.privileges?.some((p: any) => p.name?.toLowerCase() === "elder")
+  );
+  const ms = members.filter(m => 
+    m.privileges?.some((p: any) => p.name?.toLowerCase() === "ministerial servant" || p.name?.toLowerCase() === "ms")
+  );
   const others = members.filter(m => !m.privileges || m.privileges.length === 0);
   
   let groupIndex = 0;
@@ -327,13 +331,24 @@ async function _getGroupAnalytics(user: User) {
     const groups = await Group.find({}).lean();
     const analytics = await Promise.all(
       groups.map(async (group) => {
-        const members = await Member.find({ groupId: group._id }).populate("privileges");
+        const members = await Member.find({ groupId: group._id })
+          .populate("privileges")
+          .lean();
         
-        const maleCount = members.filter(m => m.gender === "Male").length;
-        const femaleCount = members.filter(m => m.gender === "Female").length;
-        const pioneerCount = members.filter(m => m.pioneerStatus !== "none").length;
-        const elderCount = members.filter(m => m.privileges?.some((p: any) => p.name === "Elder")).length;
-        const msCount = members.filter(m => m.privileges?.some((p: any) => p.name === "Ministerial Servant")).length;
+        const maleCount = members.filter(m => m.gender?.toLowerCase() === "male").length;
+        const femaleCount = members.filter(m => m.gender?.toLowerCase() === "female").length;
+        
+        // Count each unique privilege
+        const privilegeCounts: { [key: string]: number } = {};
+        members.forEach(member => {
+          if (member.privileges && Array.isArray(member.privileges)) {
+            member.privileges.forEach((privilege: any) => {
+              if (privilege?.name) {
+                privilegeCounts[privilege.name] = (privilegeCounts[privilege.name] || 0) + 1;
+              }
+            });
+          }
+        });
 
         return {
           groupId: group._id,
@@ -341,9 +356,7 @@ async function _getGroupAnalytics(user: User) {
           totalMembers: members.length,
           maleCount,
           femaleCount,
-          pioneerCount,
-          elderCount,
-          msCount,
+          privilegeCounts, // Object with privilege names as keys and counts as values
         };
       })
     );
@@ -407,7 +420,9 @@ async function _validateGroupAssignments(user: User) {
         warnings.push({ groupName: group.name, type: "large", message: `Group has ${members.length} members (too large)` });
       }
       
-      const hasElder = members.some(m => m.privileges?.some((p: any) => p.name === "Elder"));
+      const hasElder = members.some(m => 
+        m.privileges?.some((p: any) => p.name?.toLowerCase() === "elder")
+      );
       if (!hasElder) {
         warnings.push({ groupName: group.name, type: "no_elder", message: "Group has no elder" });
       }

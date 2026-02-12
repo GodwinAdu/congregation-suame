@@ -159,6 +159,29 @@ async function _fetchAllMembers(user: User) {
         throw error;
     }
 }
+
+async function _fetchMaleMembers(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const members = await Member.find({ gender: 'male' })
+            .populate([
+                { path: "privileges", model: Privilege },
+                { path: "groupId", model: Group },
+                { path: "createdBy", model: Member },
+            ])
+            .exec();
+
+        if (!members || members.length === 0) return [];
+
+        return JSON.parse(JSON.stringify(members));
+    } catch (error) {
+        console.log("error happened while fetching male members", error);
+        throw error;
+    }
+}
 async function _fetchAllMembersByRole(user: User) {
     try {
         if (!user) throw new Error("User not authorized");
@@ -679,6 +702,7 @@ async function _getCurrentUser(user: User) {
 
 export const createMember = await withAuth(_createMember);
 export const fetchAllMembers = await withAuth(_fetchAllMembers);
+export const fetchMaleMembers = await withAuth(_fetchMaleMembers);
 export const fetchAllMembersByRole = await withAuth(_fetchAllMembersByRole);
 export const resetPassword = await withAuth(_resetPassword);
 export const updateMemberRole = await withAuth(_updateMemberRole);

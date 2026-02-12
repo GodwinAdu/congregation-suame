@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, UserCheck, Award, Shield } from "lucide-react";
+import { Users, Award } from "lucide-react";
 import { getGroupAnalytics } from "@/lib/actions/group-assignment.actions";
 import { toast } from "sonner";
 
@@ -68,27 +68,15 @@ export default function AnalyticsView() {
                   {group.maleCount} / {group.femaleCount}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-green-500" />
-                  <span>Pioneers</span>
+              {Object.entries(group.privilegeCounts || {}).map(([privilegeName, count]) => (
+                <div key={privilegeName} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-purple-500" />
+                    <span>{privilegeName}</span>
+                  </div>
+                  <span className="font-medium">{count as number}</span>
                 </div>
-                <span className="font-medium">{group.pioneerCount}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-purple-500" />
-                  <span>Elders</span>
-                </div>
-                <span className="font-medium">{group.elderCount}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="h-4 w-4 text-orange-500" />
-                  <span>MS</span>
-                </div>
-                <span className="font-medium">{group.msCount}</span>
-              </div>
+              ))}
             </CardContent>
           </Card>
         ))}

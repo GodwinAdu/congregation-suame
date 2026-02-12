@@ -318,6 +318,14 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "Assignment History",
           url: `/dashboard/assignments/history`,
           roleField: "assignmentHistoryView"
+        },
+        {
+          title: "Public Talks",
+          url: `/dashboard/meetings/public-talks`,
+        },
+        {
+          title: "Readers",
+          url: `/dashboard/meetings/readers`,
         }
       ],
     },
