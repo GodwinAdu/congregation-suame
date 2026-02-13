@@ -3,25 +3,32 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Eye, Edit } from "lucide-react"
+import { Plus, Eye, Edit, Phone, MessageSquare } from "lucide-react"
 
 export type MemberWithReportStatus = {
     _id: string
     fullName: string
+    phone: string
     hasReported: boolean
     month: string
     privileges: Array<{ _id: string; name: string }>
     groupId?: { _id: string; name: string } | null
     reportId?: string | null
+    smsCount?: number
 }
 
 interface ColumnsProps {
     onAddReport: (member: MemberWithReportStatus) => void
     onViewReport: (reportId: string) => void
     onEditReport?: (reportId: string) => void
+    onSendSMS?: (member: MemberWithReportStatus) => void
 }
 
-export const createColumns = ({ onAddReport, onViewReport, onEditReport }: ColumnsProps): ColumnDef<MemberWithReportStatus>[] => [
+const handleCall = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+};
+
+export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendSMS }: ColumnsProps): ColumnDef<MemberWithReportStatus>[] => [
     {
         accessorKey: "groupId",
         header: "Group",
@@ -39,7 +46,19 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport }: Colum
         accessorKey: "fullName",
         header: "Full Name",
         cell: ({ row }) => {
-            return <div className="font-medium">{row.getValue("fullName")}</div>
+            const hasReported = row.original.hasReported;
+            const smsCount = row.original.smsCount || 0;
+            return (
+                <div className="flex items-center gap-2">
+                    <span className="font-medium">{row.getValue("fullName")}</span>
+                    {!hasReported && (
+                        <Badge variant="destructive" className="text-xs">!</Badge>
+                    )}
+                    {smsCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">{smsCount} SMS</Badge>
+                    )}
+                </div>
+            );
         },
     },
     {
@@ -67,6 +86,7 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport }: Colum
         cell: ({ row }) => {
             const member = row.original
             const hasReported = member.hasReported
+            const monthName = new Date(member.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
             
             return (
                 <div className="flex gap-2">
@@ -79,7 +99,7 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport }: Colum
                                 className="h-8"
                             >
                                 <Eye className="w-4 h-4 mr-2" />
-                                View Report
+                                View
                             </Button>
                             {onEditReport && (
                                 <Button
@@ -94,15 +114,39 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport }: Colum
                             )}
                         </>
                     ) : (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onAddReport(member)}
-                            className="h-8"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Report
-                        </Button>
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onAddReport(member)}
+                                className="h-8"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add
+                            </Button>
+                            {member.phone && (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleCall(member.phone)}
+                                        className="h-8"
+                                        title="Call member"
+                                    >
+                                        <Phone className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onSendSMS?.(member)}
+                                        className="h-8"
+                                        title="Send SMS reminder"
+                                    >
+                                        <MessageSquare className="w-4 h-4" />
+                                    </Button>
+                                </>
+                            )}
+                        </>
                     )}
                 </div>
             )

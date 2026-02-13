@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Calendar, RefreshCw, AlertCircle, Plus } from 'lucide-react'
+import { Calendar, RefreshCw, AlertCircle, Plus, MessageSquare } from 'lucide-react'
 import { fetchMembersWithReportStatus, fetchAllGroups } from '@/lib/actions/field-service.actions'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import MonthSelection from '@/components/commons/MonthSelection'
 import { AddReportModal } from './AddReportModal'
 import { ReportDetailsModal } from './ReportDetailsModal'
+import SMSModal from './SMSModal'
 import { createColumns, MemberWithReportStatus } from './column'
 import { DataTable } from '@/components/table/data-table'
 
@@ -26,7 +27,11 @@ const ReportGrid = () => {
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
     const [groups, setGroups] = useState<Array<{ _id: string; name: string }>>([])
     const [groupsLoading, setGroupsLoading] = useState(true)
-     const [editMode, setEditMode] = useState(false)
+    const [editMode, setEditMode] = useState(false)
+    const [showSMSModal, setShowSMSModal] = useState(false)
+    const [smsRecipient, setSmsRecipient] = useState<{ phone: string; name: string; month: string; recipientId: string } | null>(null)
+    const [smsRecipients, setSmsRecipients] = useState<Array<{ phone: string; name: string; month: string; recipientId: string }>>([])  
+    const [smsMessage, setSmsMessage] = useState('')
 
     const fetchData = useCallback(async (monthDate: Date) => {
         setLoading(true)
@@ -69,6 +74,29 @@ const ReportGrid = () => {
     const handleRefresh = () => {
         fetchData(selectedMonth)
     }
+
+    const handleRemindAll = () => {
+        const nonReporters = membersData.filter(m => !m.hasReported && m.phone);
+        if (nonReporters.length === 0) return;
+        
+        const monthName = selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const message = `Dear Brothers and Sisters, this is a friendly reminder to submit your field service report for ${monthName}. You can send your report directly to +233 551556650. Thank you for your faithful service!`;
+        
+        setSmsRecipients(nonReporters.map(m => ({ phone: m.phone, name: m.fullName, month: m.month, recipientId: m._id })));
+        setSmsMessage(message);
+        setSmsRecipient(null);
+        setShowSMSModal(true);
+    };
+
+    const handleSendSMS = (member: MemberWithReportStatus) => {
+        const monthName = new Date(member.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const message = `Dear ${member.fullName}, this is a friendly reminder to submit your field service report for ${monthName}. You can send your report directly to +233 551556650. Thank you for your faithful service!`;
+        
+        setSmsRecipient({ phone: member.phone, name: member.fullName, month: member.month, recipientId: member._id });
+        setSmsRecipients([]);
+        setSmsMessage(message);
+        setShowSMSModal(true);
+    };
 
     const handleAddReport = (member: MemberWithReportStatus) => {
         setSelectedMember(member)
@@ -144,6 +172,16 @@ const ReportGrid = () => {
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
+                                size="sm"
+                                onClick={handleRemindAll}
+                                disabled={loading || membersData.filter(m => !m.hasReported && m.phone).length === 0}
+                                className="shrink-0"
+                            >
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                                Remind All ({membersData.filter(m => !m.hasReported && m.phone).length})
+                            </Button>
+                            <Button
+                                variant="outline"
                                 size="icon"
                                 onClick={handleRefresh}
                                 disabled={loading}
@@ -176,8 +214,9 @@ const ReportGrid = () => {
                         <DataTable
                             columns={createColumns({ 
                                 onAddReport: handleAddReport,
-                                onViewReport: handleViewReport ,
-                                onEditReport:handleEditReport
+                                onViewReport: handleViewReport,
+                                onEditReport: handleEditReport,
+                                onSendSMS: handleSendSMS
                             })}
                             data={membersData}
                             searchKey="fullName"
@@ -211,6 +250,14 @@ const ReportGrid = () => {
                 open={showDetailsModal}
                 onClose={handleCloseDetailsModal}
                 reportId={selectedReportId}
+            />
+
+            <SMSModal
+                open={showSMSModal}
+                onClose={() => setShowSMSModal(false)}
+                recipient={smsRecipient || undefined}
+                recipients={smsRecipients.length > 0 ? smsRecipients : undefined}
+                defaultMessage={smsMessage}
             />
         </div>
     )

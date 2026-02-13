@@ -377,12 +377,13 @@ async function _exportAssignments(user: User) {
     const members = await Member.find({})
       .populate("groupId", "name")
       .populate("privileges", "name")
-      .select("fullName gender pioneerStatus groupId privileges")
+      .select("fullName gender pioneerStatus groupId privileges phone")
       .sort({ "groupId.name": 1, fullName: 1 })
       .lean();
 
     const csvData = members.map(m => ({
       Name: m.fullName,
+      Phone: m.phone || "",
       Gender: m.gender,
       Group: m.groupId?.name || "Unassigned",
       PioneerStatus: m.pioneerStatus,

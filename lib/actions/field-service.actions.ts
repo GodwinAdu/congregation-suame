@@ -119,7 +119,7 @@ async function _fetchMembersWithReportStatus(user: User, month: string) {
         await connectToDB();
 
         const members = await Member.find({})
-            .select('fullName privileges groupId')
+            .select('fullName phone privileges groupId')
             .populate('privileges', 'name')
             .populate('groupId', 'name')
             .sort({ fullName: 1 });
@@ -130,10 +130,20 @@ async function _fetchMembersWithReportStatus(user: User, month: string) {
 
         const reportMap = new Map(reports.map(r => [r.publisher.toString(), r._id.toString()]));
 
+        // Import SMSLog dynamically to avoid circular dependency
+        const SMSLog = (await import('../models/sms-log.models')).default;
+        const smsLogs = await SMSLog.find({ month }).select('recipient').lean();
+        const smsCountMap = new Map<string, number>();
+        smsLogs.forEach((log: any) => {
+            const id = log.recipient.toString();
+            smsCountMap.set(id, (smsCountMap.get(id) || 0) + 1);
+        });
+
         const membersWithStatus = members.map(member => ({
             ...member.toObject(),
             hasReported: reportMap.has(member._id.toString()),
             reportId: reportMap.get(member._id.toString()) || null,
+            smsCount: smsCountMap.get(member._id.toString()) || 0,
             month
         }));
 
