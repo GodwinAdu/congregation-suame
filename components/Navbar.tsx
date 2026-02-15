@@ -5,6 +5,7 @@ import { Separator } from "./ui/separator";
 import UserDropdown from "./commons/user-dropdown";
 import FullScreenButton from "./commons/FullScreenButton";
 import { LanguageSwitcher } from "./language-switcher";
+import { AIAssistantDialog } from "./ai/ai-assistant-dialog";
 
 
 
@@ -22,6 +23,9 @@ const Navbar = ({ user }: { user: IEmployee }) => {
             </div>
 
             <div className="dashboard-stats flex gap-2 sm:gap-4 ml-auto items-center pr-2 sm:pr-10">
+                <div className="">
+                    <AIAssistantDialog username={user?.fullName || "User"} />
+                </div>
                 <div className="language-switcher">
                     <LanguageSwitcher />
                 </div>

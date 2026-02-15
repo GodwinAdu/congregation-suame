@@ -29,11 +29,18 @@ export interface IBibleStudy extends Document {
   sessions: Array<{
     date: Date;
     lessonNumber: number;
+    lessonTitle?: string;
     attended: boolean;
     duration?: number;
     topics?: string;
     notes?: string;
     engagement: 'excellent' | 'good' | 'fair' | 'poor';
+    nextLesson?: {
+      lessonNumber: number;
+      lessonTitle?: string;
+      plannedDate?: Date;
+      notes?: string;
+    };
   }>;
   notes?: string;
   createdAt: Date;
@@ -70,11 +77,18 @@ const BibleStudySchema = new Schema<IBibleStudy>(
     sessions: [{
       date: Date,
       lessonNumber: Number,
+      lessonTitle: String,
       attended: Boolean,
       duration: Number,
       topics: String,
       notes: String,
-      engagement: { type: String, enum: ['excellent', 'good', 'fair', 'poor'] }
+      engagement: { type: String, enum: ['excellent', 'good', 'fair', 'poor'] },
+      nextLesson: {
+        lessonNumber: Number,
+        lessonTitle: String,
+        plannedDate: Date,
+        notes: String
+      }
     }],
     notes: { type: String }
   },

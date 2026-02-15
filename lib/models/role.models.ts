@@ -75,6 +75,7 @@ export interface IRole {
         configGroup: boolean;
         configPrivilege: boolean;
         configRole: boolean;
+        manageBackups: boolean;
     };
 }
 
@@ -196,7 +197,8 @@ const RoleSchema = new Schema({
         // System
         history: { type: Boolean, default: false },
         trash: { type: Boolean, default: false },
-        manageUser: { type: Boolean, default: false }
+        manageUser: { type: Boolean, default: false },
+        manageBackups: { type: Boolean, default: false }
     }
 }, {
     timestamps: true

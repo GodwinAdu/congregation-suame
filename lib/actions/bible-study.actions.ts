@@ -56,12 +56,15 @@ export async function deleteBibleStudy(id: string) {
 
 export async function getBibleStudies(congregationId?: string, filters?: { status?: string; conductorId?: string }) {
   try {
+    const user = await currentUser();
+    if (!user) throw new Error('Unauthorized');
     await connectToDB();
 
     const query: any = {};
     if (congregationId) query.congregationId = congregationId;
     if (filters?.status) query.status = filters.status;
     if (filters?.conductorId) query.conductorId = filters.conductorId;
+    query.conductorId = user._id as string;
 
     const studies = await BibleStudy.find(query)
       .populate('conductorId', 'firstName lastName')
@@ -80,7 +83,7 @@ export async function addStudySession(studyId: string, session: any) {
 
     const study = await BibleStudy.findByIdAndUpdate(
       studyId,
-      { 
+      {
         $push: { sessions: session },
         $set: { currentLesson: session.lessonNumber }
       },
@@ -139,11 +142,13 @@ export async function addMilestone(studyId: string, milestone: any) {
 
 export async function getBibleStudyStats(congregationId?: string) {
   try {
+    const user = await currentUser();
+    if (!user) throw new Error('Unauthorized');
     await connectToDB();
 
     const query: any = {};
     if (congregationId) query.congregationId = congregationId;
-
+    query.conductorId = user._id as string;
     const [total, active, completed, discontinued] = await Promise.all([
       BibleStudy.countDocuments(query),
       BibleStudy.countDocuments({ ...query, status: 'active' }),
@@ -152,13 +157,13 @@ export async function getBibleStudyStats(congregationId?: string) {
     ]);
 
     const studies = await BibleStudy.find({ ...query, status: 'active' }).lean();
-    
+
     const avgProgress = studies.length > 0
       ? studies.reduce((sum, s) => sum + (s.currentLesson / s.totalLessons) * 100, 0) / studies.length
       : 0;
 
     const totalSessions = studies.reduce((sum, s) => sum + (s.sessions?.length || 0), 0);
-    const attendedSessions = studies.reduce((sum, s) => 
+    const attendedSessions = studies.reduce((sum, s) =>
       sum + (s.sessions?.filter((sess: any) => sess.attended).length || 0), 0
     );
     const attendanceRate = totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0;
@@ -181,11 +186,13 @@ export async function getBibleStudyStats(congregationId?: string) {
 
 export async function getStudyEffectivenessReport(congregationId?: string) {
   try {
+    const user = await currentUser();
+    if (!user) throw new Error('Unauthorized');
     await connectToDB();
 
     const query: any = {};
     if (congregationId) query.congregationId = congregationId;
-
+    query.conductorId = user._id as string;
     const studies = await BibleStudy.find(query)
       .populate('conductorId', 'firstName lastName')
       .lean();
@@ -195,11 +202,11 @@ export async function getStudyEffectivenessReport(congregationId?: string) {
       const totalSessions = sessions.length;
       const attendedSessions = sessions.filter((s: any) => s.attended).length;
       const attendanceRate = totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0;
-      
+
       const engagementScores = sessions
         .filter((s: any) => s.engagement)
         .map((s: any) => {
-          switch(s.engagement) {
+          switch (s.engagement) {
             case 'excellent': return 4;
             case 'good': return 3;
             case 'fair': return 2;
@@ -207,7 +214,7 @@ export async function getStudyEffectivenessReport(congregationId?: string) {
             default: return 0;
           }
         });
-      
+
       const avgEngagement = engagementScores.length > 0
         ? engagementScores.reduce((a: number, b: number) => a + b, 0) / engagementScores.length
         : 0;

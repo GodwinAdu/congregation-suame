@@ -132,7 +132,8 @@ const formSchema = z.object({
         // System
         history: z.boolean().default(false),
         trash: z.boolean().default(false),
-        manageUser: z.boolean().default(false)
+        manageUser: z.boolean().default(false),
+        manageBackups: z.boolean().default(false)
     })
 })
 
@@ -297,7 +298,8 @@ const permissionGroups = [
         icon: Shield,
         permissions: [
             { key: "history", label: "System History", description: "View system logs and activity" },
-            { key: "trash", label: "Trash Management", description: "Access and restore deleted items" }
+            { key: "trash", label: "Trash Management", description: "Access and restore deleted items" },
+            { key: "manageBackups", label: "Backup Management", description: "Create and restore database backups" }
         ]
     }
 ]
@@ -743,7 +745,8 @@ export function RoleModal({ open, onClose, role, onSuccess, mode }: RoleModalPro
                     // System
                     history: false,
                     trash: false,
-                    manageUser: false
+                    manageUser: false,
+                    manageBackups: false
                 }
             })
         }

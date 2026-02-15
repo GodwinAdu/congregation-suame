@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { addStudySession, addGoal, addMilestone } from '@/lib/actions/bible-study.actions';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import { Plus } from 'lucide-react';
 
 interface StudyDetailModalProps {
   open: boolean;
@@ -23,11 +24,18 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
   const [sessionData, setSessionData] = useState({
     date: new Date().toISOString().split('T')[0],
     lessonNumber: study?.currentLesson + 1 || 1,
+    lessonTitle: '',
     attended: true,
     duration: '',
     topics: '',
     notes: '',
-    engagement: 'good'
+    engagement: 'good',
+    nextLesson: {
+      lessonNumber: study?.currentLesson + 2 || 2,
+      lessonTitle: '',
+      plannedDate: '',
+      notes: ''
+    }
   });
   const [goalData, setGoalData] = useState({ description: '', targetDate: '' });
   const [milestoneData, setMilestoneData] = useState({ type: 'custom', description: '', date: new Date().toISOString().split('T')[0], notes: '' });
@@ -42,7 +50,22 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
     });
     if (result.success) {
       toast.success('Session recorded');
-      setSessionData({ date: new Date().toISOString().split('T')[0], lessonNumber: study.currentLesson + 2, attended: true, duration: '', topics: '', notes: '', engagement: 'good' });
+      setSessionData({ 
+        date: new Date().toISOString().split('T')[0], 
+        lessonNumber: study.currentLesson + 2, 
+        lessonTitle: '',
+        attended: true, 
+        duration: '', 
+        topics: '', 
+        notes: '', 
+        engagement: 'good',
+        nextLesson: {
+          lessonNumber: study.currentLesson + 3,
+          lessonTitle: '',
+          plannedDate: '',
+          notes: ''
+        }
+      });
     } else {
       toast.error(result.error);
     }
@@ -131,6 +154,10 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
                     <Input type="number" value={sessionData.duration} onChange={(e) => setSessionData({ ...sessionData, duration: e.target.value })} />
                   </div>
                 </div>
+                <div>
+                  <Label>Lesson Title</Label>
+                  <Input value={sessionData.lessonTitle} onChange={(e) => setSessionData({ ...sessionData, lessonTitle: e.target.value })} placeholder="e.g., What is God's Kingdom?" />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Engagement</Label>
@@ -159,7 +186,33 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
                   <Label>Notes</Label>
                   <Textarea value={sessionData.notes} onChange={(e) => setSessionData({ ...sessionData, notes: e.target.value })} rows={2} />
                 </div>
-                <Button onClick={handleAddSession} disabled={loading}>Add Session</Button>
+                
+                <div className="border-t pt-3 mt-3">
+                  <h4 className="font-medium mb-3">Next Lesson Plan</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Next Lesson #</Label>
+                      <Input type="number" value={sessionData.nextLesson.lessonNumber} onChange={(e) => setSessionData({ ...sessionData, nextLesson: { ...sessionData.nextLesson, lessonNumber: Number(e.target.value) } })} />
+                    </div>
+                    <div>
+                      <Label>Planned Date</Label>
+                      <Input type="date" value={sessionData.nextLesson.plannedDate} onChange={(e) => setSessionData({ ...sessionData, nextLesson: { ...sessionData.nextLesson, plannedDate: e.target.value } })} />
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <Label>Next Lesson Title</Label>
+                    <Input value={sessionData.nextLesson.lessonTitle} onChange={(e) => setSessionData({ ...sessionData, nextLesson: { ...sessionData.nextLesson, lessonTitle: e.target.value } })} placeholder="What will we study next?" />
+                  </div>
+                  <div className="mt-3">
+                    <Label>Preparation Notes</Label>
+                    <Textarea value={sessionData.nextLesson.notes} onChange={(e) => setSessionData({ ...sessionData, nextLesson: { ...sessionData.nextLesson, notes: e.target.value } })} rows={2} placeholder="Any preparation needed..." />
+                  </div>
+                </div>
+                
+                <Button onClick={handleAddSession} disabled={loading} className="w-full" size="lg">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Record Session
+                </Button>
               </div>
 
               <div className="space-y-2">
@@ -167,7 +220,7 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
                 {study.sessions?.slice().reverse().map((session: any, idx: number) => (
                   <div key={idx} className="border p-3 rounded">
                     <div className="flex justify-between">
-                      <span className="font-medium">Lesson {session.lessonNumber} - {new Date(session.date).toLocaleDateString()}</span>
+                      <span className="font-medium">Lesson {session.lessonNumber}{session.lessonTitle && `: ${session.lessonTitle}`} - {new Date(session.date).toLocaleDateString()}</span>
                       <span className={`px-2 py-1 rounded text-xs ${session.attended ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {session.attended ? 'Attended' : 'Absent'}
                       </span>
@@ -178,6 +231,13 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
                       <span>Engagement: {session.engagement}</span>
                       {session.duration && <span>Duration: {session.duration}min</span>}
                     </div>
+                    {session.nextLesson && (
+                      <div className="mt-2 pt-2 border-t bg-blue-50 -mx-3 -mb-3 px-3 py-2 rounded-b">
+                        <p className="text-xs font-medium text-blue-900">Next: Lesson {session.nextLesson.lessonNumber}{session.nextLesson.lessonTitle && ` - ${session.nextLesson.lessonTitle}`}</p>
+                        {session.nextLesson.plannedDate && <p className="text-xs text-blue-700">Planned: {new Date(session.nextLesson.plannedDate).toLocaleDateString()}</p>}
+                        {session.nextLesson.notes && <p className="text-xs text-blue-700 mt-1">{session.nextLesson.notes}</p>}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -194,7 +254,10 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
                   <Label>Target Date (Optional)</Label>
                   <Input type="date" value={goalData.targetDate} onChange={(e) => setGoalData({ ...goalData, targetDate: e.target.value })} />
                 </div>
-                <Button onClick={handleAddGoal} disabled={loading || !goalData.description}>Add Goal</Button>
+                <Button onClick={handleAddGoal} disabled={loading || !goalData.description} className="w-full" size="lg">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Goal
+                </Button>
               </div>
 
               <div className="space-y-2">
@@ -241,7 +304,10 @@ export function StudyDetailModal({ open, onOpenChange, study }: StudyDetailModal
                   <Label>Notes</Label>
                   <Textarea value={milestoneData.notes} onChange={(e) => setMilestoneData({ ...milestoneData, notes: e.target.value })} rows={2} />
                 </div>
-                <Button onClick={handleAddMilestone} disabled={loading || !milestoneData.description}>Add Milestone</Button>
+                <Button onClick={handleAddMilestone} disabled={loading || !milestoneData.description} className="w-full" size="lg">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Milestone
+                </Button>
               </div>
 
               <div className="space-y-2">
