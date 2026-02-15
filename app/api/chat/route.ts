@@ -3,7 +3,7 @@
 import { streamText, convertToModelMessages } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { databaseTools } from "@/lib/mcp/database-tools";
-import { auth } from "@/auth";
+import { currentUser } from "@/lib/helpers/session";
 import { connectToDB } from "@/lib/mongoose";
 import Role from "@/lib/models/role.models";
 
@@ -11,8 +11,8 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!session?.user) {
+    const user = await currentUser();
+    if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
     // Check if user has permission to use AI assistant
     await connectToDB();
-    const userRole = await Role.findOne({ name: session.user.role });
+    const userRole = await Role.findOne({ name: user.role });
     
     if (!userRole?.permissions?.aiAssistant) {
       return new Response(
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const finalModelId = selectedModelId || "gpt-4o";
     const modelInstance = openai(finalModelId);
 
-    const userRoleName = session.user.role || "publisher";
+    const userRoleName = user.role || "publisher";
     const isAdmin = userRole?.permissions?.manageBackups || false;
 
     const baseInstruction = `
