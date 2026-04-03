@@ -33,6 +33,12 @@ import {
     Trash2
 } from 'lucide-react'
 import { FieldServiceReportModal } from './field-service-report-modal'
+import { BibleReadingSummary } from './bible-reading-summary'
+import { StudyTrackerSummary } from './study-tracker-summary'
+import { MeetingPrepSummary } from './meeting-prep-summary'
+import { TalkingPointsSummary } from './talking-points-summary'
+import { MeetingNotesSummary } from './meeting-notes-summary'
+import { PrayerListSummary } from './prayer-list-summary'
 import { format, startOfWeek, endOfWeek, isWithinInterval, subMonths } from 'date-fns'
 import { fetchFamilyMemberReports, deleteFieldServiceReport } from '@/lib/actions/publisher.actions'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -377,6 +383,22 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
                         </div>
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* Bible Reading Summary */}
+            <BibleReadingSummary />
+
+            {/* Study Tracker Summary */}
+            <StudyTrackerSummary />
+
+            {/* Meeting Prep Summary */}
+            <MeetingPrepSummary />
+
+            {/* Personal Organization */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <TalkingPointsSummary />
+                <MeetingNotesSummary />
+                <PrayerListSummary />
             </div>
 
             {/* Main Content Tabs */}

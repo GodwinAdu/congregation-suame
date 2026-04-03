@@ -110,6 +110,30 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "My Goals",
           url: `/dashboard/publisher/goals`,
           roleField: "publisherGoals"
+        },
+        {
+          title: "Bible Reading",
+          url: `/dashboard/publisher/bible-reading`,
+        },
+        {
+          title: "Study Tracker",
+          url: `/dashboard/publisher/study-tracker`,
+        },
+        {
+          title: "Meeting Prep",
+          url: `/dashboard/publisher/meeting-prep`,
+        },
+        {
+          title: "Talking Points",
+          url: `/dashboard/publisher/talking-points`,
+        },
+        {
+          title: "Meeting Notes",
+          url: `/dashboard/publisher/meeting-notes`,
+        },
+        {
+          title: "Prayer List",
+          url: `/dashboard/publisher/prayer-list`,
         }
       ],
     },
