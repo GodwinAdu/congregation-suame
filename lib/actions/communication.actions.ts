@@ -93,7 +93,9 @@ async function _createBroadcast(user: User, data: {
         console.log('Broadcast recipients:', recipients)
 
         const broadcast = new Broadcast({
-            ...data,
+            title: data.title || data.content.substring(0, 50),
+            content: data.content,
+            targetAudience: data.targetAudience,
             sender: user._id,
             recipients,
             status: data.scheduledFor ? 'scheduled' : 'sent'
@@ -568,9 +570,9 @@ async function _updateBroadcast(user: User, broadcastId: string, data: {
             throw new Error('Unauthorized to edit this broadcast')
         }
 
-        // Can only edit drafts or scheduled broadcasts
-        if (broadcast.status === 'sent') {
-            throw new Error('Cannot edit sent broadcasts')
+        // Title is required only if email is selected
+        if (data.deliveryMethod.includes('email') && !data.title) {
+            throw new Error("Title is required for email delivery")
         }
 
         // Get target recipients
@@ -602,7 +604,9 @@ async function _updateBroadcast(user: User, broadcastId: string, data: {
         const updatedBroadcast = await Broadcast.findByIdAndUpdate(
             broadcastId,
             {
-                ...data,
+                title: data.title || data.content.substring(0, 50),
+                content: data.content,
+                targetAudience: data.targetAudience,
                 recipients,
                 status: data.scheduledFor ? 'scheduled' : 'draft'
             },

@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { BookOpen, Calendar, CheckCircle, RotateCcw, ChevronLeft, ChevronRight, Trophy, Flame, Award, ChevronDown, MessageSquare } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { BookOpen, Calendar, CheckCircle, RotateCcw, ChevronLeft, ChevronRight, Trophy, Flame, Award, ChevronDown, MessageSquare, Shuffle, Hand } from "lucide-react"
 import { BIBLE_BOOKS } from "@/lib/data/bible-reading-plan"
-import { generateReadingPlan, TOTAL_CHAPTERS, type DayReading } from "@/lib/data/bible-reading-plan"
+import { generateReadingPlan, TOTAL_CHAPTERS, type DayReading, getAvailableChapters } from "@/lib/data/bible-reading-plan"
 import {
   savePlanStartDate,
   getPlanStartDate,
@@ -16,6 +17,9 @@ import {
   resetPlan,
   saveNote,
   getAllNotes,
+  markChapterRead,
+  unmarkChapterRead,
+  getAllReadChapters,
 } from "@/lib/db/bibleReadingDB"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
@@ -24,8 +28,12 @@ const DAYS_PER_PAGE = 7
 export default function BibleReadingClient() {
   const [startDate, setStartDate] = useState("")
   const [duration, setDuration] = useState(1)
+  const [readingMode, setReadingMode] = useState<'sequential' | 'random' | 'manual'>('sequential')
+  const [startBook, setStartBook] = useState("")
+  const [startChapter, setStartChapter] = useState(1)
   const [plan, setPlan] = useState<DayReading[]>([])
   const [completedDays, setCompletedDays] = useState<Set<number>>(new Set())
+  const [readChapters, setReadChapters] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showResetDialog, setShowResetDialog] = useState(false)
@@ -33,6 +41,11 @@ export default function BibleReadingClient() {
   const [notes, setNotes] = useState<Map<number, string>>(new Map())
   const [editingNoteDay, setEditingNoteDay] = useState<number | null>(null)
   const [noteText, setNoteText] = useState("")
+  const [selectedBook, setSelectedBook] = useState("")
+  const [planActive, setPlanActive] = useState(false)
+
+  const startBookMeta = BIBLE_BOOKS.find(b => b.name === startBook)
+  const maxChapters = startBookMeta?.chapters || 1
 
   useEffect(() => {
     async function load() {
@@ -41,16 +54,28 @@ export default function BibleReadingClient() {
         if (saved) {
           setStartDate(saved.startDate)
           setDuration(saved.duration)
-          setPlan(generateReadingPlan(new Date(saved.startDate), saved.duration))
-          setCompletedDays(await getCompletedDays())
+          setReadingMode(saved.readingMode || 'sequential')
+          setStartBook(saved.startBook || "")
+          setStartChapter(saved.startChapter || 1)
+          setPlanActive(true)
+          
+          if (saved.readingMode === 'manual') {
+            setReadChapters(await getAllReadChapters())
+          } else {
+            setPlan(generateReadingPlan(new Date(saved.startDate), saved.duration, saved.readingMode || 'sequential', saved.startBook, saved.startChapter))
+            setCompletedDays(await getCompletedDays())
+          }
+          
           setNotes(await getAllNotes())
 
-          // Auto-navigate to today's reading
-          const today = new Date().toISOString().split("T")[0]
-          const generatedPlan = generateReadingPlan(new Date(saved.startDate), saved.duration)
-          const todayIndex = generatedPlan.findIndex((d) => d.date === today)
-          if (todayIndex >= 0) {
-            setPage(Math.floor(todayIndex / DAYS_PER_PAGE))
+          // Auto-navigate to today's reading for scheduled plans
+          if (saved.readingMode !== 'manual') {
+            const today = new Date().toISOString().split("T")[0]
+            const generatedPlan = generateReadingPlan(new Date(saved.startDate), saved.duration, saved.readingMode || 'sequential', saved.startBook, saved.startChapter)
+            const todayIndex = generatedPlan.findIndex((d) => d.date === today)
+            if (todayIndex >= 0) {
+              setPage(Math.floor(todayIndex / DAYS_PER_PAGE))
+            }
           }
         }
       } catch (e) {
@@ -63,11 +88,33 @@ export default function BibleReadingClient() {
   }, [])
 
   const handleStartPlan = async () => {
+    if (readingMode === 'manual') {
+      const today = new Date().toISOString().split("T")[0]
+      await savePlanStartDate(today, 1, 'manual')
+      setReadChapters(new Set())
+      setPlanActive(true)
+      return
+    }
     if (!startDate) return
-    await savePlanStartDate(startDate, duration)
-    setPlan(generateReadingPlan(new Date(startDate), duration))
+    await savePlanStartDate(startDate, duration, readingMode, startBook || undefined, startBook ? startChapter : undefined)
+    setPlan(generateReadingPlan(new Date(startDate), duration, readingMode, startBook || undefined, startBook ? startChapter : undefined))
     setCompletedDays(new Set())
     setPage(0)
+    setPlanActive(true)
+  }
+
+  const handleToggleChapter = async (chapter: string) => {
+    if (readChapters.has(chapter)) {
+      await unmarkChapterRead(chapter)
+      setReadChapters((prev) => {
+        const next = new Set(prev)
+        next.delete(chapter)
+        return next
+      })
+    } else {
+      await markChapterRead(chapter)
+      setReadChapters((prev) => new Set(prev).add(chapter))
+    }
   }
 
   const handleSaveNote = async (day: number) => {
@@ -95,10 +142,15 @@ export default function BibleReadingClient() {
     setPlan([])
     setStartDate("")
     setDuration(1)
+    setReadingMode('sequential')
+    setStartBook("")
+    setStartChapter(1)
     setCompletedDays(new Set())
+    setReadChapters(new Set())
     setNotes(new Map())
     setPage(0)
     setShowResetDialog(false)
+    setPlanActive(false)
   }
 
   const totalPages = Math.ceil(plan.length / DAYS_PER_PAGE)
@@ -121,7 +173,6 @@ export default function BibleReadingClient() {
   const { currentStreak, longestStreak } = useMemo(() => {
     if (plan.length === 0 || completedDays.size === 0) return { currentStreak: 0, longestStreak: 0 }
 
-    // Sort completed day numbers and walk backwards from the latest completed day that is <= today
     const todayDayObj = plan.find((d) => d.date === today)
     const todayDayNum = todayDayObj?.day ?? plan.length
 
@@ -130,7 +181,6 @@ export default function BibleReadingClient() {
       if (completedDays.has(d)) current++
       else break
     }
-    // If today isn't completed yet, check streak ending yesterday
     if (current === 0 && todayDayNum > 1) {
       for (let d = todayDayNum - 1; d >= 1; d--) {
         if (completedDays.has(d)) current++
@@ -155,7 +205,6 @@ export default function BibleReadingClient() {
   const bookProgress = useMemo(() => {
     if (plan.length === 0) return []
 
-    // Collect all completed chapter strings
     const completedChapterSet = new Set<string>()
     completedDays.forEach((day) => {
       const d = plan.find((p) => p.day === day)
@@ -184,8 +233,163 @@ export default function BibleReadingClient() {
     )
   }
 
+  // Manual mode - show chapter selector
+  if (readingMode === 'manual' && planActive) {
+    const allChapters = getAvailableChapters()
+    const bookChapters = selectedBook
+      ? allChapters.filter((ch) => ch.startsWith(selectedBook))
+      : []
+
+    return (
+      <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <Hand className="h-6 w-6" />
+                Manual Bible Reading
+              </h1>
+              <p className="text-purple-100 text-sm mt-1">
+                Select any chapters you want to read
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowResetDialog(true)}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/30"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Reset
+            </Button>
+          </div>
+
+          {/* Progress */}
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>{readChapters.size} chapters read</span>
+              <span>{readChapters.size} / {TOTAL_CHAPTERS} total</span>
+            </div>
+            <div className="w-full bg-white/20 rounded-full h-3">
+              <div
+                className="bg-white rounded-full h-3 transition-all duration-500"
+                style={{ width: `${Math.round((readChapters.size / TOTAL_CHAPTERS) * 100)}%` }}
+              />
+            </div>
+            <p className="text-purple-100 text-xs text-right">{Math.round((readChapters.size / TOTAL_CHAPTERS) * 100)}% complete</p>
+          </div>
+        </div>
+
+        {/* Book Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Select Book</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={selectedBook} onValueChange={setSelectedBook}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a book..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {BIBLE_BOOKS.map((book) => (
+                  <SelectItem key={book.name} value={book.name}>
+                    {book.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Chapter Grid */}
+        {selectedBook && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                {selectedBook} ({bookChapters.filter((ch) => readChapters.has(ch)).length} / {bookChapters.length} read)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                {bookChapters.map((chapter) => {
+                  const isRead = readChapters.has(chapter)
+                  const chNum = parseInt(chapter.split(' ').pop() || '0')
+                  return (
+                    <button
+                      key={chapter}
+                      onClick={() => handleToggleChapter(chapter)}
+                      className={`p-2 rounded-lg font-medium text-sm transition-all ${
+                        isRead
+                          ? 'bg-green-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700'
+                      }`}
+                    >
+                      {isRead && <CheckCircle className="h-3 w-3 absolute" />}
+                      {chNum}
+                    </button>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Book Progress */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Overall Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {BIBLE_BOOKS.map((book) => {
+                const bookChaps = allChapters.filter((ch) => ch.startsWith(book.name))
+                const readCount = bookChaps.filter((ch) => readChapters.has(ch)).length
+                const status = readCount === 0 ? 'not-started' : readCount >= book.chapters ? 'complete' : 'in-progress'
+                return (
+                  <div
+                    key={book.name}
+                    className={`rounded-lg p-2 text-center text-xs border transition-colors cursor-pointer hover:shadow-md ${
+                      status === 'complete'
+                        ? 'bg-green-50 border-green-300 text-green-700'
+                        : status === 'in-progress'
+                        ? 'bg-blue-50 border-blue-300 text-blue-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-400'
+                    }`}
+                    onClick={() => setSelectedBook(book.name)}
+                  >
+                    <div className="font-medium truncate">{book.name}</div>
+                    <div className="text-[10px] mt-0.5">{readCount}/{book.chapters}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Reset Dialog */}
+        <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset Reading Plan</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will delete your current reading plan and all progress. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleReset} className="bg-red-600 hover:bg-red-700">
+                Reset Plan
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    )
+  }
+
   // No plan yet - show setup
-  if (plan.length === 0) {
+  if (!planActive) {
     return (
       <div className="container mx-auto p-3 sm:p-6 max-w-2xl">
         <Card className="border-0 shadow-lg">
@@ -195,10 +399,55 @@ export default function BibleReadingClient() {
             </div>
             <CardTitle className="text-2xl">Daily Bible Reading</CardTitle>
             <p className="text-muted-foreground mt-2">
-              Read the entire Bible in 1, 2, or 3 years. Choose your duration and start date.
+              Read the entire Bible in 1, 2, or 3 years. Choose your reading style and start date.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Reading Mode</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setReadingMode('sequential')}
+                  className={`p-3 rounded-lg border text-center transition-colors ${
+                    readingMode === 'sequential'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold text-sm">Sequential</div>
+                  <div className="text-xs text-muted-foreground mt-1">1, 2, 3 year plan</div>
+                </button>
+                <button
+                  onClick={() => setReadingMode('random')}
+                  className={`p-3 rounded-lg border text-center transition-colors ${
+                    readingMode === 'random'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold text-sm flex items-center justify-center gap-1">
+                    <Shuffle className="h-4 w-4" />
+                    Random
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Shuffle chapters</div>
+                </button>
+                <button
+                  onClick={() => setReadingMode('manual')}
+                  className={`p-3 rounded-lg border text-center transition-colors ${
+                    readingMode === 'manual'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold text-sm flex items-center justify-center gap-1">
+                    <Hand className="h-4 w-4" />
+                    Manual
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Pick any chapter</div>
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">Reading Plan Duration</label>
               <div className="grid grid-cols-3 gap-2">
@@ -223,15 +472,53 @@ export default function BibleReadingClient() {
                 })}
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Start Date</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleStartPlan} disabled={!startDate} className="w-full gap-2">
+
+            {readingMode === 'sequential' && (
+              <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <label className="text-sm font-medium block">Custom Start (Optional)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select value={startBook} onValueChange={setStartBook}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select book..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {BIBLE_BOOKS.map((book) => (
+                        <SelectItem key={book.name} value={book.name}>
+                          {book.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={startChapter.toString()} onValueChange={(v) => setStartChapter(parseInt(v))}>
+                    <SelectTrigger disabled={!startBook}>
+                      <SelectValue placeholder="Chapter..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {Array.from({ length: maxChapters }, (_, i) => i + 1).map((ch) => (
+                        <SelectItem key={ch} value={ch.toString()}>
+                          Chapter {ch}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {startBook ? `Start from ${startBook} ${startChapter}` : 'Leave empty to start from Genesis 1'}
+                </p>
+              </div>
+            )}
+
+            {readingMode !== 'manual' && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Start Date</label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+            )}
+            <Button onClick={handleStartPlan} disabled={readingMode !== 'manual' && !startDate} className="w-full gap-2">
               <Calendar className="h-4 w-4" />
               Start Reading Plan
             </Button>
@@ -255,7 +542,7 @@ export default function BibleReadingClient() {
               Daily Bible Reading
             </h1>
             <p className="text-blue-100 text-sm mt-1">
-              {duration}-year plan started {new Date(startDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              {duration}-year {readingMode === 'random' ? 'random' : 'sequential'} plan started {new Date(startDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </p>
           </div>
           <Button

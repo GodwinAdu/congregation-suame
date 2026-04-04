@@ -67,8 +67,14 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!formData.title || !formData.content || formData.deliveryMethod.length === 0) {
+        if (!formData.content || formData.deliveryMethod.length === 0) {
             toast.error("Please fill in all required fields")
+            return
+        }
+        
+        // Title is required only if email is selected
+        if (formData.deliveryMethod.includes('email') && !formData.title) {
+            toast.error("Title is required for email delivery")
             return
         }
 
@@ -117,13 +123,16 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="text-sm font-medium">Title</label>
+                        <label className="text-sm font-medium">Title {formData.deliveryMethod.includes('email') ? <span className="text-red-500">*</span> : <span className="text-gray-400">(Email only)</span>}</label>
                         <Input
                             value={formData.title}
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Enter broadcast title"
-                            required
+                            placeholder="Enter broadcast title (required for email)"
+                            required={formData.deliveryMethod.includes('email')}
                         />
+                        {formData.deliveryMethod.includes('sms') && !formData.deliveryMethod.includes('email') && (
+                            <p className="text-xs text-blue-600 mt-1">ℹ️ SMS will not include the title, only the content</p>
+                        )}
                     </div>
 
                     <div>
@@ -135,6 +144,13 @@ export function CreateBroadcastModal({ open, onClose, members, groups, onSuccess
                             rows={4}
                             required
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                            {formData.deliveryMethod.includes('sms') && formData.deliveryMethod.includes('email') 
+                                ? "SMS will send content only (no title). Email will include both title and content."
+                                : formData.deliveryMethod.includes('sms')
+                                ? "SMS will send this content only"
+                                : "Email will include title and content"}
+                        </p>
                     </div>
 
                     <div>

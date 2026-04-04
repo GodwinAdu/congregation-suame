@@ -75,7 +75,28 @@ export interface DayReading {
   readings: string[]
 }
 
-export function generateReadingPlan(startDate: Date, duration: number = 1): DayReading[] {
+export interface ManualReading {
+  date: string
+  readings: string[]
+}
+
+export function generateReadingPlan(
+  startDate: Date,
+  duration: number = 1,
+  readingMode: 'sequential' | 'random' | 'manual' = 'sequential',
+  startBook?: string,
+  startChapter?: number,
+  manualReadings?: ManualReading[]
+): DayReading[] {
+  // For manual mode, convert manual readings to day readings
+  if (readingMode === 'manual') {
+    return manualReadings?.map((reading, index) => ({
+      day: index + 1,
+      date: reading.date,
+      readings: reading.readings,
+    })) || []
+  }
+
   const totalDays = duration * 365
   const chaptersPerDay = Math.floor(TOTAL_CHAPTERS / totalDays)
   const extraChapters = TOTAL_CHAPTERS % totalDays
@@ -84,6 +105,22 @@ export function generateReadingPlan(startDate: Date, duration: number = 1): DayR
   for (const book of BIBLE_BOOKS) {
     for (let ch = 1; ch <= book.chapters; ch++) {
       allChapters.push(`${book.name} ${ch}`)
+    }
+  }
+
+  // If custom start is specified, reorder chapters to start from that point
+  if (startBook && startChapter && readingMode === 'sequential') {
+    const startIndex = allChapters.findIndex(ch => ch === `${startBook} ${startChapter}`)
+    if (startIndex > 0) {
+      allChapters.splice(0, startIndex)
+    }
+  }
+
+  // For random mode, shuffle the chapters
+  if (readingMode === 'random') {
+    for (let i = allChapters.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allChapters[i], allChapters[j]] = [allChapters[j], allChapters[i]]
     }
   }
 
@@ -106,4 +143,17 @@ export function generateReadingPlan(startDate: Date, duration: number = 1): DayR
   }
 
   return plan
+}
+
+export function getAvailableChapters(excludeChapters?: Set<string>): string[] {
+  const chapters: string[] = []
+  for (const book of BIBLE_BOOKS) {
+    for (let ch = 1; ch <= book.chapters; ch++) {
+      const chapter = `${book.name} ${ch}`
+      if (!excludeChapters?.has(chapter)) {
+        chapters.push(chapter)
+      }
+    }
+  }
+  return chapters
 }

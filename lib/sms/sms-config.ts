@@ -4,19 +4,17 @@ import axios from "axios";
 interface MsgProps {
     text: string;
     sender: string;
-    destinations: string[];
+    destinations: string[]
 }
 
 const sms_key = process.env.SMS_TOKEN!;
 const endPoint = process.env.SMS_ENDPOINT!;
 
 const headers = {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=UTF-8",
     Accept: "application/json",
     Authorization: `Key ${sms_key}`,
 };
-
-
 
 export async function smsConfig(values: MsgProps) {
     try {
@@ -33,7 +31,9 @@ export async function smsConfig(values: MsgProps) {
             destinations,
         };
 
-        const response = await axios.post(endPoint, msgData, { headers });
+        const response = await axios.post(endPoint, JSON.stringify(msgData), { 
+            headers
+        });
 
         if (response.status === 200 || response.status === 201) {
             console.log(`✅ SMS Sent Successfully: ${JSON.stringify(response.data)}`);

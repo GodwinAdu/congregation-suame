@@ -1,15 +1,19 @@
 const DB_NAME = "bible-reading-db"
-const DB_VERSION = 2
+const DB_VERSION = 3
 const PLAN_STORE = "reading-plan"
 const PROGRESS_STORE = "reading-progress"
 const NOTES_STORE = "reading-notes"
+const MANUAL_CHAPTERS_STORE = "manual-chapters"
 
 let dbInstance: IDBDatabase | null = null
 
 export interface ReadingPlanRecord {
   id: string // always "active"
   startDate: string
-  duration: number // 1, 2, or 3 years
+  duration: number // 1, 2, or 3 years (ignored for manual mode)
+  readingMode: 'sequential' | 'random' | 'manual' // sequential (1,2,3 year plan), random, or manual
+  startBook?: string // for custom start
+  startChapter?: number // for custom start
 }
 
 function openDB(): Promise<IDBDatabase> {
@@ -33,21 +37,37 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(NOTES_STORE)) {
         db.createObjectStore(NOTES_STORE, { keyPath: "day" })
       }
+      if (!db.objectStoreNames.contains(MANUAL_CHAPTERS_STORE)) {
+        db.createObjectStore(MANUAL_CHAPTERS_STORE, { keyPath: "chapter" })
+      }
     }
   })
 }
 
-export async function savePlanStartDate(startDate: string, duration: number = 1): Promise<void> {
+export async function savePlanStartDate(
+  startDate: string,
+  duration: number = 1,
+  readingMode: 'sequential' | 'random' | 'manual' = 'sequential',
+  startBook?: string,
+  startChapter?: number
+): Promise<void> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction([PLAN_STORE], "readwrite")
-    tx.objectStore(PLAN_STORE).put({ id: "active", startDate, duration })
+    tx.objectStore(PLAN_STORE).put({
+      id: "active",
+      startDate,
+      duration,
+      readingMode,
+      startBook,
+      startChapter
+    })
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })
 }
 
-export async function getPlanStartDate(): Promise<{ startDate: string; duration: number } | null> {
+export async function getPlanStartDate(): Promise<ReadingPlanRecord | null> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const request = db.transaction([PLAN_STORE], "readonly").objectStore(PLAN_STORE).get("active")
@@ -55,7 +75,14 @@ export async function getPlanStartDate(): Promise<{ startDate: string; duration:
     request.onsuccess = () => {
       const result = request.result
       if (!result) resolve(null)
-      else resolve({ startDate: result.startDate, duration: result.duration || 1 })
+      else resolve({
+        id: result.id,
+        startDate: result.startDate,
+        duration: result.duration || 1,
+        readingMode: result.readingMode || 'sequential',
+        startBook: result.startBook,
+        startChapter: result.startChapter
+      })
     }
   })
 }
@@ -92,6 +119,48 @@ export async function getCompletedDays(): Promise<Set<number>> {
     const request = db.transaction([PROGRESS_STORE], "readonly").objectStore(PROGRESS_STORE).getAll()
     request.onerror = () => reject(request.error)
     request.onsuccess = () => resolve(new Set(request.result.map((r: any) => r.day)))
+  })
+}
+
+// Manual mode functions
+export async function markChapterRead(chapter: string): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([MANUAL_CHAPTERS_STORE], "readwrite")
+    tx.objectStore(MANUAL_CHAPTERS_STORE).put({
+      chapter,
+      readAt: new Date().toISOString()
+    })
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function unmarkChapterRead(chapter: string): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([MANUAL_CHAPTERS_STORE], "readwrite")
+    tx.objectStore(MANUAL_CHAPTERS_STORE).delete(chapter)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function isChapterRead(chapter: string): Promise<boolean> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const request = db.transaction([MANUAL_CHAPTERS_STORE], "readonly").objectStore(MANUAL_CHAPTERS_STORE).get(chapter)
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(!!request.result)
+  })
+}
+
+export async function getAllReadChapters(): Promise<Set<string>> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const request = db.transaction([MANUAL_CHAPTERS_STORE], "readonly").objectStore(MANUAL_CHAPTERS_STORE).getAll()
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(new Set(request.result.map((r: any) => r.chapter)))
   })
 }
 
