@@ -520,7 +520,7 @@ async function _deliverBroadcast(broadcastId: string, deliveryMethods: string[])
             if (validPhones.length > 0) {
                 try {
                     const smsResult = await smsConfig({
-                        text: `${broadcast.title}\n\n${broadcast.content}\n\n- ${broadcast.sender.fullName}\nSuame Congregation`,
+                        text: `${broadcast.title}\n\n${broadcast.content}\n\n- Suame Twi Congregation`,
                         sender: 'Suame JW',
                         destinations: validPhones
                     })
