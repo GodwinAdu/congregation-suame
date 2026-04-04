@@ -118,13 +118,17 @@ export function MeetingNotesClient() {
       </div>
 
       <Tabs value={activeType} onValueChange={setActiveType}>
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-6 h-14">
           {meetingTypes.map((type) => {
             const Icon = type.icon;
+            const shortLabel = {
+              all: 'All', midweek: 'Midweek', weekend: 'Weekend',
+              'circuit-assembly': 'Circuit', convention: 'Conv.', other: 'Other'
+            }[type.id] ?? type.label
             return (
-              <TabsTrigger key={type.id} value={type.id} className="text-xs">
-                <Icon className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">{type.label}</span>
+              <TabsTrigger key={type.id} value={type.id} className="flex flex-col items-center gap-0.5 px-0.5 py-1.5">
+                <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="text-[9px] leading-none">{shortLabel}</span>
               </TabsTrigger>
             );
           })}

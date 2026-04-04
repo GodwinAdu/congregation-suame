@@ -131,10 +131,6 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "Meeting Notes",
           url: `/dashboard/publisher/meeting-notes`,
         },
-        {
-          title: "Prayer List",
-          url: `/dashboard/publisher/prayer-list`,
-        }
       ],
     },
     {
@@ -261,6 +257,36 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Activity Summary",
           url: `/dashboard/field-service/summary`,
+          roleField: "manageAllReport"
+        },
+        {
+          title: "Auxiliary Pioneers",
+          url: `/dashboard/field-service/auxiliary-pioneers`,
+          roleField: "manageAllReport"
+        },
+        {
+          title: "Regular Pioneers",
+          url: `/dashboard/field-service/regular-pioneers`,
+          roleField: "manageAllReport"
+        },
+        {
+          title: "Pioneer List",
+          url: `/dashboard/field-service/pioneer-applications`,
+          roleField: "manageAllReport"
+        },
+        {
+          title: "Inactive Publishers",
+          url: `/dashboard/field-service/inactive-publishers`,
+          roleField: "manageAllReport"
+        },
+        {
+          title: "Hours Trend",
+          url: `/dashboard/field-service/hours-trend`,
+          roleField: "manageAllReport"
+        },
+        {
+          title: "Group Comparison",
+          url: `/dashboard/field-service/group-comparison`,
           roleField: "manageAllReport"
         }
       ],

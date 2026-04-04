@@ -111,9 +111,9 @@ export function MeetingNoteForm({ note, onClose }: MeetingNoteFormProps) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full max-w-2xl max-h-[95vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
             {note ? 'Edit Meeting Note' : 'Add Meeting Note'}
           </DialogTitle>
         </DialogHeader>

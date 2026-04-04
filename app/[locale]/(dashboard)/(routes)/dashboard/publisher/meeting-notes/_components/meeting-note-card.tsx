@@ -32,38 +32,38 @@ export function MeetingNoteCard({ note, onEdit, onDelete }: MeetingNoteCardProps
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-3">
-          <div className="flex-1">
-            <CardTitle className="text-lg mb-2">{note.title}</CardTitle>
-            <div className="flex flex-wrap gap-2 mb-2">
-              <Badge className={typeColors[note.meetingType] || typeColors.other}>
+        <div className="flex justify-between items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base sm:text-lg mb-2 leading-tight">{note.title}</CardTitle>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              <Badge className={`text-xs ${typeColors[note.meetingType] || typeColors.other}`}>
                 {typeLabels[note.meetingType] || 'Other'}
               </Badge>
-              <Badge variant="outline" className="flex items-center">
-                <Calendar className="h-3 w-3 mr-1" />
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
                 {new Date(note.date).toLocaleDateString()}
               </Badge>
             </div>
             {(note.speaker || note.theme) && (
-              <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+              <div className="flex flex-wrap gap-2 text-xs text-gray-600">
                 {note.speaker && (
-                  <span className="flex items-center">
-                    <User className="h-3 w-3 mr-1" />
+                  <span className="flex items-center gap-1">
+                    <User className="h-3 w-3" />
                     {note.speaker}
                   </span>
                 )}
                 {note.theme && (
-                  <span className="italic">"{note.theme}"</span>
+                  <span className="italic truncate">"{note.theme}"</span>
                 )}
               </div>
             )}
           </div>
-          <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              <Edit className="h-4 w-4" />
+          <div className="flex gap-0.5 flex-shrink-0">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onEdit}>
+              <Edit className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={onDelete}>
-              <Trash2 className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-400 hover:text-red-600" onClick={onDelete}>
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

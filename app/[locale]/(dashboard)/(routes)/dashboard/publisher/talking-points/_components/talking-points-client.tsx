@@ -125,13 +125,17 @@ export function TalkingPointsClient() {
       </div>
 
       <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-7 h-14">
           {categories.map((category) => {
             const Icon = category.icon;
+            const shortLabel = {
+              all: 'All', introduction: 'Intro', presentation: 'Present',
+              'return-visit': 'Return', 'bible-study': 'Bible', informal: 'Informal', other: 'Other'
+            }[category.id] ?? category.label
             return (
-              <TabsTrigger key={category.id} value={category.id} className="text-xs">
-                <Icon className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">{category.label}</span>
+              <TabsTrigger key={category.id} value={category.id} className="flex flex-col items-center gap-0.5 px-0.5 py-1.5">
+                <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="text-[9px] leading-none">{shortLabel}</span>
               </TabsTrigger>
             );
           })}

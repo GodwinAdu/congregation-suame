@@ -23,6 +23,7 @@ const DAYS_PER_PAGE = 7
 
 export default function BibleReadingClient() {
   const [startDate, setStartDate] = useState("")
+  const [duration, setDuration] = useState(1)
   const [plan, setPlan] = useState<DayReading[]>([])
   const [completedDays, setCompletedDays] = useState<Set<number>>(new Set())
   const [page, setPage] = useState(0)
@@ -38,14 +39,15 @@ export default function BibleReadingClient() {
       try {
         const saved = await getPlanStartDate()
         if (saved) {
-          setStartDate(saved)
-          setPlan(generateReadingPlan(new Date(saved)))
+          setStartDate(saved.startDate)
+          setDuration(saved.duration)
+          setPlan(generateReadingPlan(new Date(saved.startDate), saved.duration))
           setCompletedDays(await getCompletedDays())
           setNotes(await getAllNotes())
 
           // Auto-navigate to today's reading
           const today = new Date().toISOString().split("T")[0]
-          const generatedPlan = generateReadingPlan(new Date(saved))
+          const generatedPlan = generateReadingPlan(new Date(saved.startDate), saved.duration)
           const todayIndex = generatedPlan.findIndex((d) => d.date === today)
           if (todayIndex >= 0) {
             setPage(Math.floor(todayIndex / DAYS_PER_PAGE))
@@ -62,8 +64,8 @@ export default function BibleReadingClient() {
 
   const handleStartPlan = async () => {
     if (!startDate) return
-    await savePlanStartDate(startDate)
-    setPlan(generateReadingPlan(new Date(startDate)))
+    await savePlanStartDate(startDate, duration)
+    setPlan(generateReadingPlan(new Date(startDate), duration))
     setCompletedDays(new Set())
     setPage(0)
   }
@@ -92,6 +94,7 @@ export default function BibleReadingClient() {
     await resetPlan()
     setPlan([])
     setStartDate("")
+    setDuration(1)
     setCompletedDays(new Set())
     setNotes(new Map())
     setPage(0)
@@ -109,8 +112,11 @@ export default function BibleReadingClient() {
     return count
   }, [completedDays, plan])
 
-  const progressPercent = plan.length > 0 ? Math.round((completedDays.size / 365) * 100) : 0
+  const progressPercent = plan.length > 0 ? Math.round((completedDays.size / plan.length) * 100) : 0
   const today = new Date().toISOString().split("T")[0]
+
+  const totalDays = duration * 365
+  const avgChaptersPerDay = Math.round(TOTAL_CHAPTERS / totalDays)
 
   const { currentStreak, longestStreak } = useMemo(() => {
     if (plan.length === 0 || completedDays.size === 0) return { currentStreak: 0, longestStreak: 0 }
@@ -134,7 +140,7 @@ export default function BibleReadingClient() {
 
     let longest = 0
     let run = 0
-    for (let d = 1; d <= 365; d++) {
+    for (let d = 1; d <= totalDays; d++) {
       if (completedDays.has(d)) {
         run++
         if (run > longest) longest = run
@@ -189,10 +195,34 @@ export default function BibleReadingClient() {
             </div>
             <CardTitle className="text-2xl">Daily Bible Reading</CardTitle>
             <p className="text-muted-foreground mt-2">
-              Read the entire Bible in one year. Choose your start date and we'll create a daily schedule of ~3-4 chapters per day.
+              Read the entire Bible in 1, 2, or 3 years. Choose your duration and start date.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Reading Plan Duration</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3].map((years) => {
+                  const chaptersPerDay = Math.round(TOTAL_CHAPTERS / (years * 365))
+                  return (
+                    <button
+                      key={years}
+                      onClick={() => setDuration(years)}
+                      className={`p-3 rounded-lg border text-center transition-colors ${
+                        duration === years
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="font-semibold">{years} Year{years > 1 ? 's' : ''}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        ~{chaptersPerDay} ch/day
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Start Date</label>
               <Input
@@ -206,7 +236,7 @@ export default function BibleReadingClient() {
               Start Reading Plan
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              {TOTAL_CHAPTERS} chapters • 66 books • 365 days
+              {TOTAL_CHAPTERS} chapters • 66 books • {totalDays} days • ~{avgChaptersPerDay} ch/day
             </p>
           </CardContent>
         </Card>
@@ -225,7 +255,7 @@ export default function BibleReadingClient() {
               Daily Bible Reading
             </h1>
             <p className="text-blue-100 text-sm mt-1">
-              Started {new Date(startDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              {duration}-year plan started {new Date(startDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </p>
           </div>
           <Button
@@ -242,7 +272,7 @@ export default function BibleReadingClient() {
         {/* Progress */}
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span>{completedDays.size} of 365 days completed</span>
+            <span>{completedDays.size} of {totalDays} days completed</span>
             <span>{completedChapters} / {TOTAL_CHAPTERS} chapters</span>
           </div>
           <div className="w-full bg-white/20 rounded-full h-3">

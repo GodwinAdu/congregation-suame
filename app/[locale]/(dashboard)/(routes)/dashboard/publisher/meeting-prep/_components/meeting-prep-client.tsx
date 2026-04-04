@@ -233,36 +233,35 @@ export default function MeetingPrepClient() {
   }
 
   return (
-    <div className="container mx-auto p-3 sm:p-6 space-y-4 max-w-6xl">
+    <div className="w-full p-3 sm:p-6 space-y-3 sm:space-y-4 max-w-6xl mx-auto pb-24 sm:pb-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
-        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Calendar className="h-6 w-6" />
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 sm:p-6 text-white">
+        <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+          <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
           Meeting Preparation
         </h1>
-        <p className="text-blue-100 text-sm mt-1">Stay organized and prepared for all meetings</p>
+        <p className="text-blue-100 text-xs sm:text-sm mt-0.5">Stay organized for all meetings</p>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4">
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <CheckCircle2 className="h-4 w-4 mx-auto mb-1 text-green-300" />
-            <div className="text-lg sm:text-xl font-bold">{stats.completed}</div>
-            <div className="text-blue-200 text-[10px] sm:text-xs">Completed</div>
+        <div className="grid grid-cols-4 gap-2 mt-3">
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <CheckCircle2 className="h-3.5 w-3.5 mx-auto mb-0.5 text-green-300" />
+            <div className="text-base sm:text-xl font-bold">{stats.completed}</div>
+            <div className="text-blue-200 text-[9px] sm:text-xs">Done</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <Clock className="h-4 w-4 mx-auto mb-1 text-yellow-300" />
-            <div className="text-lg sm:text-xl font-bold">{stats.inProgress}</div>
-            <div className="text-blue-200 text-[10px] sm:text-xs">In Progress</div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <Clock className="h-3.5 w-3.5 mx-auto mb-0.5 text-yellow-300" />
+            <div className="text-base sm:text-xl font-bold">{stats.inProgress}</div>
+            <div className="text-blue-200 text-[9px] sm:text-xs">Active</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <Target className="h-4 w-4 mx-auto mb-1 text-purple-300" />
-            <div className="text-lg sm:text-xl font-bold">{stats.avgCompletion}%</div>
-            <div className="text-blue-200 text-[10px] sm:text-xs">Avg Complete</div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <Target className="h-3.5 w-3.5 mx-auto mb-0.5 text-purple-300" />
+            <div className="text-base sm:text-xl font-bold">{stats.avgCompletion}%</div>
+            <div className="text-blue-200 text-[9px] sm:text-xs">Avg</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <TrendingUp className="h-4 w-4 mx-auto mb-1 text-orange-300" />
-            <div className="text-lg sm:text-xl font-bold">{formatTime(stats.totalTime)}</div>
-            <div className="text-blue-200 text-[10px] sm:text-xs">Total Time</div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <TrendingUp className="h-3.5 w-3.5 mx-auto mb-0.5 text-orange-300" />
+            <div className="text-base sm:text-xl font-bold">{formatTime(stats.totalTime)}</div>
+            <div className="text-blue-200 text-[9px] sm:text-xs">Time</div>
           </div>
         </div>
       </div>
@@ -289,25 +288,27 @@ export default function MeetingPrepClient() {
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="current" className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Current</span>
-          </TabsTrigger>
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">All</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Analytics</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Settings</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+        <div className="sticky top-0 z-10 bg-background pt-1 pb-1">
+          <TabsList className="grid w-full grid-cols-4 h-14">
+            <TabsTrigger value="current" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="text-[10px] leading-none">Current</span>
+            </TabsTrigger>
+            <TabsTrigger value="all" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <Calendar className="h-4 w-4" />
+              <span className="text-[10px] leading-none">All</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <BarChart3 className="h-4 w-4" />
+              <span className="text-[10px] leading-none">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <Settings className="h-4 w-4" />
+              <span className="text-[10px] leading-none">Settings</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Current Tab */}
         <TabsContent value="current" className="space-y-4">

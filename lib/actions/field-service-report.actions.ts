@@ -348,3 +348,226 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
 export const generateFieldServiceReport = await withAuth(_generateFieldServiceReport);
 export const getReportFilterOptions = await withAuth(_getReportFilterOptions);
 export const generatePioneerSummaryReport = await withAuth(_generatePioneerSummaryReport);
+
+// ── Inactive Publishers ──────────────────────────────────────────────────────
+const _fetchInactivePublishers = async (user: User, monthsInactive: number) => {
+  if (!user) throw new Error('Not authorized')
+  await connectToDB()
+
+  // Build cutoff as YYYY-MM string by subtracting months from current date
+  const now = new Date()
+  const cutoffDate = new Date(now.getFullYear(), now.getMonth() - monthsInactive, 1)
+  const cutoffStr = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}`
+
+  // Fetch all members — no accountStatus filter since older records may not have the field
+  const members = await Member.find()
+    .populate('groupId', 'name')
+    .select('fullName phone groupId')
+    .lean()
+
+  const allReports = await FieldServiceReport.find({
+    publisher: { $in: (members as any[]).map((m: any) => m._id) }
+  }).select('publisher month').lean()
+
+  // Build map of publisher _id -> latest month string
+  const lastReportMap: Record<string, string> = {}
+  for (const r of allReports as any[]) {
+    const id = r.publisher.toString()
+    if (!lastReportMap[id] || r.month > lastReportMap[id]) lastReportMap[id] = r.month
+  }
+
+  const inactive = (members as any[]).filter(m => {
+    const last = lastReportMap[m._id.toString()]
+    // Inactive if never reported OR last report is strictly before the cutoff month
+    return !last || last < cutoffStr
+  }).map(m => {
+    const lastReport = lastReportMap[m._id.toString()] ?? null
+    let monthsAgo: number | null = null
+    if (lastReport) {
+      const [ly, lm] = lastReport.split('-').map(Number)
+      monthsAgo = (now.getFullYear() - ly) * 12 + (now.getMonth() + 1 - lm)
+    }
+    return {
+      id: m._id.toString(),
+      fullName: m.fullName,
+      phone: m.phone ?? '',
+      group: (m.groupId as any)?.name ?? 'Unassigned',
+      lastReport,
+      monthsInactive: monthsAgo,
+    }
+  })
+
+  // Sort: never reported first, then oldest last report first
+  inactive.sort((a, b) => {
+    if (!a.lastReport && !b.lastReport) return 0
+    if (!a.lastReport) return -1
+    if (!b.lastReport) return 1
+    return a.lastReport.localeCompare(b.lastReport)
+  })
+
+  return JSON.parse(JSON.stringify(inactive))
+}
+export const fetchInactivePublishers = await withAuth(_fetchInactivePublishers)
+
+// ── Hours Trend ──────────────────────────────────────────────────────────────
+const _fetchHoursTrend = async (user: User, year: number) => {
+  if (!user) throw new Error('Not authorized')
+  await connectToDB()
+
+  const months = Array.from({ length: 12 }, (_, i) =>
+    `${year}-${String(i + 1).padStart(2, '0')}`
+  )
+
+  const reports = await FieldServiceReport.find({
+    month: { $gte: `${year}-01`, $lte: `${year}-12` }
+  }).select('month hours bibleStudents auxiliaryPioneer').lean()
+
+  const data = months.map(month => {
+    const monthReports = (reports as any[]).filter(r => r.month === month)
+    return {
+      month,
+      label: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+      totalHours: monthReports.reduce((s, r) => s + (r.hours || 0), 0),
+      totalStudies: monthReports.reduce((s, r) => s + (r.bibleStudents || 0), 0),
+      publishers: monthReports.length,
+      auxiliaryPioneers: monthReports.filter(r => r.auxiliaryPioneer).length,
+    }
+  })
+
+  return JSON.parse(JSON.stringify(data))
+}
+export const fetchHoursTrend = await withAuth(_fetchHoursTrend)
+
+// ── Group Comparison ─────────────────────────────────────────────────────────
+const _fetchGroupComparison = async (user: User, month: string) => {
+  if (!user) throw new Error('Not authorized')
+  await connectToDB()
+
+  const groups = await Group.find().lean()
+
+  // Fetch all members with their groupId (not populated — just the ObjectId)
+  const members = await Member.find().select('groupId').lean()
+
+  // Build a map of memberId -> groupId string for fast lookup
+  const memberGroupMap: Record<string, string> = {}
+  for (const m of members as any[]) {
+    if (m.groupId) memberGroupMap[m._id.toString()] = m.groupId.toString()
+  }
+
+  // Fetch reports for the month — no populate needed, publisher is ObjectId
+  const reports = await FieldServiceReport.find({ month })
+    .select('publisher hours bibleStudents auxiliaryPioneer')
+    .lean()
+
+  const result = (groups as any[]).map(group => {
+    const gid = group._id.toString()
+    const groupMemberIds = Object.entries(memberGroupMap)
+      .filter(([, gId]) => gId === gid)
+      .map(([mId]) => mId)
+
+    const groupReports = (reports as any[]).filter(r =>
+      memberGroupMap[r.publisher.toString()] === gid
+    )
+
+    return {
+      id: gid,
+      name: group.name,
+      totalMembers: groupMemberIds.length,
+      reportCount: groupReports.length,
+      totalHours: groupReports.reduce((s: number, r: any) => s + (r.hours || 0), 0),
+      totalStudies: groupReports.reduce((s: number, r: any) => s + (r.bibleStudents || 0), 0),
+      auxiliaryPioneers: groupReports.filter((r: any) => r.auxiliaryPioneer === true).length,
+      participationRate: groupMemberIds.length > 0
+        ? Math.round((groupReports.length / groupMemberIds.length) * 100)
+        : 0,
+    }
+  })
+
+  result.sort((a, b) => b.totalHours - a.totalHours)
+  return JSON.parse(JSON.stringify(result))
+}
+export const fetchGroupComparison = await withAuth(_fetchGroupComparison)
+
+// ── Regular Pioneer Tracker ──────────────────────────────────────────────────
+const _fetchRegularPioneers = async (user: User, month: string) => {
+  if (!user) throw new Error('Not authorized')
+  await connectToDB()
+
+  const Privilege = (await import('../models/privilege.models')).default
+
+  // Match any privilege whose name contains 'pioneer' (case-insensitive) but not 'auxiliary' or 'special'
+  const pioneerPrivileges = await Privilege.find({
+    name: { $regex: /pioneer/i, $not: /auxiliary|special/i }
+  }).lean()
+  const privilegeIds = (pioneerPrivileges as any[]).map(p => p._id)
+
+  // A regular pioneer is identified by pioneerStatus:'regular' OR having a regular pioneer privilege
+  const members = await Member.find({
+    $or: [
+      { pioneerStatus: 'regular' },
+      ...(privilegeIds.length > 0 ? [{ privileges: { $in: privilegeIds } }] : [])
+    ]
+  }).populate('groupId', 'name')
+    .select('fullName phone groupId pioneerStartDate pioneerStatus')
+    .lean()
+
+  const reports = await FieldServiceReport.find({
+    publisher: { $in: (members as any[]).map(m => (m as any)._id) },
+    month,
+  }).select('publisher hours bibleStudents comments').lean()
+
+  // Build report map by publisher id
+  const reportMap: Record<string, any> = {}
+  for (const r of reports as any[]) {
+    reportMap[r.publisher.toString()] = r
+  }
+
+  const HOUR_REQUIREMENT = 50
+
+  const result = (members as any[]).map(m => {
+    const report = reportMap[m._id.toString()] ?? null
+    // hours default is 0 in schema, so a submitted report always has a numeric hours value
+    const hours = report ? (report.hours ?? 0) : 0
+    return {
+      id: m._id.toString(),
+      fullName: m.fullName,
+      phone: m.phone ?? '',
+      group: (m.groupId as any)?.name ?? 'Unassigned',
+      pioneerStartDate: m.pioneerStartDate ?? null,
+      hours,
+      bibleStudents: report?.bibleStudents ?? 0,
+      comments: report?.comments ?? '',
+      submitted: report !== null,
+      metRequirement: hours >= HOUR_REQUIREMENT,
+      shortfall: Math.max(0, HOUR_REQUIREMENT - hours),
+    }
+  })
+
+  result.sort((a, b) => b.hours - a.hours)
+  return JSON.parse(JSON.stringify(result))
+}
+export const fetchRegularPioneers = await withAuth(_fetchRegularPioneers)
+
+// ── Pioneer Applications ─────────────────────────────────────────────────────
+const _fetchPioneerApplications = async (user: User) => {
+  if (!user) throw new Error('Not authorized')
+  await connectToDB()
+
+  const members = await Member.find({
+    pioneerStatus: { $in: ['auxiliary', 'regular', 'special'] }
+  }).populate('groupId', 'name')
+    .select('fullName phone groupId pioneerStatus pioneerStartDate')
+    .lean()
+
+  return JSON.parse(JSON.stringify(
+    (members as any[]).map(m => ({
+      id: m._id.toString(),
+      fullName: m.fullName,
+      phone: m.phone ?? '',
+      group: m.groupId?.name ?? 'Unassigned',
+      pioneerStatus: m.pioneerStatus,
+      pioneerStartDate: m.pioneerStartDate ?? null,
+    }))
+  ))
+}
+export const fetchPioneerApplications = await withAuth(_fetchPioneerApplications)

@@ -49,7 +49,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 export default function StudyTrackerClient() {
   const [sessions, setSessions] = useState<StudySession[]>([])
   const [schedule, setSchedule] = useState<StudyScheduleItem[]>([])
-  const [weeklyGoal, setWeeklyGoal] = useState(30)
+  const [weeklyGoal, setWeeklyGoal] = useState(180)
   const [stats, setStats] = useState<StudyStats | null>(null)
   const [weeklyData, setWeeklyData] = useState<{ date: string; minutes: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,6 +59,7 @@ export default function StudyTrackerClient() {
   const [timerRunning, setTimerRunning] = useState(false)
   const [timerSeconds, setTimerSeconds] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const [activeScheduleId, setActiveScheduleId] = useState<string | null>(null)
 
   // Manual log form
   const [showManualForm, setShowManualForm] = useState(false)
@@ -144,13 +145,15 @@ export default function StudyTrackerClient() {
       topic: topic || STUDY_CATEGORIES.find(c => c.id === selectedCategory)?.label || "Personal Study",
       notes: "",
       category: selectedCategory,
+      scheduleId: activeScheduleId || undefined,
       createdAt: new Date().toISOString(),
     }
     await saveSession(session)
     setSessions((prev) => [session, ...prev])
     setTimerSeconds(0)
     setTopic("")
-  }, [timerSeconds, topic, selectedCategory])
+    setActiveScheduleId(null)
+  }, [timerSeconds, topic, selectedCategory, activeScheduleId])
 
   const handleTimerReset = useCallback(() => {
     setTimerSeconds(0)
@@ -167,6 +170,7 @@ export default function StudyTrackerClient() {
       topic: topic || STUDY_CATEGORIES.find(c => c.id === selectedCategory)?.label || "Personal Study",
       notes,
       category: selectedCategory,
+      scheduleId: activeScheduleId || undefined,
       createdAt: new Date().toISOString(),
     }
     await saveSession(session)
@@ -176,6 +180,7 @@ export default function StudyTrackerClient() {
     setNotes("")
     setManualDate(new Date().toISOString().split("T")[0])
     setSelectedCategory('personal')
+    setActiveScheduleId(null)
     setShowManualForm(false)
   }
 
@@ -187,8 +192,9 @@ export default function StudyTrackerClient() {
   }
 
   const handleSaveGoal = async () => {
-    const mins = parseInt(goalInput)
-    if (!mins || mins <= 0) return
+    const hours = parseFloat(goalInput)
+    if (!hours || hours <= 0) return
+    const mins = Math.round(hours * 60)
     await saveWeeklyGoal(mins)
     setWeeklyGoal(mins)
     setEditingGoal(false)
@@ -240,8 +246,36 @@ export default function StudyTrackerClient() {
     setSchedule(prev => prev.filter(s => s.id !== id))
   }
 
-  // Today's scheduled studies
+  // Quick complete a schedule item with its target minutes
+  const handleQuickComplete = async (item: StudyScheduleItem) => {
+    const session: StudySession = {
+      id: Date.now().toString(),
+      date: today,
+      minutes: item.targetMinutes,
+      topic: item.label,
+      notes: "",
+      category: item.category,
+      scheduleId: item.id,
+      createdAt: new Date().toISOString(),
+    }
+    await saveSession(session)
+    setSessions((prev) => [session, ...prev])
+  }
+
+  // Start timer for a schedule item
+  const handleStartSchedule = (item: StudyScheduleItem) => {
+    setActiveScheduleId(item.id)
+    setSelectedCategory(item.category)
+    setTopic(item.label)
+    setTimerRunning(true)
+    setTimerSeconds(0)
+    setActiveTab('timer')
+  }
+
+  // Today's scheduled studies — check completion by scheduleId
   const todaySchedule = schedule.filter(s => s.dayOfWeek === new Date().getDay())
+  const isScheduleCompleted = (item: StudyScheduleItem) =>
+    sessions.some(s => s.date === today && s.scheduleId === item.id)
 
   // Filtered sessions
   const filteredSessions = categoryFilter === 'all' ? sessions : sessions.filter(s => s.category === categoryFilter)
@@ -266,36 +300,35 @@ export default function StudyTrackerClient() {
   }
 
   return (
-    <div className="container mx-auto p-3 sm:p-6 space-y-4 max-w-4xl">
+    <div className="w-full p-3 sm:p-6 space-y-3 sm:space-y-4 max-w-4xl mx-auto pb-24 sm:pb-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
-        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6" />
-          Personal Study Tracker
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 sm:p-6 text-white">
+        <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+          <BookOpen className="h-5 w-5 sm:h-6 sm:w-6" />
+          Study Tracker
         </h1>
-        <p className="text-purple-100 text-sm mt-1">Track your daily personal Bible study</p>
+        <p className="text-purple-100 text-xs sm:text-sm mt-0.5">Track your daily Bible study</p>
 
-        {/* Enhanced Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4">
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <Flame className="h-4 w-4 mx-auto mb-1 text-orange-300" />
-            <div className="text-lg sm:text-xl font-bold">{currentStreak}</div>
-            <div className="text-purple-200 text-[10px] sm:text-xs">Day Streak</div>
+        <div className="grid grid-cols-4 gap-2 mt-3">
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <Flame className="h-3.5 w-3.5 mx-auto mb-0.5 text-orange-300" />
+            <div className="text-base sm:text-xl font-bold">{currentStreak}</div>
+            <div className="text-purple-200 text-[9px] sm:text-xs">Streak</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <Clock className="h-4 w-4 mx-auto mb-1 text-blue-300" />
-            <div className="text-lg sm:text-xl font-bold">{todayMinutes}</div>
-            <div className="text-purple-200 text-[10px] sm:text-xs">Min Today</div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <Clock className="h-3.5 w-3.5 mx-auto mb-0.5 text-blue-300" />
+            <div className="text-base sm:text-xl font-bold">{todayMinutes}</div>
+            <div className="text-purple-200 text-[9px] sm:text-xs">Today</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <Award className="h-4 w-4 mx-auto mb-1 text-yellow-300" />
-            <div className="text-lg sm:text-xl font-bold">{Math.round(totalMinutes / 60)}</div>
-            <div className="text-purple-200 text-[10px] sm:text-xs">Total Hours</div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <Award className="h-3.5 w-3.5 mx-auto mb-0.5 text-yellow-300" />
+            <div className="text-base sm:text-xl font-bold">{Math.round(totalMinutes / 60)}</div>
+            <div className="text-purple-200 text-[9px] sm:text-xs">Hrs Total</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 sm:p-3 text-center">
-            <TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-300" />
-            <div className="text-lg sm:text-xl font-bold">{totalSessions}</div>
-            <div className="text-purple-200 text-[10px] sm:text-xs">Sessions</div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <TrendingUp className="h-3.5 w-3.5 mx-auto mb-0.5 text-green-300" />
+            <div className="text-base sm:text-xl font-bold">{totalSessions}</div>
+            <div className="text-purple-200 text-[9px] sm:text-xs">Sessions</div>
           </div>
         </div>
       </div>
@@ -303,36 +336,53 @@ export default function StudyTrackerClient() {
       {/* Today's Schedule */}
       {todaySchedule.length > 0 && (
         <Card>
-          <CardHeader className="py-3 px-4">
+          <CardHeader className="py-3 px-3 sm:px-4">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+              <Calendar className="h-4 w-4 flex-shrink-0" />
               Today's Schedule
+              <Badge variant="outline" className="text-xs ml-auto flex-shrink-0">
+                {todaySchedule.filter(isScheduleCompleted).length}/{todaySchedule.length} done
+              </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
+          <CardContent className="px-3 sm:px-4 pb-3 pt-0">
             <div className="space-y-2">
               {todaySchedule.map((item) => {
                 const Icon = getCategoryIcon(item.category)
                 const color = getCategoryColor(item.category)
-                const todaySessions = sessions.filter(s => s.date === today && s.category === item.category)
-                const completedMinutes = todaySessions.reduce((sum, s) => sum + s.minutes, 0)
-                const isCompleted = completedMinutes >= item.targetMinutes
+                const completed = isScheduleCompleted(item)
+                const linkedSession = sessions.find(s => s.date === today && s.scheduleId === item.id)
                 return (
-                  <div key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                    isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'
+                  <div key={item.id} className={`flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border transition-all ${
+                    completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
                   }`}>
-                    <div className={`w-8 h-8 rounded-full bg-${color}-100 flex items-center justify-center relative`}>
-                      <Icon className={`h-4 w-4 text-${color}-600`} />
-                      {isCompleted && (
-                        <CheckCircle2 className="h-3 w-3 text-green-600 absolute -top-1 -right-1 bg-white rounded-full" />
+                    <div className={`w-8 h-8 rounded-full bg-${color}-100 flex items-center justify-center flex-shrink-0 relative`}>
+                      <Icon className={`h-3.5 w-3.5 text-${color}-600`} />
+                      {completed && (
+                        <CheckCircle2 className="h-3 w-3 text-green-600 absolute -top-0.5 -right-0.5 bg-white rounded-full" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{item.label}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.label}</p>
                       <p className="text-xs text-muted-foreground">
-                        {completedMinutes}/{item.targetMinutes} min {isCompleted && '✅'}
+                        {completed
+                          ? `✅ ${linkedSession?.minutes} min done`
+                          : `${item.targetMinutes} min target`
+                        }
                       </p>
                     </div>
+                    {!completed && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 sm:w-auto sm:px-2" onClick={() => handleStartSchedule(item)}>
+                          <Play className="h-3 w-3" />
+                          <span className="hidden sm:inline ml-1 text-xs">Start</span>
+                        </Button>
+                        <Button size="sm" className="h-8 w-8 p-0 sm:w-auto sm:px-2 bg-green-600 hover:bg-green-700" onClick={() => handleQuickComplete(item)}>
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span className="hidden sm:inline ml-1 text-xs">Done</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -343,69 +393,75 @@ export default function StudyTrackerClient() {
 
       {/* Weekly Goal */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-purple-600" />
               <span className="text-sm font-semibold">Weekly Goal</span>
             </div>
             {editingGoal ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Input
                   type="number"
                   value={goalInput}
                   onChange={(e) => setGoalInput(e.target.value)}
-                  className="w-20 h-8 text-sm"
-                  placeholder="min"
+                  className="w-16 h-8 text-sm"
+                  placeholder="hrs"
+                  min="0.5"
+                  step="0.5"
                   autoFocus
                 />
-                <Button size="sm" className="h-8 text-xs" onClick={handleSaveGoal}>Save</Button>
-                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setEditingGoal(false)}>Cancel</Button>
+                <span className="text-xs text-muted-foreground">hrs</span>
+                <Button size="sm" className="h-8 text-xs px-2" onClick={handleSaveGoal}>Save</Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs px-2" onClick={() => setEditingGoal(false)}>✕</Button>
               </div>
             ) : (
               <button
                 className="text-xs text-purple-600 hover:text-purple-800"
-                onClick={() => { setEditingGoal(true); setGoalInput(String(weeklyGoal)) }}
+                onClick={() => { setEditingGoal(true); setGoalInput(String(weeklyGoal / 60)) }}
               >
-                {weeklyGoal} min/week · Edit
+                {weeklyGoal / 60}h/wk · Edit
               </button>
             )}
           </div>
-          <div className="w-full bg-purple-100 rounded-full h-3">
+          <div className="w-full bg-purple-100 rounded-full h-2.5">
             <div
-              className={`rounded-full h-3 transition-all duration-500 ${weekProgress >= 100 ? "bg-green-500" : "bg-purple-500"}`}
+              className={`rounded-full h-2.5 transition-all duration-500 ${weekProgress >= 100 ? "bg-green-500" : "bg-purple-500"}`}
               style={{ width: `${weekProgress}%` }}
             />
           </div>
           <div className="flex justify-between mt-1">
-            <span className="text-xs text-muted-foreground">{weekMinutes} min this week</span>
+            <span className="text-xs text-muted-foreground">{Math.round(weekMinutes / 60 * 10) / 10}h this week</span>
             <span className="text-xs text-muted-foreground">
-              {weekProgress >= 100 ? "✅ Goal reached!" : `${weeklyGoal - weekMinutes} min remaining`}
+              {weekProgress >= 100 ? "✅ Goal reached!" : `${Math.round((weeklyGoal - weekMinutes) / 60 * 10) / 10}h left`}
             </span>
           </div>
         </CardContent>
       </Card>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="timer" className="flex items-center gap-2">
-            <Timer className="h-4 w-4" />
-            <span className="hidden sm:inline">Timer</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Analytics</span>
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            <span className="hidden sm:inline">History</span>
-          </TabsTrigger>
-          <TabsTrigger value="schedule" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Schedule</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+        {/* Sticky tab bar on mobile */}
+        <div className="sticky top-0 z-10 bg-background pt-1 pb-1">
+          <TabsList className="grid w-full grid-cols-4 h-14">
+            <TabsTrigger value="timer" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <Timer className="h-4 w-4" />
+              <span className="text-[10px] leading-none">Timer</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <BarChart3 className="h-4 w-4" />
+              <span className="text-[10px] leading-none">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <History className="h-4 w-4" />
+              <span className="text-[10px] leading-none">History</span>
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="flex flex-col items-center gap-0.5 px-1 py-1.5">
+              <Settings className="h-4 w-4" />
+              <span className="text-[10px] leading-none">Schedule</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Timer Tab */}
         <TabsContent value="timer" className="space-y-4">
@@ -460,21 +516,24 @@ export default function StudyTrackerClient() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Category</label>
-                    <div className="grid grid-cols-2 gap-1 mb-3">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {STUDY_CATEGORIES.map((cat) => {
                         const Icon = getCategoryIcon(cat.id)
                         return (
                           <button
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
-                            className={`flex items-center gap-1 px-2 py-1.5 rounded text-xs transition-colors ${
+                            className={`flex items-center gap-1.5 px-2 py-2 rounded text-xs transition-colors text-left ${
                               selectedCategory === cat.id
                                 ? `bg-${cat.color}-100 text-${cat.color}-700 border border-${cat.color}-300`
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                           >
-                            <Icon className="h-3 w-3" />
-                            {cat.label}
+                            <Icon className="h-3 w-3 flex-shrink-0" />
+                            <span className="leading-tight">
+                              <span className="sm:hidden">{cat.shortLabel}</span>
+                              <span className="hidden sm:inline">{cat.label}</span>
+                            </span>
                           </button>
                         )
                       })}
@@ -529,35 +588,32 @@ export default function StudyTrackerClient() {
         </TabsContent>
 
         {/* History Tab */}
-        <TabsContent value="history" className="space-y-4">
+        <TabsContent value="history" className="space-y-3">
           <Card>
-            <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                <span className="flex items-center gap-2">
+            <CardHeader className="py-3 px-3 sm:px-4">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 flex-shrink-0">
                   <History className="h-4 w-4" />
-                  Study History
+                  History
                 </span>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <Filter className="h-3 w-3" />
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value as StudyCategoryId | 'all')}
-                      className="text-xs border rounded px-1 py-0.5"
-                    >
-                      <option value="all">All</option>
-                      {STUDY_CATEGORIES.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {filteredSessions.length} sessions
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value as StudyCategoryId | 'all')}
+                    className="text-xs border rounded px-1 py-1 max-w-[120px]"
+                  >
+                    <option value="all">All</option>
+                    {STUDY_CATEGORIES.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.label}</option>
+                    ))}
+                  </select>
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                    {filteredSessions.length}
                   </Badge>
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
+            <CardContent className="px-3 sm:px-4 pb-3 pt-0">
               {sessions.length === 0 ? (
                 <div className="text-center py-8">
                   <BookOpen className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
@@ -577,13 +633,15 @@ export default function StudyTrackerClient() {
                       }, {})
                     ).map(([date, dateSessions]) => (
                       <div key={date} className="space-y-2">
-                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground border-b pb-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
-                            weekday: "long", month: "long", day: "numeric", year: "numeric"
-                          })}
-                          <Badge variant="outline" className="text-xs ml-auto">
-                            {dateSessions.reduce((sum, s) => sum + s.minutes, 0)} min
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border-b pb-1">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
+                              weekday: "short", month: "short", day: "numeric"
+                            })}
+                          </span>
+                          <Badge variant="outline" className="text-xs ml-auto flex-shrink-0">
+                            {dateSessions.reduce((sum, s) => sum + s.minutes, 0)}m
                           </Badge>
                         </div>
                         {dateSessions.map((session) => (
@@ -647,21 +705,21 @@ export default function StudyTrackerClient() {
         </TabsContent>
 
         {/* Schedule Tab */}
-        <TabsContent value="schedule" className="space-y-4">
+        <TabsContent value="schedule" className="space-y-3">
           <Card>
-            <CardHeader className="py-3 px-4">
+            <CardHeader className="py-3 px-3 sm:px-4">
               <CardTitle className="text-sm font-semibold flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   Study Schedule
                 </span>
-                <Button size="sm" variant="outline" onClick={() => setShowScheduleForm(true)}>
+                <Button size="sm" variant="outline" className="h-8" onClick={() => setShowScheduleForm(true)}>
                   <Plus className="h-3 w-3 mr-1" />
                   Add
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
+            <CardContent className="px-3 sm:px-4 pb-3 pt-0">
               {showScheduleForm && (
                 <div className="mb-4 p-4 border rounded-lg space-y-3 bg-blue-50">
                   <h4 className="font-medium text-sm text-blue-900">Add Recurring Study</h4>
@@ -735,18 +793,17 @@ export default function StudyTrackerClient() {
                           {daySchedules.map((item) => {
                             const Icon = getCategoryIcon(item.category)
                             const color = getCategoryColor(item.category)
-                            const todaySessions = dayIndex === new Date().getDay() 
-                              ? sessions.filter(s => s.date === today && s.category === item.category)
-                              : []
-                            const completedMinutes = todaySessions.reduce((sum, s) => sum + s.minutes, 0)
-                            const isCompleted = completedMinutes >= item.targetMinutes
+                            const completed = dayIndex === new Date().getDay() && isScheduleCompleted(item)
+                            const linkedSession = dayIndex === new Date().getDay()
+                              ? sessions.find(s => s.date === today && s.scheduleId === item.id)
+                              : undefined
                             return (
                               <div key={item.id} className={`flex items-center gap-3 p-2 rounded border bg-white ${
-                                isCompleted ? 'border-green-300 bg-green-50' : ''
+                                completed ? 'border-green-300 bg-green-50' : ''
                               }`}>
                                 <div className={`w-6 h-6 rounded-full bg-${color}-100 flex items-center justify-center relative`}>
                                   <Icon className={`h-3 w-3 text-${color}-600`} />
-                                  {isCompleted && (
+                                  {completed && (
                                     <CheckCircle2 className="h-2.5 w-2.5 text-green-600 absolute -top-0.5 -right-0.5 bg-white rounded-full" />
                                   )}
                                 </div>
@@ -754,8 +811,8 @@ export default function StudyTrackerClient() {
                                   <p className="text-xs font-medium truncate">{item.label}</p>
                                   <p className="text-xs text-muted-foreground">
                                     {item.targetMinutes} min target
-                                    {dayIndex === new Date().getDay() && completedMinutes > 0 && (
-                                      <span className="ml-1">• {completedMinutes} done</span>
+                                    {completed && linkedSession && (
+                                      <span className="ml-1 text-green-600">· {linkedSession.minutes} min done ✅</span>
                                     )}
                                   </p>
                                 </div>

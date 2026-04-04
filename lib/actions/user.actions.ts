@@ -652,21 +652,93 @@ async function _deleteMember(user: User, memberId: string) {
         await connectToDB();
 
         const member = await Member.findById(memberId);
-        if (!member) {
-            throw new Error("Member not found");
-        }
+        if (!member) throw new Error("Member not found");
 
+        // Import all models that reference a member
+        const [
+            FieldServiceReport,
+            DailyFieldServiceReport,
+            Assignment,
+            AssignmentHistory,
+            ShepherdingCall,
+            PublisherGoal,
+            PublisherRecord,
+            PushSubscription,
+            Notification,
+            Activity,
+            TransportFee,
+            ReaderAssignment,
+            SchoolStudent,
+            BibleStudy,
+            Family,
+        ] = await Promise.all([
+            import('../models/field-service.models').then(m => m.default),
+            import('../models/daily-field-service.models').then(m => m.default),
+            import('../models/assignment.models').then(m => m.default),
+            import('../models/assignment-history.models').then(m => m.default),
+            import('../models/shepherding-call.models').then(m => m.default),
+            import('../models/publisher-goal.models').then(m => m.default),
+            import('../models/publisher-record.models').then(m => m.default),
+            import('../models/push-subscription.models').then(m => m.default),
+            import('../models/notification.models').then(m => m.Notification),
+            import('../models/activity.models').then(m => m.default),
+            import('../models/transport-fee.models').then(m => m.MemberFeePayment),
+            import('../models/reader-assignment.models').then(m => m.default),
+            import('../models/school-student.models').then(m => m.default),
+            import('../models/bible-study.models').then(m => m.default),
+            import('../models/family.models').then(m => m.default),
+        ])
+
+        await Promise.all([
+            // Field service reports (publisher field)
+            FieldServiceReport.deleteMany({ publisher: memberId }),
+            // Daily field service reports
+            DailyFieldServiceReport.deleteMany({ publisher: memberId }),
+            // Assignments where member is assignedTo or assistant
+            Assignment.deleteMany({ $or: [{ assignedTo: memberId }, { assistant: memberId }] }),
+            // Assignment history
+            AssignmentHistory.deleteMany({ memberId }),
+            // Shepherding calls where member is the subject
+            ShepherdingCall.deleteMany({ memberId }),
+            // Remove member from shepherds array in other calls
+            ShepherdingCall.updateMany({ shepherds: memberId }, { $pull: { shepherds: memberId } }),
+            // Publisher goals
+            PublisherGoal.deleteMany({ memberId }),
+            // Publisher record (one-to-one)
+            PublisherRecord.deleteMany({ memberId }),
+            // Push notification subscriptions
+            PushSubscription.deleteMany({ userId: memberId }),
+            // Notifications
+            Notification.deleteMany({ userId: memberId }),
+            // Activity logs
+            Activity.deleteMany({ userId: memberId }),
+            // Transport fee payments
+            TransportFee.deleteMany({ memberId }),
+            // Reader assignments
+            ReaderAssignment.deleteMany({ $or: [{ reader: memberId }, { assistant: memberId }] }),
+            // School student record
+            SchoolStudent.deleteMany({ memberId }),
+            // Bible studies conducted by this member
+            BibleStudy.deleteMany({ conductorId: memberId }),
+            // Remove from family relationships of other members
+            Member.updateMany(
+                { 'familyRelationships.memberId': memberId },
+                { $pull: { familyRelationships: { memberId } } }
+            ),
+        ])
+
+        // Delete the member last
         await Member.findByIdAndDelete(memberId);
 
         await logActivity({
             userId: user._id as string,
             type: 'member_delete',
-            action: `${user.fullName} deleted member ${member.fullName}`,
+            action: `${user.fullName} deleted member ${member.fullName} and all associated data`,
             details: { entityId: memberId, entityType: 'Member' },
         });
 
         revalidatePath('/dashboard/members');
-        return { success: true, message: "Member deleted successfully" };
+        return { success: true, message: "Member and all associated data deleted successfully" };
     } catch (error) {
         console.log("error happened while deleting member", error);
         throw error;

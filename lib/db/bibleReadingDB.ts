@@ -9,6 +9,7 @@ let dbInstance: IDBDatabase | null = null
 export interface ReadingPlanRecord {
   id: string // always "active"
   startDate: string
+  duration: number // 1, 2, or 3 years
 }
 
 function openDB(): Promise<IDBDatabase> {
@@ -36,22 +37,26 @@ function openDB(): Promise<IDBDatabase> {
   })
 }
 
-export async function savePlanStartDate(startDate: string): Promise<void> {
+export async function savePlanStartDate(startDate: string, duration: number = 1): Promise<void> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction([PLAN_STORE], "readwrite")
-    tx.objectStore(PLAN_STORE).put({ id: "active", startDate })
+    tx.objectStore(PLAN_STORE).put({ id: "active", startDate, duration })
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })
 }
 
-export async function getPlanStartDate(): Promise<string | null> {
+export async function getPlanStartDate(): Promise<{ startDate: string; duration: number } | null> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const request = db.transaction([PLAN_STORE], "readonly").objectStore(PLAN_STORE).get("active")
     request.onerror = () => reject(request.error)
-    request.onsuccess = () => resolve(request.result?.startDate ?? null)
+    request.onsuccess = () => {
+      const result = request.result
+      if (!result) resolve(null)
+      else resolve({ startDate: result.startDate, duration: result.duration || 1 })
+    }
   })
 }
 

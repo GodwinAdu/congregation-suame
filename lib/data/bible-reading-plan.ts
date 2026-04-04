@@ -75,9 +75,10 @@ export interface DayReading {
   readings: string[]
 }
 
-export function generateReadingPlan(startDate: Date): DayReading[] {
-  const chaptersPerDay = Math.floor(TOTAL_CHAPTERS / 365)
-  const extraChapters = TOTAL_CHAPTERS % 365
+export function generateReadingPlan(startDate: Date, duration: number = 1): DayReading[] {
+  const totalDays = duration * 365
+  const chaptersPerDay = Math.floor(TOTAL_CHAPTERS / totalDays)
+  const extraChapters = TOTAL_CHAPTERS % totalDays
 
   const allChapters: string[] = []
   for (const book of BIBLE_BOOKS) {
@@ -89,7 +90,7 @@ export function generateReadingPlan(startDate: Date): DayReading[] {
   const plan: DayReading[] = []
   let chapterIndex = 0
 
-  for (let day = 0; day < 365; day++) {
+  for (let day = 0; day < totalDays; day++) {
     const date = new Date(startDate)
     date.setDate(date.getDate() + day)
 

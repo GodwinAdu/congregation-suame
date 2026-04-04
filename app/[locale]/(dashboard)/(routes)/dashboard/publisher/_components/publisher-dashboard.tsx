@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +39,6 @@ import { StudyTrackerSummary } from './study-tracker-summary'
 import { MeetingPrepSummary } from './meeting-prep-summary'
 import { TalkingPointsSummary } from './talking-points-summary'
 import { MeetingNotesSummary } from './meeting-notes-summary'
-import { PrayerListSummary } from './prayer-list-summary'
 import { format, startOfWeek, endOfWeek, isWithinInterval, subMonths } from 'date-fns'
 import { fetchFamilyMemberReports, deleteFieldServiceReport } from '@/lib/actions/publisher.actions'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -394,12 +394,7 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
             {/* Meeting Prep Summary */}
             <MeetingPrepSummary />
 
-            {/* Personal Organization */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <TalkingPointsSummary />
-                <MeetingNotesSummary />
-                <PrayerListSummary />
-            </div>
+            
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="reports" className="space-y-4 sm:space-y-6">
@@ -437,10 +432,18 @@ export function PublisherDashboard({ user, data }: PublisherDashboardProps) {
                 <TabsContent value="reports" className="space-y-4 sm:space-y-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
                         <h2 className="text-xl sm:text-2xl font-bold">Field Service Reports</h2>
-                        <Button onClick={() => setShowReportModal(true)} className="gap-2 w-full sm:w-auto">
-                            <Plus className="h-4 w-4" />
-                            <span className="sm:inline">Submit Report</span>
-                        </Button>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <Link href="/dashboard/publisher/field-service-reports/auxiliary-pioneers">
+                                <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                                    <Users className="h-4 w-4" />
+                                    Auxiliary Pioneers
+                                </Button>
+                            </Link>
+                            <Button onClick={() => setShowReportModal(true)} className="gap-2 w-full sm:w-auto">
+                                <Plus className="h-4 w-4" />
+                                <span className="sm:inline">Submit Report</span>
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Missing Reports Reminders */}

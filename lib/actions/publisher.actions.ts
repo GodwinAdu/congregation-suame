@@ -289,3 +289,38 @@ export const submitFieldServiceReport = await withAuth(_submitFieldServiceReport
 export const fetchFamilyMemberReports = await withAuth(_fetchFamilyMemberReports)
 export const checkReportingPermissions = await withAuth(_checkReportingPermissions)
 export const deleteFieldServiceReport = await withAuth(_deleteFieldServiceReport)
+
+async function _fetchAuxiliaryPioneers(user: User, month: string) {
+    try {
+        if (!user) throw new Error("User not authorized")
+        await connectToDB()
+
+        const Member = (await import('../models/user.models')).default
+
+        const reports = await FieldServiceReport.find({
+            month,
+            auxiliaryPioneer: true,
+        })
+            .populate('publisher', 'fullName email phone groupId')
+            .lean()
+
+        const result = reports.map((r: any) => ({
+            id: r._id.toString(),
+            publisherId: r.publisher?._id?.toString() ?? '',
+            fullName: r.publisher?.fullName ?? 'Unknown',
+            email: r.publisher?.email ?? '',
+            phone: r.publisher?.phone ?? '',
+            hours: r.hours ?? 0,
+            bibleStudents: r.bibleStudents ?? 0,
+            comments: r.comments ?? '',
+            month: r.month,
+        }))
+
+        return JSON.parse(JSON.stringify(result))
+    } catch (error) {
+        console.error('Error fetching auxiliary pioneers:', error)
+        throw error
+    }
+}
+
+export const fetchAuxiliaryPioneers = await withAuth(_fetchAuxiliaryPioneers)

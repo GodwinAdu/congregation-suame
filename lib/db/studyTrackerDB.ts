@@ -7,13 +7,13 @@ const SCHEDULE_STORE = "study-schedule"
 let dbInstance: IDBDatabase | null = null
 
 export const STUDY_CATEGORIES = [
-  { id: "personal", label: "Personal Study", color: "purple", icon: "BookOpen" },
-  { id: "family", label: "Family Worship", color: "blue", icon: "Users" },
-  { id: "watchtower", label: "Watchtower Prep", color: "red", icon: "FileText" },
-  { id: "midweek", label: "Midweek Meeting Prep", color: "green", icon: "Calendar" },
-  { id: "bible_reading", label: "Bible Reading", color: "indigo", icon: "Book" },
-  { id: "convention", label: "Convention/Assembly Prep", color: "orange", icon: "Presentation" },
-  { id: "other", label: "Other", color: "gray", icon: "MoreHorizontal" },
+  { id: "personal",     label: "Personal Study",    shortLabel: "Personal",    color: "purple", icon: "BookOpen" },
+  { id: "family",       label: "Family Worship",    shortLabel: "Family",      color: "blue",   icon: "Users" },
+  { id: "watchtower",   label: "Watchtower Prep",   shortLabel: "Watchtower",  color: "red",    icon: "FileText" },
+  { id: "midweek",      label: "Midweek Meeting",   shortLabel: "Midweek",     color: "green",  icon: "Calendar" },
+  { id: "bible_reading",label: "Bible Reading",     shortLabel: "Bible",       color: "indigo", icon: "Book" },
+  { id: "convention",   label: "Convention Prep",   shortLabel: "Convention",  color: "orange", icon: "Presentation" },
+  { id: "other",        label: "Other",             shortLabel: "Other",       color: "gray",   icon: "MoreHorizontal" },
 ] as const
 
 export type StudyCategoryId = typeof STUDY_CATEGORIES[number]["id"]
@@ -25,8 +25,8 @@ export interface StudySession {
   topic: string
   notes: string
   category: StudyCategoryId
+  scheduleId?: string
   createdAt: string
-  completed?: boolean
 }
 
 export interface StudyScheduleItem {
@@ -128,7 +128,7 @@ export async function getWeeklyGoal(): Promise<number> {
   return new Promise((resolve, reject) => {
     const request = db.transaction([SETTINGS_STORE], "readonly").objectStore(SETTINGS_STORE).get("config")
     request.onerror = () => reject(request.error)
-    request.onsuccess = () => resolve(request.result?.weeklyGoalMinutes ?? 30)
+    request.onsuccess = () => resolve(request.result?.weeklyGoalMinutes ?? 180)
   })
 }
 
