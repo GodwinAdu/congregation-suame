@@ -244,12 +244,14 @@ async function _deleteFieldServiceReport(user: User, reportId: string) {
             throw new Error("Report not found")
         }
         
-        // Check if user owns the report
-        if (report.publisher.toString() !== user._id?.toString()) {
+        // Check if user owns the report (admins can delete any report)
+        const canManageAll = user.role === 'admin'
+        if (!canManageAll && report.publisher.toString() !== user._id?.toString()) {
             throw new Error("You can only delete your own reports")
         }
         
-        // Check deletion restrictions - same as editing
+        // Skip date restrictions for admins
+        if (!canManageAll) {
         const currentDate = new Date()
         const currentDay = currentDate.getDate()
         const reportMonth = new Date(report.month + '-01')
@@ -265,6 +267,7 @@ async function _deleteFieldServiceReport(user: User, reportId: string) {
         
         if (isPreviousMonth && currentDay > 10) {
             throw new Error("Previous month reports can only be deleted until the 10th of the current month")
+        }
         }
         
         await FieldServiceReport.findByIdAndDelete(reportId)

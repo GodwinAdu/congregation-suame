@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Eye, Edit, Phone, MessageSquare } from "lucide-react"
+import { Plus, Eye, Edit, Phone, MessageSquare, Trash2 } from "lucide-react"
 
 export type MemberWithReportStatus = {
     _id: string
@@ -22,13 +22,14 @@ interface ColumnsProps {
     onViewReport: (reportId: string) => void
     onEditReport?: (reportId: string) => void
     onSendSMS?: (member: MemberWithReportStatus) => void
+    onDeleteReport?: (reportId: string, memberName: string) => void
 }
 
 const handleCall = (phone: string) => {
     window.location.href = `tel:${phone}`;
 };
 
-export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendSMS }: ColumnsProps): ColumnDef<MemberWithReportStatus>[] => [
+export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendSMS, onDeleteReport }: ColumnsProps): ColumnDef<MemberWithReportStatus>[] => [
     {
         accessorKey: "groupId",
         header: "Group",
@@ -63,7 +64,7 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendS
     },
     {
         accessorKey: "hasReported",
-        header: "Report Status",
+        header: "Status",
         cell: ({ row }) => {
             const hasReported = row.getValue("hasReported") as boolean
             return (
@@ -86,30 +87,40 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendS
         cell: ({ row }) => {
             const member = row.original
             const hasReported = member.hasReported
-            const monthName = new Date(member.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
             
             return (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-1">
                     {hasReported && member.reportId ? (
                         <>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => onViewReport(member.reportId!)}
-                                className="h-8"
+                                className="h-8 px-2 sm:px-3"
                             >
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
+                                <Eye className="w-4 h-4 sm:mr-1" />
+                                <span className="hidden sm:inline">View</span>
                             </Button>
                             {onEditReport && (
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onEditReport(member.reportId!)}
-                                    className="h-8"
+                                    className="h-8 px-2 sm:px-3"
                                 >
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
+                                    <Edit className="w-4 h-4 sm:mr-1" />
+                                    <span className="hidden sm:inline">Edit</span>
+                                </Button>
+                            )}
+                            {onDeleteReport && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onDeleteReport(member.reportId!, member.fullName)}
+                                    className="h-8 px-2 sm:px-3 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                >
+                                    <Trash2 className="w-4 h-4 sm:mr-1" />
+                                    <span className="hidden sm:inline">Delete</span>
                                 </Button>
                             )}
                         </>
@@ -119,10 +130,10 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendS
                                 variant="outline"
                                 size="sm"
                                 onClick={() => onAddReport(member)}
-                                className="h-8"
+                                className="h-8 px-2 sm:px-3"
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add
+                                <Plus className="w-4 h-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Add</span>
                             </Button>
                             {member.phone && (
                                 <>
@@ -130,7 +141,7 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendS
                                         variant="outline"
                                         size="sm"
                                         onClick={() => handleCall(member.phone)}
-                                        className="h-8"
+                                        className="h-8 px-2"
                                         title="Call member"
                                     >
                                         <Phone className="w-4 h-4" />
@@ -139,7 +150,7 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendS
                                         variant="outline"
                                         size="sm"
                                         onClick={() => onSendSMS?.(member)}
-                                        className="h-8"
+                                        className="h-8 px-2"
                                         title="Send SMS reminder"
                                     >
                                         <MessageSquare className="w-4 h-4" />

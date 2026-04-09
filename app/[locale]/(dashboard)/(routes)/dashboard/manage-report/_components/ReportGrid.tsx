@@ -6,7 +6,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar, RefreshCw, AlertCircle, Plus, MessageSquare } from 'lucide-react'
+import { toast } from 'sonner'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { fetchMembersWithReportStatus, fetchAllGroups } from '@/lib/actions/field-service.actions'
+import { deleteFieldServiceReport } from '@/lib/actions/publisher.actions'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import MonthSelection from '@/components/commons/MonthSelection'
@@ -32,6 +44,7 @@ const ReportGrid = () => {
     const [smsRecipient, setSmsRecipient] = useState<{ phone: string; name: string; month: string; recipientId: string } | null>(null)
     const [smsRecipients, setSmsRecipients] = useState<Array<{ phone: string; name: string; month: string; recipientId: string }>>([])  
     const [smsMessage, setSmsMessage] = useState('')
+    const [deleteTarget, setDeleteTarget] = useState<{ reportId: string; memberName: string } | null>(null)
 
     const fetchData = useCallback(async (monthDate: Date) => {
         setLoading(true)
@@ -127,6 +140,24 @@ const ReportGrid = () => {
         setSelectedReportId(null)
     }
 
+    const handleDeleteReport = (reportId: string, memberName: string) => {
+        setDeleteTarget({ reportId, memberName })
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget) return
+        try {
+            await deleteFieldServiceReport(deleteTarget.reportId)
+            toast.success('Report deleted successfully')
+            fetchData(selectedMonth)
+        } catch (err) {
+            toast.error('Failed to delete report')
+            console.error(err)
+        } finally {
+            setDeleteTarget(null)
+        }
+    }
+
     const LoadingSkeleton = () => (
         <div className="space-y-6">
             <Card>
@@ -216,7 +247,8 @@ const ReportGrid = () => {
                                 onAddReport: handleAddReport,
                                 onViewReport: handleViewReport,
                                 onEditReport: handleEditReport,
-                                onSendSMS: handleSendSMS
+                                onSendSMS: handleSendSMS,
+                                onDeleteReport: handleDeleteReport,
                             })}
                             data={membersData}
                             searchKey="fullName"
@@ -259,6 +291,23 @@ const ReportGrid = () => {
                 recipients={smsRecipients.length > 0 ? smsRecipients : undefined}
                 defaultMessage={smsMessage}
             />
+
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Report</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete the report for <strong>{deleteTarget?.memberName}</strong>? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
