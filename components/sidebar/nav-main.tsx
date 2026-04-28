@@ -217,6 +217,11 @@ export function NavMain({ role, user }: NavMainProps) {
           url: `/dashboard/manage-report`,
         },
         {
+          title: "Field Service Help",
+          url: `/dashboard/manage-report/field-service-help`,
+          roleField: "manageAllReport"
+        },
+        {
           title: "Overseer Reports",
           url: `/dashboard/overseer-report`,
           roleField: "overseerReports"

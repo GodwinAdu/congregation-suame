@@ -292,3 +292,114 @@ export const fetchMembersWithGroupStatus = await withAuth(_fetchMembersWithGroup
 export const fetchReportById = await withAuth(_fetchReportById);
 export const fetchMemberReports = await withAuth(_fetchMemberReports);
 export const fetchAllGroups = await withAuth(_fetchAllGroups);
+
+
+async function _fetchMembersNeedingHelp(user: User, month: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        // Generate last 6 months excluding current month
+        const targetDate = new Date(month + '-01');
+        const months: string[] = [];
+        for (let i = 6; i >= 1; i--) {
+            const d = new Date(targetDate);
+            d.setMonth(d.getMonth() - i);
+            months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+        }
+
+        const members = await Member.find({})
+            .select('fullName phone privileges groupId')
+            .populate('privileges', 'name')
+            .populate('groupId', 'name')
+            .sort({ 'groupId.name': 1, fullName: 1 });
+
+        // Fetch all reports for the last 6 months
+        const reports = await FieldServiceReport.find({ month: { $in: months } })
+            .select('publisher month bibleStudents _id')
+            .lean();
+
+        // Build history map: memberId -> { month -> { id, bibleStudents } }
+        const historyMap = new Map<string, Map<string, { id: string; bibleStudents: number }>>();
+        reports.forEach(r => {
+            const memberId = r.publisher.toString();
+            if (!historyMap.has(memberId)) {
+                historyMap.set(memberId, new Map());
+            }
+            historyMap.get(memberId)!.set(r.month, {
+                id: r._id.toString(),
+                bibleStudents: r.bibleStudents || 0
+            });
+        });
+
+        const membersNeedingHelp = members
+            .map(member => {
+                const memberId = member._id.toString();
+                const history = historyMap.get(memberId) || new Map();
+
+                // Analyze 6-month history
+                const reportedMonths = months.filter(m => history.has(m));
+                const missedMonths = months.filter(m => !history.has(m));
+                const monthsWithStudents = reportedMonths.filter(m => (history.get(m)?.bibleStudents || 0) > 0);
+                const monthsWithoutStudents = reportedMonths.filter(m => (history.get(m)?.bibleStudents || 0) === 0);
+
+                // Current month data
+                const currentReport = history.get(month);
+                const hasReportedThisMonth = !!currentReport;
+                const currentBibleStudents = currentReport?.bibleStudents || 0;
+
+                // Categorization logic
+                let category: 'consistently-not-reporting' | 'no-bible-students' | 'irregular' | null = null;
+                let needsHelp = false;
+
+                // Consistently Not Reporting: missed 3+ of last 6 months
+                if (missedMonths.length >= 3) {
+                    category = 'consistently-not-reporting';
+                    needsHelp = true;
+                }
+                // No Bible Students: reported at least 4 months but 0 students in all reports
+                else if (reportedMonths.length >= 4 && monthsWithStudents.length === 0) {
+                    category = 'no-bible-students';
+                    needsHelp = true;
+                }
+                // Irregular: has gaps (missed 1-2 months) or inconsistent bible students
+                else if (missedMonths.length >= 1 && missedMonths.length < 3) {
+                    category = 'irregular';
+                    needsHelp = true;
+                }
+                // Also flag as irregular if they report but bible students fluctuate between 0 and >0
+                else if (reportedMonths.length >= 4 && monthsWithoutStudents.length >= 2 && monthsWithStudents.length >= 1) {
+                    category = 'irregular';
+                    needsHelp = true;
+                }
+
+                if (!needsHelp) return null;
+
+                return {
+                    ...member.toObject(),
+                    hasReported: hasReportedThisMonth,
+                    bibleStudents: currentBibleStudents,
+                    reportId: currentReport?.id || null,
+                    category,
+                    reportedMonths: reportedMonths.length,
+                    missedMonths: missedMonths.length,
+                    monthsWithStudents: monthsWithStudents.length,
+                    helpReason: category === 'consistently-not-reporting' 
+                        ? 'Consistently Not Reporting' 
+                        : category === 'no-bible-students' 
+                        ? 'No Bible Students' 
+                        : 'Irregular Reporter',
+                    month
+                };
+            })
+            .filter(m => m !== null);
+
+        return JSON.parse(JSON.stringify(membersNeedingHelp));
+    } catch (error) {
+        console.log("Error fetching members needing help:", error);
+        throw error;
+    }
+}
+
+export const fetchMembersNeedingHelp = await withAuth(_fetchMembersNeedingHelp);
