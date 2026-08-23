@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Download, FileSpreadsheet, FileText, MapPin, Search, Users, Shield, Award, BookOpen } from 'lucide-react'
+import { Download, FileSpreadsheet, FileText, MapPin, Search, Users, Shield, Award } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
@@ -40,11 +40,10 @@ function getCategory(member: MemberLocation): string {
 
     if (privNames.some(n => n.includes('elder'))) return 'Elder'
     if (privNames.some(n => n.includes('ministerial servant') || n.includes('ms'))) return 'Ministerial Servant'
-    if (privNames.some(n => n.includes('pioneer') || n.includes('regular pioneer') || n.includes('special pioneer'))) return 'Pioneer'
     return 'Publisher'
 }
 
-const CATEGORY_ORDER = ['Elder', 'Ministerial Servant', 'Pioneer', 'Publisher']
+const CATEGORY_ORDER = ['Elder', 'Ministerial Servant', 'Publisher']
 
 function groupByCategory(members: MemberLocation[]): Record<string, MemberLocation[]> {
     const groups: Record<string, MemberLocation[]> = {}
@@ -196,7 +195,6 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
         switch (category) {
             case 'Elder': return <Shield className="h-4 w-4 text-blue-600" />
             case 'Ministerial Servant': return <Award className="h-4 w-4 text-green-600" />
-            case 'Pioneer': return <BookOpen className="h-4 w-4 text-yellow-600" />
             default: return <Users className="h-4 w-4 text-gray-600" />
         }
     }
@@ -206,7 +204,7 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
     return (
         <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Card>
                     <CardContent className="pt-4 pb-3 px-4">
                         <div className="flex items-center gap-2">
@@ -225,17 +223,6 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
                             <div>
                                 <p className="text-lg font-bold">{getCategoryCount('Ministerial Servant')}</p>
                                 <p className="text-xs text-muted-foreground">Min. Servants</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-4 pb-3 px-4">
-                        <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-yellow-600" />
-                            <div>
-                                <p className="text-lg font-bold">{getCategoryCount('Pioneer')}</p>
-                                <p className="text-xs text-muted-foreground">Pioneers</p>
                             </div>
                         </div>
                     </CardContent>
