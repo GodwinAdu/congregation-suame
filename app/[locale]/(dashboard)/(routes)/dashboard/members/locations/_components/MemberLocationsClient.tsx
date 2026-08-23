@@ -6,14 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Download, FileSpreadsheet, FileText, MapPin, Search, Users } from 'lucide-react'
+import { Download, FileSpreadsheet, FileText, MapPin, Search, Users, Shield, Award, BookOpen } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
@@ -25,6 +20,7 @@ interface MemberLocation {
     phone: string
     address: string
     role: string
+    privileges?: Array<{ _id: string; name: string }>
     groupId?: { _id: string; name: string }
     location: {
         latitude: number
@@ -39,6 +35,29 @@ interface MemberLocationsClientProps {
     members: MemberLocation[]
 }
 
+function getCategory(member: MemberLocation): string {
+    const privNames = member.privileges?.map(p => p.name.toLowerCase()) || []
+
+    if (privNames.some(n => n.includes('elder'))) return 'Elder'
+    if (privNames.some(n => n.includes('ministerial servant') || n.includes('ms'))) return 'Ministerial Servant'
+    if (privNames.some(n => n.includes('pioneer') || n.includes('regular pioneer') || n.includes('special pioneer'))) return 'Pioneer'
+    return 'Publisher'
+}
+
+const CATEGORY_ORDER = ['Elder', 'Ministerial Servant', 'Pioneer', 'Publisher']
+
+function groupByCategory(members: MemberLocation[]): Record<string, MemberLocation[]> {
+    const groups: Record<string, MemberLocation[]> = {}
+    CATEGORY_ORDER.forEach(cat => { groups[cat] = [] })
+
+    members.forEach(member => {
+        const cat = getCategory(member)
+        groups[cat].push(member)
+    })
+
+    return groups
+}
+
 export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
     const [searchQuery, setSearchQuery] = useState('')
 
@@ -49,42 +68,68 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
         member.groupId?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    const getExportData = () => {
-        return filteredMembers.map((member, index) => ({
-            'No.': index + 1,
-            'Full Name': member.fullName,
-            'Phone': member.phone || '-',
-            'Home Address': member.address || member.location.address || '-',
-            'Role': member.role || '-',
-            'Latitude': member.location.latitude,
-            'Longitude': member.location.longitude,
-            'Location Visible': member.location.isPublic ? 'Yes' : 'No',
-            'Last Updated': member.location.lastUpdated
-                ? new Date(member.location.lastUpdated).toLocaleDateString()
-                : '-'
-        }))
-    }
+    const grouped = groupByCategory(filteredMembers)
 
     const exportToCSV = () => {
-        const data = getExportData()
-        const worksheet = XLSX.utils.json_to_sheet(data)
+        const rows: any[] = []
+        let counter = 1
+
+        CATEGORY_ORDER.forEach(category => {
+            const categoryMembers = grouped[category]
+            if (categoryMembers.length === 0) return
+
+            // Section header row
+            rows.push({ 'No.': '', 'Full Name': `--- ${category.toUpperCase()}S (${categoryMembers.length}) ---`, 'Phone': '', 'Home Address': '', 'Latitude': '', 'Longitude': '' })
+
+            categoryMembers.forEach(member => {
+                rows.push({
+                    'No.': counter++,
+                    'Full Name': member.fullName,
+                    'Phone': member.phone || '-',
+                    'Home Address': member.address || member.location.address || '-',
+                    'Latitude': member.location.latitude,
+                    'Longitude': member.location.longitude,
+                })
+            })
+
+            // Empty row between groups
+            rows.push({ 'No.': '', 'Full Name': '', 'Phone': '', 'Home Address': '', 'Latitude': '', 'Longitude': '' })
+        })
+
+        const worksheet = XLSX.utils.json_to_sheet(rows)
         const csv = XLSX.utils.sheet_to_csv(worksheet)
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
         saveAs(blob, `member-locations-${new Date().toISOString().split('T')[0]}.csv`)
     }
 
     const exportToExcel = () => {
-        const data = getExportData()
         const workbook = XLSX.utils.book_new()
-        const worksheet = XLSX.utils.json_to_sheet(data)
 
-        // Auto-size columns
-        const colWidths = Object.keys(data[0] || {}).map(key => ({
-            wch: Math.max(key.length, ...data.map(row => String(row[key as keyof typeof row] || '').length))
-        }))
-        worksheet['!cols'] = colWidths
+        // Create one sheet per category
+        CATEGORY_ORDER.forEach(category => {
+            const categoryMembers = grouped[category]
+            if (categoryMembers.length === 0) return
 
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Member Locations')
+            const data = categoryMembers.map((member, index) => ({
+                'No.': index + 1,
+                'Full Name': member.fullName,
+                'Phone': member.phone || '-',
+                'Home Address': member.address || member.location.address || '-',
+                'Latitude': member.location.latitude,
+                'Longitude': member.location.longitude,
+            }))
+
+            const worksheet = XLSX.utils.json_to_sheet(data)
+            const colWidths = Object.keys(data[0] || {}).map(key => ({
+                wch: Math.max(key.length, ...data.map(row => String(row[key as keyof typeof row] || '').length))
+            }))
+            worksheet['!cols'] = colWidths
+
+            // Sheet name max 31 chars
+            const sheetName = category.length > 31 ? category.slice(0, 31) : category
+            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
+        })
+
         XLSX.writeFile(workbook, `member-locations-${new Date().toISOString().split('T')[0]}.xlsx`)
     }
 
@@ -97,69 +142,111 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
         doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 22)
         doc.text(`Total Members with Location: ${filteredMembers.length}`, 14, 28)
 
-        const tableData = filteredMembers.map((member, index) => [
-            index + 1,
-            member.fullName,
-            member.phone || '-',
-            member.address || member.location.address || '-',
-            member.location.latitude.toFixed(6),
-            member.location.longitude.toFixed(6),
-        ])
+        let startY = 34
 
-        autoTable(doc, {
-            startY: 34,
-            head: [['#', 'Full Name', 'Phone', 'Address', 'Latitude', 'Longitude']],
-            body: tableData,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [59, 130, 246] },
+        CATEGORY_ORDER.forEach((category, catIndex) => {
+            const categoryMembers = grouped[category]
+            if (categoryMembers.length === 0) return
+
+            // Check if we need a new page
+            if (startY > 170) {
+                doc.addPage()
+                startY = 15
+            }
+
+            // Category header
+            doc.setFontSize(12)
+            doc.setFont('helvetica', 'bold')
+            doc.text(`${category}s (${categoryMembers.length})`, 14, startY)
+            doc.setFont('helvetica', 'normal')
+            startY += 4
+
+            const tableData = categoryMembers.map((member, index) => [
+                index + 1,
+                member.fullName,
+                member.phone || '-',
+                member.address || member.location.address || '-',
+                member.location.latitude.toFixed(6),
+                member.location.longitude.toFixed(6),
+            ])
+
+            const colors: Record<string, number[]> = {
+                'Elder': [59, 130, 246],
+                'Ministerial Servant': [16, 185, 129],
+                'Pioneer': [245, 158, 11],
+                'Publisher': [107, 114, 128],
+            }
+
+            autoTable(doc, {
+                startY,
+                head: [['#', 'Full Name', 'Phone', 'Address', 'Latitude', 'Longitude']],
+                body: tableData,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: colors[category] || [107, 114, 128] },
+                margin: { left: 14 },
+            })
+
+            startY = (doc as any).lastAutoTable?.finalY + 10 || startY + 40
         })
 
         doc.save(`member-locations-${new Date().toISOString().split('T')[0]}.pdf`)
     }
 
+    const getCategoryIcon = (category: string) => {
+        switch (category) {
+            case 'Elder': return <Shield className="h-4 w-4 text-blue-600" />
+            case 'Ministerial Servant': return <Award className="h-4 w-4 text-green-600" />
+            case 'Pioneer': return <BookOpen className="h-4 w-4 text-yellow-600" />
+            default: return <Users className="h-4 w-4 text-gray-600" />
+        }
+    }
+
+    const getCategoryCount = (category: string) => grouped[category]?.length || 0
+
     return (
         <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                <MapPin className="h-5 w-5 text-blue-600" />
-                            </div>
+                    <CardContent className="pt-4 pb-3 px-4">
+                        <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-blue-600" />
                             <div>
-                                <p className="text-2xl font-bold">{members.length}</p>
-                                <p className="text-sm text-muted-foreground">Members with Location</p>
+                                <p className="text-lg font-bold">{getCategoryCount('Elder')}</p>
+                                <p className="text-xs text-muted-foreground">Elders</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                <Users className="h-5 w-5 text-green-600" />
-                            </div>
+                    <CardContent className="pt-4 pb-3 px-4">
+                        <div className="flex items-center gap-2">
+                            <Award className="h-4 w-4 text-green-600" />
                             <div>
-                                <p className="text-2xl font-bold">
-                                    {members.filter(m => m.location.isPublic).length}
-                                </p>
-                                <p className="text-sm text-muted-foreground">Public Locations</p>
+                                <p className="text-lg font-bold">{getCategoryCount('Ministerial Servant')}</p>
+                                <p className="text-xs text-muted-foreground">Min. Servants</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                <MapPin className="h-5 w-5 text-orange-600" />
-                            </div>
+                    <CardContent className="pt-4 pb-3 px-4">
+                        <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-yellow-600" />
                             <div>
-                                <p className="text-2xl font-bold">
-                                    {members.filter(m => !m.location.isPublic).length}
-                                </p>
-                                <p className="text-sm text-muted-foreground">Private Locations</p>
+                                <p className="text-lg font-bold">{getCategoryCount('Pioneer')}</p>
+                                <p className="text-xs text-muted-foreground">Pioneers</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-4 pb-3 px-4">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-gray-600" />
+                            <div>
+                                <p className="text-lg font-bold">{getCategoryCount('Publisher')}</p>
+                                <p className="text-xs text-muted-foreground">Publishers</p>
                             </div>
                         </div>
                     </CardContent>
@@ -176,7 +263,7 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
                                 All Member Locations
                             </CardTitle>
                             <CardDescription>
-                                {filteredMembers.length} of {members.length} members shown
+                                {filteredMembers.length} members grouped by privilege
                             </CardDescription>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -207,64 +294,52 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
                         />
                     </div>
 
-                    {/* Table */}
-                    <div className="rounded-md border overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-12">#</TableHead>
-                                        <TableHead>Full Name</TableHead>
-                                        <TableHead className="hidden md:table-cell">Phone</TableHead>
-                                        <TableHead className="hidden lg:table-cell">Address</TableHead>
-                                        <TableHead className="hidden sm:table-cell">Group</TableHead>
-                                        <TableHead>Latitude</TableHead>
-                                        <TableHead>Longitude</TableHead>
-                                        <TableHead className="hidden md:table-cell">Visible</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredMembers.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                                                {searchQuery ? 'No members match your search.' : 'No members with location data found.'}
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        filteredMembers.map((member, index) => (
-                                            <TableRow key={member._id}>
-                                                <TableCell className="text-muted-foreground text-sm">
-                                                    {index + 1}
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    {member.fullName}
-                                                </TableCell>
-                                                <TableCell className="hidden md:table-cell text-sm">
-                                                    {member.phone || '-'}
-                                                </TableCell>
-                                                <TableCell className="hidden lg:table-cell text-sm max-w-[200px] truncate">
-                                                    {member.address || member.location.address || '-'}
-                                                </TableCell>
-                                                <TableCell className="hidden sm:table-cell text-sm">
-                                                    {member.groupId?.name || '-'}
-                                                </TableCell>
-                                                <TableCell className="font-mono text-sm">
-                                                    {member.location.latitude.toFixed(6)}
-                                                </TableCell>
-                                                <TableCell className="font-mono text-sm">
-                                                    {member.location.longitude.toFixed(6)}
-                                                </TableCell>
-                                                <TableCell className="hidden md:table-cell">
-                                                    <Badge variant={member.location.isPublic ? "default" : "secondary"} className="text-xs">
-                                                        {member.location.isPublic ? 'Public' : 'Private'}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                    {/* Grouped Tables */}
+                    <div className="space-y-6">
+                        {CATEGORY_ORDER.map(category => {
+                            const categoryMembers = grouped[category]
+                            if (categoryMembers.length === 0) return null
+
+                            return (
+                                <div key={category}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {getCategoryIcon(category)}
+                                        <h3 className="font-semibold text-sm">{category}s</h3>
+                                        <Badge variant="secondary" className="text-xs">{categoryMembers.length}</Badge>
+                                    </div>
+                                    <div className="rounded-md border overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-10">#</TableHead>
+                                                        <TableHead>Full Name</TableHead>
+                                                        <TableHead className="hidden md:table-cell">Phone</TableHead>
+                                                        <TableHead className="hidden lg:table-cell">Address</TableHead>
+                                                        <TableHead>Latitude</TableHead>
+                                                        <TableHead>Longitude</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {categoryMembers.map((member, index) => (
+                                                        <TableRow key={member._id}>
+                                                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
+                                                            <TableCell className="font-medium">{member.fullName}</TableCell>
+                                                            <TableCell className="hidden md:table-cell text-sm">{member.phone || '-'}</TableCell>
+                                                            <TableCell className="hidden lg:table-cell text-sm max-w-[200px] truncate">
+                                                                {member.address || member.location.address || '-'}
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">{member.location.latitude.toFixed(6)}</TableCell>
+                                                            <TableCell className="font-mono text-sm">{member.location.longitude.toFixed(6)}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </CardContent>
             </Card>

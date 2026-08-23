@@ -113,8 +113,9 @@ async function _getAllMemberLocations(user: User) {
             'location.latitude': { $ne: null },
             'location.longitude': { $ne: null },
         })
-            .select('fullName phone address location groupId role')
+            .select('fullName phone address location groupId role privileges')
             .populate('groupId', 'name')
+            .populate('privileges', 'name')
             .sort({ fullName: 1 });
 
         return JSON.parse(JSON.stringify(members));
