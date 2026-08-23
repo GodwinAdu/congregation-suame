@@ -169,7 +169,7 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
                 member.location.longitude.toFixed(6),
             ])
 
-            const colors: Record<string, number[]> = {
+            const colors: Record<string, [number, number, number]> = {
                 'Elder': [59, 130, 246],
                 'Ministerial Servant': [16, 185, 129],
                 'Pioneer': [245, 158, 11],
@@ -181,7 +181,7 @@ export function MemberLocationsClient({ members }: MemberLocationsClientProps) {
                 head: [['#', 'Full Name', 'Phone', 'Address', 'Latitude', 'Longitude']],
                 body: tableData,
                 styles: { fontSize: 8 },
-                headStyles: { fillColor: colors[category] || [107, 114, 128] },
+                headStyles: { fillColor: colors[category] || [107, 114, 128] as [number, number, number] },
                 margin: { left: 14 },
             })
 
