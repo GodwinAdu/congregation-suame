@@ -119,7 +119,7 @@ async function _fetchMembersWithReportStatus(user: User, month: string) {
         await connectToDB();
 
         const members = await Member.find({})
-            .select('fullName phone privileges groupId')
+            .select('fullName phone privileges groupId profileImage')
             .populate('privileges', 'name')
             .populate('groupId', 'name')
             .sort({ fullName: 1 });

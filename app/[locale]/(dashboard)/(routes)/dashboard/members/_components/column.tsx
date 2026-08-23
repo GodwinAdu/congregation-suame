@@ -112,20 +112,20 @@ export const columns: ColumnDef<any>[] = [
             return (
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
-                        <AvatarImage src={row.original.avatar} alt={name} />
+                        <AvatarImage src={row.original.profileImage || ''} alt={name} />
                         <AvatarFallback className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold">
                             {name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                         </AvatarFallback>
                     </Avatar>
                     <div>
-                        <p className="font-medium text-slate-900">{name}</p>
+                        <p className="font-medium">{name}</p>
                         <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">{role}</Badge>
                             <Badge
                                 variant={status === 'active' ? 'default' : 'secondary'}
                                 className={`text-xs ${status === 'active'
-                                    ? 'bg-green-100 text-green-700 border-green-200'
-                                    : 'bg-red-100 text-red-700 border-red-200'
+                                    ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+                                    : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
                                     }`}
                             >
                                 {status}

@@ -23,17 +23,23 @@ export function ProfileImageUpload({ currentImage, fullName, onImageUpdate }: Pr
     const { startUpload } = useUploadThing('profileImage', {
         onClientUploadComplete: async (res) => {
             if (res && res[0]) {
-                const url = res[0].ufsUrl
+                const url = res[0].url || res[0].ufsUrl
+                if (!url) {
+                    setUploading(false)
+                    toast.error('Upload completed but no URL returned')
+                    return
+                }
                 setImageUrl(url)
                 setUploading(false)
 
                 // Save to database
                 try {
-                    await updateProfile({ profileImage: url } as any)
+                    await updateProfile({ profileImage: url })
                     toast.success('Profile photo updated')
                     onImageUpdate?.(url)
-                } catch {
-                    toast.error('Failed to save profile photo')
+                } catch (error: any) {
+                    console.error('Save error:', error)
+                    toast.error(error?.message || 'Failed to save profile photo')
                 }
             }
         },
@@ -63,12 +69,12 @@ export function ProfileImageUpload({ currentImage, fullName, onImageUpdate }: Pr
 
     const handleRemove = async () => {
         try {
-            await updateProfile({ profileImage: '' } as any)
+            await updateProfile({ profileImage: '' })
             setImageUrl('')
             toast.success('Profile photo removed')
             onImageUpdate?.('')
-        } catch {
-            toast.error('Failed to remove photo')
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to remove photo')
         }
     }
 

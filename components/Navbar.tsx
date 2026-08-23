@@ -36,7 +36,7 @@ const Navbar = ({ user }: { user: IEmployee }) => {
                     <UserDropdown
                         email={user?.email}
                         username={user?.fullName}
-                        avatarUrl={user?.imgUrl as string}
+                        avatarUrl={user?.profileImage || ''}
                         notificationCount={100}
                     />
                 </div>

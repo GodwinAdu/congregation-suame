@@ -3,12 +3,14 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Plus, Eye, Edit, Phone, MessageSquare, Trash2 } from "lucide-react"
 
 export type MemberWithReportStatus = {
     _id: string
     fullName: string
     phone: string
+    profileImage?: string
     hasReported: boolean
     month: string
     privileges: Array<{ _id: string; name: string }>
@@ -47,11 +49,19 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendS
         accessorKey: "fullName",
         header: "Full Name",
         cell: ({ row }) => {
+            const name = row.original.fullName;
             const hasReported = row.original.hasReported;
             const smsCount = row.original.smsCount || 0;
+            const profileImage = row.original.profileImage;
             return (
                 <div className="flex items-center gap-2">
-                    <span className="font-medium">{row.getValue("fullName")}</span>
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={profileImage || ''} alt={name} />
+                        <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{name}</span>
                     {!hasReported && (
                         <Badge variant="destructive" className="text-xs">!</Badge>
                     )}
@@ -72,8 +82,8 @@ export const createColumns = ({ onAddReport, onViewReport, onEditReport, onSendS
                     variant={hasReported ? "default" : "destructive"}
                     className={
                         hasReported
-                            ? "bg-green-100 text-green-800 hover:bg-green-200"
-                            : "bg-red-100 text-red-800 hover:bg-red-200"
+                            ? "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300"
+                            : "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300"
                     }
                 >
                     {hasReported ? "Reported" : "Not Reported"}
