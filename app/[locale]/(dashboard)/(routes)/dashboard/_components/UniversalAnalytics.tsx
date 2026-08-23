@@ -171,7 +171,7 @@ export default function UniversalAnalytics() {
     const getGrowthColor = (growth: number) => {
         if (growth > 0) return 'text-green-600'
         if (growth < 0) return 'text-red-600'
-        return 'text-gray-600'
+        return 'text-muted-foreground'
     }
 
     const getGrowthIcon = (growth: number) => {
@@ -400,7 +400,7 @@ export default function UniversalAnalytics() {
                             <CardContent>
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-3 gap-4 text-center">
-                                        <div className="p-3 bg-blue-50 rounded-lg">
+                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                                             <p className="text-2xl font-bold text-blue-600">{data.transport?.participating || 0}</p>
                                             <p className="text-xs text-muted-foreground">Participating</p>
                                         </div>
@@ -419,7 +419,7 @@ export default function UniversalAnalytics() {
                                         <div className="space-y-2">
                                             <h4 className="text-sm font-medium text-muted-foreground">By Transport Fee</h4>
                                             {data.transport.byFee.map((fee: any, index: number) => (
-                                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
                                                     <div>
                                                         <span className="text-sm font-medium">{fee.feeName}</span>
                                                         <span className="text-xs text-muted-foreground ml-2">(₵{fee.feeAmount})</span>
@@ -485,7 +485,7 @@ export default function UniversalAnalytics() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                                         <p className="text-2xl font-bold text-blue-600">{data.members.total}</p>
                                         <p className="text-sm text-muted-foreground">Total Members</p>
                                     </div>
@@ -584,7 +584,7 @@ export default function UniversalAnalytics() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                                         <p className="text-2xl font-bold text-blue-600">{data.fieldService?.totalReports || 0}</p>
                                         <p className="text-sm text-muted-foreground">Total Reports</p>
                                     </div>
@@ -617,7 +617,7 @@ export default function UniversalAnalytics() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                                         <p className="text-2xl font-bold text-blue-600">{data.attendance.weeklyMeetings}</p>
                                         <p className="text-sm text-muted-foreground">Weekly Meetings</p>
                                     </div>
@@ -828,7 +828,7 @@ export default function UniversalAnalytics() {
                                                     <p className="text-sm font-medium text-gray-900">
                                                         {activity.userId?.fullName || 'Unknown User'}
                                                     </p>
-                                                    <p className="text-sm text-gray-600 truncate">
+                                                    <p className="text-sm text-muted-foreground truncate">
                                                         {activity.action}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1">

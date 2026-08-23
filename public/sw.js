@@ -1,8 +1,9 @@
 // Service Worker for Push Notifications
-const CACHE_NAME = 'suame-v1'
+const CACHE_NAME = 'suame-v2'
 const urlsToCache = [
   '/',
   '/dashboard',
+  '/dashboard/publisher',
   '/icon-192x192.png',
   '/icon-512x512.png'
 ]
@@ -15,15 +16,30 @@ self.addEventListener('install', (event) => {
   )
 })
 
-// Fetch event
+// Fetch event - network first, cache fallback
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests and API calls
+  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+    return
+  }
+
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then((response) => {
-        if (response) {
-          return response
+        // Cache successful responses
+        if (response.status === 200) {
+          const responseClone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone)
+          })
         }
-        return fetch(event.request)
+        return response
+      })
+      .catch(() => {
+        // Fallback to cache when offline
+        return caches.match(event.request).then((response) => {
+          return response || caches.match('/')
+        })
       })
   )
 })
@@ -104,12 +120,42 @@ self.addEventListener('notificationclick', (event) => {
 
 // Background sync
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
+  if (event.tag === 'sync-field-service-reports') {
+    event.waitUntil(syncPendingReports())
+  } else if (event.tag === 'background-sync') {
     event.waitUntil(doBackgroundSync())
   }
 })
 
+async function syncPendingReports() {
+  // Open IndexedDB and get pending reports
+  try {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('suame-offline-reports', 1)
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+
+    const tx = db.transaction('pending-reports', 'readonly')
+    const store = tx.objectStore('pending-reports')
+    const index = store.index('synced')
+    
+    const pending = await new Promise((resolve, reject) => {
+      const request = index.getAll(IDBKeyRange.only(false))
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+
+    // Notify the client to sync (the actual submission uses server actions via the client)
+    const clients = await self.clients.matchAll()
+    for (const client of clients) {
+      client.postMessage({ type: 'SYNC_PENDING_REPORTS', count: pending.length })
+    }
+  } catch (error) {
+    console.error('Background sync error:', error)
+  }
+}
+
 function doBackgroundSync() {
-  // Implement background sync logic here
-  return Promise.resolve()
+  return syncPendingReports()
 }

@@ -166,7 +166,7 @@ export default function GroupAssistantAnalytics() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-3 bg-blue-50 rounded-lg">
+                            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                                 <p className="text-2xl font-bold text-blue-600">{data.attendance.weeklyMeetings}</p>
                                 <p className="text-sm text-muted-foreground">Weekly</p>
                             </div>

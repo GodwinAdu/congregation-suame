@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, Loader2, BookOpen, Clock, Calendar } from "lucide-react"
+import { FileText, Loader2, BookOpen, Clock, Calendar, WifiOff } from "lucide-react"
 import { toast } from "sonner"
 import { submitFieldServiceReport, checkReportingPermissions } from "@/lib/actions/publisher.actions"
+import { useOfflineSync } from "@/hooks/use-offline-sync"
 import { format, subMonths } from "date-fns"
 
 interface FieldServiceReportModalProps {
@@ -39,6 +40,8 @@ export function FieldServiceReportModal({
         check: false,
         comments: ""
     })
+    
+    const { isOnline, submitReport, pendingCount } = useOfflineSync()
     
     // Update form data when existingReport changes
     useEffect(() => {
@@ -90,16 +93,32 @@ export function FieldServiceReportModal({
         
         setLoading(true)
         try {
-            await submitFieldServiceReport({
+            const result = await submitReport({
                 month: selectedMonth,
                 ...formData
             })
             
-            toast.success("Field service report submitted successfully!")
+            const monthName = getMonthName(selectedMonth)
+            
+            if (result.offline) {
+                toast.success("Report Saved Offline!", {
+                    description: `${monthName} report saved locally. It will be submitted automatically when you're back online.`,
+                    duration: 6000,
+                })
+            } else {
+                toast.success(existingReport ? "Report Updated!" : "Report Submitted!", {
+                    description: `${monthName} — ${formData.bibleStudies} Bible ${formData.bibleStudies === 1 ? 'study' : 'studies'}${formData.hours > 0 ? `, ${formData.hours} hours` : ''}${formData.auxiliaryPioneer ? ' (Auxiliary Pioneer)' : ''}. Your report will be reviewed by the secretary.`,
+                    duration: 6000,
+                })
+            }
             onClose()
-            window.location.reload() // Refresh to show updated data
-        } catch (error) {
-            toast.error("Failed to submit report. Please try again.")
+            if (!result.offline) {
+                window.location.reload()
+            }
+        } catch (error: any) {
+            toast.error("Failed to submit report", {
+                description: error?.message || "Please try again later."
+            })
         } finally {
             setLoading(false)
         }
@@ -121,6 +140,22 @@ export function FieldServiceReportModal({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {!isOnline && (
+                        <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 rounded-lg">
+                            <WifiOff className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                            <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                                You&apos;re offline. Your report will be saved locally and submitted when you reconnect.
+                            </p>
+                        </div>
+                    )}
+                    {pendingCount > 0 && isOnline && (
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-lg">
+                            <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                            <p className="text-sm text-blue-800 dark:text-blue-300">
+                                {pendingCount} pending {pendingCount === 1 ? 'report' : 'reports'} will be synced shortly.
+                            </p>
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Label htmlFor="month" className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-blue-600" />
@@ -241,8 +276,8 @@ export function FieldServiceReportModal({
                         
                         if (!canEdit) {
                             return (
-                                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-                                    <p className="text-sm text-yellow-800">
+                                <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 p-3 rounded-lg">
+                                    <p className="text-sm text-yellow-800 dark:text-yellow-300">
                                         ⚠️ {isPreviousMonth ? 
                                             'Previous month reports can only be edited until the 10th of the current month.' :
                                             'Only current and previous month reports can be edited.'
@@ -254,8 +289,8 @@ export function FieldServiceReportModal({
                         return null
                     })()}
 
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-semibold text-blue-800 mb-2">Report Summary</h4>
+                    <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg">
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Report Summary</h4>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             {(permissions?.canRecordHours || formData.auxiliaryPioneer) && (
                                 <div>

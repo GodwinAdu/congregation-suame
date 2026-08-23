@@ -31,6 +31,11 @@ const nextConfig = {
         hostname: 'utfs.io',
         pathname: '/**',
       } as const,
+      {
+        protocol: 'https',
+        hostname: '*.uploadthing.com',
+        pathname: '/**',
+      } as const,
     ],
   },
   webpack(config: import('webpack').Configuration) {

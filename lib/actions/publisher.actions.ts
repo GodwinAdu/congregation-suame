@@ -177,6 +177,17 @@ async function _submitFieldServiceReport(user: User, data: {
             details: { entityId: report._id, entityType: 'FieldServiceReport' }
         })
 
+        // Send confirmation notification to the publisher
+        const { Notification } = await import('../models/notification.models')
+        await Notification.create({
+            userId: user._id,
+            type: 'reminder',
+            title: 'Report Submitted Successfully',
+            message: `Your field service report for ${data.month} has been received. ${data.bibleStudies} Bible ${data.bibleStudies === 1 ? 'study' : 'studies'}${(data.hours && data.hours > 0) ? `, ${data.hours} hours` : ''}. It will be reviewed by the secretary.`,
+            priority: 'low',
+            status: 'delivered',
+        })
+
         revalidatePath('/dashboard/publisher')
         return JSON.parse(JSON.stringify(report))
     } catch (error) {

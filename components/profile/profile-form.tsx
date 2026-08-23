@@ -105,7 +105,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 <CardContent className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
                         <Avatar className="h-16 w-16 sm:h-20 sm:w-20 mx-auto sm:mx-0">
-                            <AvatarImage src="" />
+                            <AvatarImage src={user.profileImage || ""} />
                             <AvatarFallback className="text-base sm:text-lg">
                                 {getInitials(user.fullName)}
                             </AvatarFallback>

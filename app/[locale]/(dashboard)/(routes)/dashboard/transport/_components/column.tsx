@@ -76,8 +76,8 @@ export const createColumns = ({ onAddPayment, onRefresh }: ColumnsProps): Column
                         variant={carStatus ? "default" : "secondary"}
                         className={
                             carStatus
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
                         }
                     >
                         {carStatus ? "Yes" : "No"}

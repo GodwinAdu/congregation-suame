@@ -457,6 +457,7 @@ async function _updateProfile(user: User, updateData: {
         address?: string;
         isPublic?: boolean;
     };
+    profileImage?: string;
 }) {
     try {
         if (!user) throw new Error("User not authenticated");
@@ -742,6 +743,8 @@ async function _deleteMember(user: User, memberId: string) {
             ),
             // SMS logs
             SMSLog.deleteMany({ $or: [{ recipient: memberId }, { sentBy: memberId }] }),
+            // Individual attendance records
+            (await import('../models/member-attendance.models')).default.deleteMany({ memberId }),
             // Territory assignments
             ...(TerritoryAssignment ? [TerritoryAssignment.deleteMany({ publisherId: memberId })] : []),
             // Communications (delete messages sent by member, remove from recipients)

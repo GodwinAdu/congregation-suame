@@ -168,6 +168,10 @@ export function NavMain({ role, user }: NavMainProps) {
           url: `/dashboard/attendance`,
         },
         {
+          title: "Mark Attendance",
+          url: `/dashboard/attendance/mark`,
+        },
+        {
           title: "Attendance Tracker",
           url: `/dashboard/attendance/attendance-tracker`,
         },
@@ -463,6 +467,11 @@ export function NavMain({ role, user }: NavMainProps) {
           title: "CO Reports",
           url: `/dashboard/co-visit/reports`,
           roleField: "coVisitView"
+        },
+        {
+          title: "CO Visit Preparation",
+          url: `/dashboard/co-visit/preparation`,
+          roleField: "coVisitView"
         }
       ],
     },
@@ -601,6 +610,16 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "Backup & Restore",
           url: `/dashboard/backup`,
+          roleField: "config"
+        },
+        {
+          title: "Activity Log",
+          url: `/dashboard/settings/activity-log`,
+          roleField: "config"
+        },
+        {
+          title: "Meeting Schedule",
+          url: `/dashboard/settings/meeting-schedule`,
           roleField: "config"
         },
         {

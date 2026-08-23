@@ -76,7 +76,7 @@ const MemberMarker = ({ member, mapRef }: { member: any; mapRef: any }) => {
       <Popup>
         <div className="p-2">
           <h5 className="font-medium">{member.fullName}</h5>
-          <p className="text-xs text-gray-600">{member.role}</p>
+          <p className="text-xs text-muted-foreground">{member.role}</p>
           {member.phone && (
             <p className="text-xs">{member.phone}</p>
           )}

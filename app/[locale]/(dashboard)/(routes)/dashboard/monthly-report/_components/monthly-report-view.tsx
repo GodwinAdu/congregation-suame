@@ -5,10 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, FileText, Clock, BookOpen, AlertTriangle } from "lucide-react";
+import { Users, FileText, Clock, BookOpen, AlertTriangle, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getMonthlyReport } from "@/lib/actions/monthly-report.actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface MonthlyStats {
     activePublishers: number;
@@ -36,6 +39,7 @@ interface MonthlyReportViewProps {
 export function MonthlyReportView({ month, year }: MonthlyReportViewProps) {
     const [stats, setStats] = useState<MonthlyStats | null>(null);
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const router = useRouter();
 
     const months = [
@@ -67,6 +71,55 @@ export function MonthlyReportView({ month, year }: MonthlyReportViewProps) {
 
     const handleYearChange = (newYear: string) => {
         router.push(`/dashboard/monthly-report?month=${month}&year=${newYear}`);
+    };
+
+    const handleExportPDF = () => {
+        if (!stats) return;
+        setExporting(true);
+
+        try {
+            const doc = new jsPDF();
+            const monthName = months[month - 1];
+
+            // Title
+            doc.setFontSize(18);
+            doc.text(`Congregation Report`, 14, 15);
+            doc.setFontSize(12);
+            doc.text(`${monthName} ${year} — Suame Congregation`, 14, 23);
+            doc.setFontSize(9);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 29);
+
+            // Summary table
+            autoTable(doc, {
+                startY: 35,
+                head: [['Category', 'Reports', 'Hours', 'Bible Studies']],
+                body: [
+                    ['Publishers', String(stats.publishers.reports), '—', String(stats.publishers.bibleStudies)],
+                    ['Auxiliary Pioneers', String(stats.auxiliaryPioneers.reports), String(stats.auxiliaryPioneers.hours), String(stats.auxiliaryPioneers.bibleStudies)],
+                    ['Regular Pioneers', String(stats.regularPioneers.reports), String(stats.regularPioneers.hours), String(stats.regularPioneers.bibleStudies)],
+                ],
+                foot: [[
+                    'TOTALS',
+                    String(stats.publishers.reports + stats.auxiliaryPioneers.reports + stats.regularPioneers.reports),
+                    String(stats.auxiliaryPioneers.hours + stats.regularPioneers.hours),
+                    String(stats.publishers.bibleStudies + stats.auxiliaryPioneers.bibleStudies + stats.regularPioneers.bibleStudies),
+                ]],
+                headStyles: { fillColor: [59, 130, 246] },
+                footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
+            });
+
+            // Active publishers note
+            const finalY = (doc as any).lastAutoTable?.finalY || 80;
+            doc.setFontSize(10);
+            doc.text(`Active Publishers (reported in last 6 months): ${stats.activePublishers}`, 14, finalY + 12);
+
+            doc.save(`congregation-report-${monthName.toLowerCase()}-${year}.pdf`);
+            toast.success('Report exported as PDF');
+        } catch (error) {
+            toast.error('Failed to export report');
+        } finally {
+            setExporting(false);
+        }
     };
 
     if (loading) {
@@ -152,7 +205,7 @@ export function MonthlyReportView({ month, year }: MonthlyReportViewProps) {
     return (
         <div className="space-y-6">
             {/* Month/Year Selector */}
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4 items-center">
                 <Select value={month.toString()} onValueChange={handleMonthChange}>
                     <SelectTrigger className="w-40">
                         <SelectValue />
@@ -178,6 +231,19 @@ export function MonthlyReportView({ month, year }: MonthlyReportViewProps) {
                         ))}
                     </SelectContent>
                 </Select>
+
+                <Button
+                    variant="outline"
+                    onClick={handleExportPDF}
+                    disabled={exporting || !stats}
+                >
+                    {exporting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Export PDF
+                </Button>
             </div>
 
             {/* Report Title */}
@@ -282,9 +348,9 @@ export function MonthlyReportView({ month, year }: MonthlyReportViewProps) {
             </Card>
 
             {/* Members Needing Help */}
-            <Card className="border-orange-200 bg-orange-50">
+            <Card className="border-orange-200 dark:border-orange-800/30 bg-orange-50 dark:bg-orange-900/10">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-orange-700">
+                    <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
                         <AlertTriangle className="h-5 w-5" />
                         Members Needing Help
                     </CardTitle>

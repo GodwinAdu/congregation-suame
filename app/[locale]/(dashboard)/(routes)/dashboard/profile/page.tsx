@@ -1,5 +1,6 @@
 import { currentUser } from "@/lib/helpers/session";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { ProfileImageUpload } from "@/components/profile/profile-image-upload";
 import { PasswordChange } from "@/components/profile/password-change";
 import { LocationUpdate } from "@/components/location/location-update";
 import { EmergencyContactsForm } from "@/components/profile/emergency-contacts-form";
@@ -35,6 +36,7 @@ export default async function ProfilePage() {
                     </TabsList>
 
                     <TabsContent value="profile" className="space-y-6">
+                        <ProfileImageUpload currentImage={user.profileImage} fullName={user.fullName} />
                         <ProfileForm user={user} />
                         <LocationUpdate currentLocation={user.location} />
                     </TabsContent>

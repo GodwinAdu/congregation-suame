@@ -71,6 +71,10 @@ const UserSchema = new Schema({
         type: String,
         default: "publisher",
     },
+    profileImage: {
+        type: String,
+        default: null
+    },
     privileges: [{ type: Schema.Types.ObjectId, ref: "Privilege", default: [] }],
     groupId: { type: Schema.Types.ObjectId, ref: "Group", default: null },
     familyRelationships: [{

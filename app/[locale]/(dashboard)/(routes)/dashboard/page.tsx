@@ -11,6 +11,7 @@ import GroupAssistantAnalytics from './_components/GroupAssistantAnalytics'
 import Heading from '@/components/commons/Header'
 import { Separator } from '@/components/ui/separator'
 import UniversalAnalytics from './_components/UniversalAnalytics'
+import AdminAlerts from './_components/AdminAlerts'
 import { requirePermission } from '@/lib/helpers/server-permission-check'
 import { BackupModal } from './_components/BackupModal'
 import { WEEKLY_FOCUS, SPIRITUAL_HIGHLIGHTS, DAILY_MOTIVATIONS } from '@/lib/data/spiritual-content'
@@ -64,7 +65,7 @@ const page = async () => {
           {/* Greeting */}
           <div className="text-center">
             <p className="text-sm text-muted-foreground">{today}</p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mt-1">{greeting}, {firstName} 👋</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-1">{greeting}, {firstName} 👋</h1>
           </div>
 
           {/* Daily Bible Motivation */}
@@ -201,6 +202,8 @@ const page = async () => {
       </div>
       <Separator />
       
+      {isAdmin && <AdminAlerts />}
+
       {isAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-600 to-indigo-700 text-white overflow-hidden relative">
