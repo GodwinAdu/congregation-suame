@@ -188,7 +188,7 @@ const FamilyModal = ({ open, onClose, onSuccess, family }: FamilyModalProps) => 
                         </div>
                         
                         {familyMembers.map((member, index) => (
-                            <div key={index} className="flex gap-2 items-end p-3 bg-gray-50 rounded-lg">
+                            <div key={index} className="flex gap-2 items-end p-3 bg-muted/50 rounded-lg">
                                 <div className="flex-1">
                                     <Label className="text-xs">Member</Label>
                                     <Select

@@ -103,6 +103,28 @@ async function _updateMyLocation(user: User, locationData: LocationData) {
     }
 }
 
+async function _getAllMemberLocations(user: User) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const members = await Member.find({
+            'location.latitude': { $ne: null },
+            'location.longitude': { $ne: null },
+        })
+            .select('fullName phone address location groupId role')
+            .populate('groupId', 'name')
+            .sort({ fullName: 1 });
+
+        return JSON.parse(JSON.stringify(members));
+    } catch (error) {
+        console.log("Error fetching all member locations:", error);
+        throw error;
+    }
+}
+
 export const updateMemberLocation = await withAuth(_updateMemberLocation);
 export const getMembersWithLocations = await withAuth(_getMembersWithLocations);
+export const getAllMemberLocations = await withAuth(_getAllMemberLocations);
 export const updateMyLocation = await withAuth(_updateMyLocation);

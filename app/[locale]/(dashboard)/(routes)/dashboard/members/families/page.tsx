@@ -1,13 +1,18 @@
-import React from 'react'
-import FamilyGrid from './_components/FamilyGrid'
+import { fetchFamilies } from '@/lib/actions/family.actions'
 import { requirePermission } from '@/lib/helpers/server-permission-check'
+import FamilyGrid from './_components/FamilyGrid'
+import Heading from '@/components/commons/Header'
 
-const FamiliesPage = () => {
+export default async function FamiliesPage() {
+    await requirePermission('members')
+
     return (
-        <div className="p-6">
+        <div className="space-y-6">
+            <Heading
+                title="Family Management"
+                description="View and manage congregation family groups"
+            />
             <FamilyGrid />
         </div>
     )
 }
-
-export default FamiliesPage

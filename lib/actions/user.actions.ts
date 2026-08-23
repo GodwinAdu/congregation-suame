@@ -689,6 +689,12 @@ async function _deleteMember(user: User, memberId: string) {
             import('../models/family.models').then(m => m.default),
         ])
 
+        // Destructure the additional models
+        const SMSLog = (await import('../models/sms-log.models')).default;
+        const { TerritoryAssignment } = await import('../models/territory.models');
+        const { Message } = await import('../models/communication.models');
+        const { Event } = await import('../models/event.models');
+
         await Promise.all([
             // Field service reports (publisher field)
             FieldServiceReport.deleteMany({ publisher: memberId }),
@@ -725,6 +731,34 @@ async function _deleteMember(user: User, memberId: string) {
                 { 'familyRelationships.memberId': memberId },
                 { $pull: { familyRelationships: { memberId } } }
             ),
+            // Remove from Family model (as head or member)
+            Family.updateMany(
+                { 'members.memberId': memberId },
+                { $pull: { members: { memberId } } }
+            ),
+            Family.updateMany(
+                { headOfFamily: memberId },
+                { $unset: { headOfFamily: '' } }
+            ),
+            // SMS logs
+            SMSLog.deleteMany({ $or: [{ recipient: memberId }, { sentBy: memberId }] }),
+            // Territory assignments
+            ...(TerritoryAssignment ? [TerritoryAssignment.deleteMany({ publisherId: memberId })] : []),
+            // Communications (delete messages sent by member, remove from recipients)
+            ...(Message ? [
+                Message.deleteMany({ from: memberId }),
+                Message.updateMany(
+                    { to: memberId },
+                    { $pull: { to: memberId } }
+                ),
+            ] : []),
+            // Events (remove from attendees)
+            ...(Event ? [
+                Event.updateMany(
+                    { attendees: memberId },
+                    { $pull: { attendees: memberId } }
+                ),
+            ] : []),
         ])
 
         // Delete the member last

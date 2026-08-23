@@ -203,6 +203,10 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: t('sidebar.locationMap'),
           url: `/dashboard/members/map`,
+        },
+        {
+          title: "Download Locations",
+          url: `/dashboard/members/locations`,
         }
       ],
     },
@@ -215,6 +219,11 @@ export function NavMain({ role, user }: NavMainProps) {
         {
           title: "All Reports",
           url: `/dashboard/manage-report`,
+        },
+        {
+          title: "Review Reports",
+          url: `/dashboard/field-service/review`,
+          roleField: "manageAllReport"
         },
         {
           title: "Field Service Help",

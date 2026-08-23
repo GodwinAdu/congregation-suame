@@ -2,6 +2,7 @@
 
 import { User, withAuth } from "../helpers/auth";
 import Family from "../models/family.models";
+import Member from "../models/user.models";
 import { connectToDB } from "../mongoose";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "../utils/activity-logger";
@@ -48,9 +49,12 @@ async function _fetchFamilies(user: User) {
 
         await connectToDB();
 
+        // Ensure Member model is registered for populate
+        void Member;
+
         const families = await Family.find({})
-            .populate('members.memberId', 'fullName')
-            .populate('headOfFamily', 'fullName')
+            .populate('members.memberId', 'fullName phone gender profileImage')
+            .populate('headOfFamily', 'fullName phone gender profileImage')
             .sort({ familyName: 1 });
 
         return JSON.parse(JSON.stringify(families));

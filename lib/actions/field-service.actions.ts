@@ -403,3 +403,177 @@ async function _fetchMembersNeedingHelp(user: User, month: string) {
 }
 
 export const fetchMembersNeedingHelp = await withAuth(_fetchMembersNeedingHelp);
+
+// ── Report Review / Validation ───────────────────────────────────────────────
+
+async function _fetchReportsForReview(user: User, month: string) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        // Get all members
+        const members = await Member.find({})
+            .select('fullName phone groupId pioneerStatus')
+            .populate('groupId', 'name')
+            .sort({ fullName: 1 });
+
+        // Get all reports for this month
+        const reports = await FieldServiceReport.find({ month })
+            .populate('publisher', 'fullName phone groupId pioneerStatus')
+            .sort({ createdAt: -1 });
+
+        // Build report map
+        const reportMap = new Map<string, any>();
+        reports.forEach(r => {
+            if (r.publisher && r.publisher._id) {
+                reportMap.set(r.publisher._id.toString(), r);
+            }
+        });
+
+        // Categorize reports
+        const submitted: any[] = [];
+        const notSubmitted: any[] = [];
+
+        members.forEach(member => {
+            const report = reportMap.get(member._id.toString());
+            if (report) {
+                // Detect issues
+                const issues: string[] = [];
+
+                if (!report.check) {
+                    issues.push('unchecked');
+                }
+                if ((report.hours || 0) === 0) {
+                    issues.push('zero_hours');
+                }
+                if ((report.bibleStudents || 0) === 0 && (member.pioneerStatus === 'regular' || member.pioneerStatus === 'auxiliary' || member.pioneerStatus === 'special')) {
+                    issues.push('pioneer_no_studies');
+                }
+                if (report.auxiliaryPioneer && (report.hours || 0) < 15) {
+                    issues.push('aux_low_hours');
+                }
+
+                submitted.push({
+                    _id: report._id.toString(),
+                    memberId: member._id.toString(),
+                    memberName: member.fullName,
+                    phone: member.phone || '',
+                    group: member.groupId?.name || 'Unassigned',
+                    pioneerStatus: member.pioneerStatus || 'none',
+                    hours: report.hours || 0,
+                    bibleStudents: report.bibleStudents || 0,
+                    auxiliaryPioneer: report.auxiliaryPioneer || false,
+                    check: report.check || false,
+                    comments: report.comments || '',
+                    issues,
+                    hasIssues: issues.length > 0,
+                    submittedAt: report.createdAt,
+                });
+            } else {
+                notSubmitted.push({
+                    memberId: member._id.toString(),
+                    memberName: member.fullName,
+                    phone: member.phone || '',
+                    group: member.groupId?.name || 'Unassigned',
+                    pioneerStatus: member.pioneerStatus || 'none',
+                });
+            }
+        });
+
+        // Summary stats
+        const totalMembers = members.length;
+        const totalSubmitted = submitted.length;
+        const checkedCount = submitted.filter(r => r.check).length;
+        const uncheckedCount = submitted.filter(r => !r.check).length;
+        const withIssues = submitted.filter(r => r.hasIssues).length;
+        const zeroHours = submitted.filter(r => r.issues.includes('zero_hours')).length;
+        const pioneerNoStudies = submitted.filter(r => r.issues.includes('pioneer_no_studies')).length;
+        const auxLowHours = submitted.filter(r => r.issues.includes('aux_low_hours')).length;
+
+        return {
+            month,
+            summary: {
+                totalMembers,
+                totalSubmitted,
+                notSubmittedCount: notSubmitted.length,
+                checkedCount,
+                uncheckedCount,
+                withIssues,
+                zeroHours,
+                pioneerNoStudies,
+                auxLowHours,
+            },
+            submitted,
+            notSubmitted,
+        };
+    } catch (error) {
+        console.log("Error fetching reports for review:", error);
+        throw error;
+    }
+}
+
+async function _bulkCheckReports(user: User, reportIds: string[]) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const result = await FieldServiceReport.updateMany(
+            { _id: { $in: reportIds } },
+            { $set: { check: true } }
+        );
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'report_update',
+            action: `${user.fullName} bulk-checked ${result.modifiedCount} reports`,
+            details: { entityType: 'FieldServiceReport', count: result.modifiedCount },
+        });
+
+        revalidatePath('/dashboard/field-service/review');
+        return { success: true, modifiedCount: result.modifiedCount };
+    } catch (error) {
+        console.log("Error bulk checking reports:", error);
+        throw error;
+    }
+}
+
+async function _quickUpdateReport(user: User, reportId: string, updates: {
+    hours?: number;
+    bibleStudents?: number;
+    auxiliaryPioneer?: boolean;
+    check?: boolean;
+    comments?: string;
+}) {
+    try {
+        if (!user) throw new Error("User not authorized");
+
+        await connectToDB();
+
+        const report = await FieldServiceReport.findByIdAndUpdate(
+            reportId,
+            { $set: updates },
+            { new: true, runValidators: false }
+        );
+
+        if (!report) throw new Error("Report not found");
+
+        await logActivity({
+            userId: user._id as string,
+            type: 'report_update',
+            action: `${user.fullName} reviewed and updated a field service report`,
+            details: { entityId: reportId, entityType: 'FieldServiceReport' },
+        });
+
+        revalidatePath('/dashboard/field-service/review');
+        return JSON.parse(JSON.stringify(report));
+    } catch (error) {
+        console.log("Error quick updating report:", error);
+        throw error;
+    }
+}
+
+export const fetchReportsForReview = await withAuth(_fetchReportsForReview);
+export const bulkCheckReports = await withAuth(_bulkCheckReports);
+export const quickUpdateReport = await withAuth(_quickUpdateReport);

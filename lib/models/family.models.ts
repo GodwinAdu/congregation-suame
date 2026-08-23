@@ -7,12 +7,12 @@ const familySchema = new mongoose.Schema({
     },
     headOfFamily: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'Member'
     },
     members: [{
         memberId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            ref: 'Member',
             required: true
         },
         relationship: {
@@ -27,7 +27,7 @@ const familySchema = new mongoose.Schema({
     }],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Member',
         required: true
     }
 }, {
