@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -148,6 +148,32 @@ export function PioneerSummaryGenerator() {
     }
     // Multiple service years - show range like "2023-2024 to 2024-2025"
     return `${formatServiceYearShort(startServiceYear)} to ${formatServiceYearShort(endServiceYear)}`
+  }
+  
+  // Generate list of months with their year based on the selected date range
+  const getMonthsInRange = () => {
+    const months: { month: string; year: number; monthValue: string; serviceYear: string }[] = []
+    
+    for (let sy = startServiceYear; sy <= endServiceYear; sy++) {
+      const startIdx = (sy === startServiceYear) ? startMonthIndex : 0
+      const endIdx = (sy === endServiceYear) ? endMonthIndex : 11
+      
+      for (let mi = startIdx; mi <= endIdx; mi++) {
+        const monthName = monthOptions[mi].label
+        const actualYear = mi <= 3 ? sy : sy + 1
+        const monthNum = mi <= 3 ? mi + 9 : mi - 3
+        const monthValue = `${actualYear}-${monthNum.toString().padStart(2, '0')}`
+        
+        months.push({
+          month: monthName,
+          year: actualYear,
+          monthValue: monthValue,
+          serviceYear: formatServiceYearShort(sy)
+        })
+      }
+    }
+    
+    return months
   }
 
   const onSubmit = async (data: ReportFormData) => {
@@ -335,7 +361,9 @@ export function PioneerSummaryGenerator() {
                   <table className="w-full border-collapse border-2 border-black">
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="border border-black p-3 font-bold">Month</th>
+                        <th className={`border border-black p-3 font-bold ${isMultipleServiceYears ? 'w-[140px]' : ''}`}>
+                          {isMultipleServiceYears ? 'Month / Year' : 'Month'}
+                        </th>
                         <th className="border border-black p-3 font-bold" colSpan={3}>Regular Pioneers</th>
                         <th className="border border-black p-3 font-bold" colSpan={3}>Auxiliary Pioneers</th>
                       </tr>
@@ -350,17 +378,37 @@ export function PioneerSummaryGenerator() {
                       </tr>
                     </thead>
                     <tbody>
-                      {reportData.months.map((month: any) => (
-                        <tr key={month.month}>
-                          <td className="border border-black p-3 font-medium">{month.monthName}</td>
-                          <td className="border border-black p-3 text-center">{month.regularPioneers.count}</td>
-                          <td className="border border-black p-3 text-center">{month.regularPioneers.totalHours}</td>
-                          <td className="border border-black p-3 text-center">{month.regularPioneers.totalBibleStudies}</td>
-                          <td className="border border-black p-3 text-center">{month.auxiliaryPioneers.count}</td>
-                          <td className="border border-black p-3 text-center">{month.auxiliaryPioneers.totalHours}</td>
-                          <td className="border border-black p-3 text-center">{month.auxiliaryPioneers.totalBibleStudies}</td>
-                        </tr>
-                      ))}
+                      {(() => {
+                        const monthsInRange = getMonthsInRange()
+                        return monthsInRange.map((monthData, idx) => {
+                          // Find matching data from reportData.months
+                          const monthReport = reportData.months.find((m: any) => m.month === monthData.monthValue)
+                          const showSeparator = isMultipleServiceYears && (idx === 0 || monthsInRange[idx - 1].serviceYear !== monthData.serviceYear)
+                          
+                          return (
+                            <React.Fragment key={monthData.monthValue}>
+                              {showSeparator && (
+                                <tr className="bg-gray-200">
+                                  <td colSpan={7} className="border border-black p-2 text-center font-bold">
+                                    Service Year: {monthData.serviceYear}
+                                  </td>
+                                </tr>
+                              )}
+                              <tr>
+                                <td className="border border-black p-3 font-medium">
+                                  {monthData.month}{isMultipleServiceYears ? ` ${monthData.year}` : ''}
+                                </td>
+                                <td className="border border-black p-3 text-center">{monthReport?.regularPioneers?.count || 0}</td>
+                                <td className="border border-black p-3 text-center">{monthReport?.regularPioneers?.totalHours || 0}</td>
+                                <td className="border border-black p-3 text-center">{monthReport?.regularPioneers?.totalBibleStudies || 0}</td>
+                                <td className="border border-black p-3 text-center">{monthReport?.auxiliaryPioneers?.count || 0}</td>
+                                <td className="border border-black p-3 text-center">{monthReport?.auxiliaryPioneers?.totalHours || 0}</td>
+                                <td className="border border-black p-3 text-center">{monthReport?.auxiliaryPioneers?.totalBibleStudies || 0}</td>
+                              </tr>
+                            </React.Fragment>
+                          )
+                        })
+                      })()}
                       <tr className="bg-gray-100 font-bold">
                         <td className="border border-black p-3">TOTALS</td>
                         <td className="border border-black p-3 text-center">-</td>
@@ -488,7 +536,9 @@ export function PioneerSummaryGenerator() {
           <table className="w-full border-collapse border-2 border-black table-fixed">
             <thead>
               <tr>
-                <th className="border border-black p-2 bg-gray-100 font-bold w-[90px]">Service Year</th>
+                <th className={`border border-black p-2 bg-gray-100 font-bold ${isMultipleServiceYears ? 'w-[130px]' : 'w-[90px]'}`}>
+                  {isMultipleServiceYears ? 'Month / Year' : 'Service Year'}
+                </th>
                 <th className="border border-black p-2 bg-gray-100 font-bold w-[80px] text-center">Shared in Ministry</th>
                 <th className="border border-black p-2 bg-gray-100 font-bold w-[70px] text-center">Bible Studies</th>
                 <th className="border border-black p-2 bg-gray-100 font-bold w-[80px] text-center">Auxiliary Pioneer</th>
@@ -497,31 +547,42 @@ export function PioneerSummaryGenerator() {
               </tr>
             </thead>
             <tbody>
-              {['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'].map((monthName) => {
-                const monthData = months.find(m => {
-                  const date = new Date(m.month + '-01')
-                  return date.toLocaleDateString('en-US', { month: 'long' }) === monthName
+              {(() => {
+                const monthsInRange = getMonthsInRange()
+                return monthsInRange.map((monthInfo, idx) => {
+                  const monthData = months.find(m => m.month === monthInfo.monthValue)
+                  const monthStats = pioneerType === 'Regular Pioneer' 
+                    ? monthData?.regularPioneers 
+                    : monthData?.auxiliaryPioneers
+                  const showSeparator = isMultipleServiceYears && (idx === 0 || monthsInRange[idx - 1].serviceYear !== monthInfo.serviceYear)
+                  
+                  return (
+                    <React.Fragment key={monthInfo.monthValue}>
+                      {showSeparator && (
+                        <tr className="bg-gray-200">
+                          <td colSpan={6} className="border border-black p-2 text-center font-bold">
+                            Service Year: {monthInfo.serviceYear}
+                          </td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td className="border border-black p-2">
+                          {monthInfo.month}{isMultipleServiceYears ? ` ${monthInfo.year}` : ''}
+                        </td>
+                        <td className="border border-black p-2 text-center">
+                          <input type="checkbox" checked={monthStats?.count > 0} readOnly />
+                        </td>
+                        <td className="border border-black p-2 text-center">{monthStats?.totalBibleStudies || ''}</td>
+                        <td className="border border-black p-2 text-center">
+                          <input type="checkbox" checked={pioneerType === 'Auxiliary Pioneer' && monthStats?.count > 0} readOnly />
+                        </td>
+                        <td className="border border-black p-2 text-center">{monthStats?.totalHours || ''}</td>
+                        <td className="border border-black p-2 text-sm break-words whitespace-pre-wrap">{monthStats?.count > 0 ? `${monthStats.count} individuals` : ''}</td>
+                      </tr>
+                    </React.Fragment>
+                  )
                 })
-                
-                const monthStats = pioneerType === 'Regular Pioneer' 
-                  ? monthData?.regularPioneers 
-                  : monthData?.auxiliaryPioneers
-                
-                return (
-                  <tr key={monthName}>
-                    <td className="border border-black p-2">{monthName}</td>
-                    <td className="border border-black p-2 text-center">
-                      <input type="checkbox" checked={monthStats?.count > 0} readOnly />
-                    </td>
-                    <td className="border border-black p-2 text-center">{monthStats?.totalBibleStudies || ''}</td>
-                    <td className="border border-black p-2 text-center">
-                      <input type="checkbox" checked={pioneerType === 'Auxiliary Pioneer' && monthStats?.count > 0} readOnly />
-                    </td>
-                    <td className="border border-black p-2 text-center">{monthStats?.totalHours || ''}</td>
-                    <td className="border border-black p-2 text-sm break-words whitespace-pre-wrap">{monthStats?.count > 0 ? `${monthStats.count} individuals` : ''}</td>
-                  </tr>
-                )
-              })}
+              })()}
               <tr className="font-bold">
                 <td className="border border-black p-2">Total</td>
                 <td className="border border-black p-2"></td>
@@ -653,7 +714,7 @@ export function PioneerSummaryGenerator() {
 
         <table style="table-layout: fixed; width: 100%;">
           <colgroup>
-            <col style="width: 90px;" />
+            <col style="width: ${isMultipleServiceYears ? '130px' : '90px'};" />
             <col style="width: 80px;" />
             <col style="width: 70px;" />
             <col style="width: 80px;" />
@@ -662,7 +723,7 @@ export function PioneerSummaryGenerator() {
           </colgroup>
           <thead>
             <tr>
-              <th>Service Year</th>
+              <th>${isMultipleServiceYears ? 'Month / Year' : 'Service Year'}</th>
               <th>Shared in Ministry</th>
               <th>Bible Studies</th>
               <th>Auxiliary Pioneer</th>
@@ -671,31 +732,43 @@ export function PioneerSummaryGenerator() {
             </tr>
           </thead>
           <tbody>
-            ${['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'].map(monthName => {
-              const monthData = months.find(m => {
-                const date = new Date(m.month + '-01')
-                return date.toLocaleDateString('en-US', { month: 'long' }) === monthName
-              })
-              
-              const monthStats = pioneerType === 'Regular Pioneer' 
-                ? monthData?.regularPioneers 
-                : monthData?.auxiliaryPioneers
-              
-              return `
-                <tr>
-                  <td>${monthName}</td>
-                  <td style="text-align: center;">
-                    <input type="checkbox" ${monthStats?.count > 0 ? 'checked' : ''} />
-                  </td>
-                  <td style="text-align: center;">${monthStats?.totalBibleStudies || ''}</td>
-                  <td style="text-align: center;">
-                    <input type="checkbox" ${pioneerType === 'Auxiliary Pioneer' && monthStats?.count > 0 ? 'checked' : ''} />
-                  </td>
-                  <td style="text-align: center;">${monthStats?.totalHours || ''}</td>
-                  <td class="remarks-col" style="word-wrap: break-word; white-space: pre-wrap; font-size: 11px;">${monthStats?.count > 0 ? `${monthStats.count} Pub.` : ''}</td>
-                </tr>
-              `
-            }).join('')}
+            ${(() => {
+              const monthsInRange = getMonthsInRange()
+              return monthsInRange.map((monthInfo, idx) => {
+                const monthData = months.find(m => m.month === monthInfo.monthValue)
+                const monthStats = pioneerType === 'Regular Pioneer' 
+                  ? monthData?.regularPioneers 
+                  : monthData?.auxiliaryPioneers
+                const showSeparator = isMultipleServiceYears && (idx === 0 || monthsInRange[idx - 1].serviceYear !== monthInfo.serviceYear)
+                
+                let separatorRow = ''
+                if (showSeparator) {
+                  separatorRow = `
+                    <tr style="background-color: #e5e5e5;">
+                      <td colspan="6" style="text-align: center; font-weight: bold; padding: 8px;">
+                        Service Year: ${monthInfo.serviceYear}
+                      </td>
+                    </tr>
+                  `
+                }
+                
+                return `
+                  ${separatorRow}
+                  <tr>
+                    <td>${monthInfo.month}${isMultipleServiceYears ? ' ' + monthInfo.year : ''}</td>
+                    <td style="text-align: center;">
+                      <input type="checkbox" ${monthStats?.count > 0 ? 'checked' : ''} />
+                    </td>
+                    <td style="text-align: center;">${monthStats?.totalBibleStudies || ''}</td>
+                    <td style="text-align: center;">
+                      <input type="checkbox" ${pioneerType === 'Auxiliary Pioneer' && monthStats?.count > 0 ? 'checked' : ''} />
+                    </td>
+                    <td style="text-align: center;">${monthStats?.totalHours || ''}</td>
+                    <td class="remarks-col" style="word-wrap: break-word; white-space: pre-wrap; font-size: 11px;">${monthStats?.count > 0 ? `${monthStats.count} Pub.` : ''}</td>
+                  </tr>
+                `
+              }).join('')
+            })()}
             <tr style="font-weight: bold;">
               <td>Total</td>
               <td></td>
