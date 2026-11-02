@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -159,6 +159,43 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
   
   // Check if multiple service years are selected
   const isMultipleServiceYears = startServiceYear !== endServiceYear
+  
+  // Get the service years label for display in reports
+  const getServiceYearsLabel = () => {
+    if (startServiceYear === endServiceYear) {
+      return formatServiceYearShort(startServiceYear)
+    }
+    // Multiple service years - show range like "2023-2024 to 2024-2025"
+    return `${formatServiceYearShort(startServiceYear)} to ${formatServiceYearShort(endServiceYear)}`
+  }
+  
+  // Generate list of months with their year based on the selected date range
+  // This creates entries like: {month: "September", year: 2024, monthValue: "2024-09"}
+  const getMonthsInRange = () => {
+    const months: { month: string; year: number; monthValue: string; serviceYear: string }[] = []
+    
+    for (let sy = startServiceYear; sy <= endServiceYear; sy++) {
+      // Determine start and end month indices for this service year
+      const startIdx = (sy === startServiceYear) ? startMonthIndex : 0
+      const endIdx = (sy === endServiceYear) ? endMonthIndex : 11
+      
+      for (let mi = startIdx; mi <= endIdx; mi++) {
+        const monthName = monthOptions[mi].label
+        const actualYear = mi <= 3 ? sy : sy + 1  // Sept-Dec: service year, Jan-Aug: service year + 1
+        const monthNum = mi <= 3 ? mi + 9 : mi - 3  // Convert to calendar month (1-12)
+        const monthValue = `${actualYear}-${monthNum.toString().padStart(2, '0')}`
+        
+        months.push({
+          month: monthName,
+          year: actualYear,
+          monthValue: monthValue,
+          serviceYear: formatServiceYearShort(sy)
+        })
+      }
+    }
+    
+    return months
+  }
 
   const onSubmit = async (data: ReportFormData) => {
     setIsGenerating(true)
@@ -304,10 +341,17 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
   }
 
   const generateS21HTML = (memberReport: any) => {
+    const monthsInRange = getMonthsInRange()
+    const serviceYearsLabel = getServiceYearsLabel()
+    
+    // Group months by service year for header display
+    const serviceYearsInRange = [...new Set(monthsInRange.map(m => m.serviceYear))]
+    
     return `
       <div class="s21-container">
         <div class="header">
           <h2>CONGREGATION'S PUBLISHER RECORD</h2>
+          <p style="font-size: 14px; margin-top: 5px;"><strong>Service Year${serviceYearsInRange.length > 1 ? 's' : ''}: ${serviceYearsLabel}</strong></p>
         </div>
 
         <div class="personal-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
@@ -367,7 +411,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
 
         <table style="table-layout: fixed; width: 100%;">
           <colgroup>
-            <col style="width: 90px;" />
+            <col style="width: ${isMultipleServiceYears ? '130px' : '90px'};" />
             <col style="width: 80px;" />
             <col style="width: 70px;" />
             <col style="width: 80px;" />
@@ -376,7 +420,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
           </colgroup>
           <thead>
             <tr>
-              <th>Service Year</th>
+              <th>${isMultipleServiceYears ? 'Month / Year' : 'Service Year'}</th>
               <th>Shared in Ministry</th>
               <th>Bible Studies</th>
               <th>Auxiliary Pioneer</th>
@@ -385,14 +429,34 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
             </tr>
           </thead>
           <tbody>
-            ${['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'].map(month => {
-              const report = memberReport.reports.find((r: any) => {
-                const reportDate = new Date(r.month + '-01')
-                return reportDate.toLocaleDateString('en-US', { month: 'long' }) === month
-              })
+            ${monthsInRange.map((monthData, idx) => {
+              // Find report by matching the exact month value (YYYY-MM format)
+              const report = memberReport.reports.find((r: any) => r.month === monthData.monthValue)
+              
+              // For multiple service years, add a separator row at the start of each new service year
+              let separatorRow = ''
+              if (isMultipleServiceYears && idx > 0 && monthsInRange[idx - 1].serviceYear !== monthData.serviceYear) {
+                separatorRow = `
+                  <tr style="background-color: #e5e5e5;">
+                    <td colspan="6" style="text-align: center; font-weight: bold; padding: 8px;">
+                      Service Year: ${monthData.serviceYear}
+                    </td>
+                  </tr>
+                `
+              } else if (isMultipleServiceYears && idx === 0) {
+                separatorRow = `
+                  <tr style="background-color: #e5e5e5;">
+                    <td colspan="6" style="text-align: center; font-weight: bold; padding: 8px;">
+                      Service Year: ${monthData.serviceYear}
+                    </td>
+                  </tr>
+                `
+              }
+              
               return `
+                ${separatorRow}
                 <tr>
-                  <td>${month}</td>
+                  <td>${monthData.month}${isMultipleServiceYears ? ' ' + monthData.year : ''}</td>
                   <td style="text-align: center;">
                     <input type="checkbox" ${report ? 'checked' : ''} />
                   </td>
@@ -517,6 +581,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
               <div class="export-content">
                 <div class="header">
                   <h1>CONGREGATION'S PUBLISHER RECORD</h1>
+                  <p style="font-size: 14px; margin-top: 5px;"><strong>Service Year${isMultipleServiceYears ? 's' : ''}: ${getServiceYearsLabel()}</strong></p>
                 </div>
 
                 <div class="personal-info">
@@ -578,7 +643,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
 
                 <table style="table-layout: fixed; width: 100%;">
                   <colgroup>
-                    <col style="width: 90px;" />
+                    <col style="width: ${isMultipleServiceYears ? '130px' : '90px'};" />
                     <col style="width: 80px;" />
                     <col style="width: 70px;" />
                     <col style="width: 80px;" />
@@ -587,7 +652,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                   </colgroup>
                   <thead>
                     <tr>
-                      <th>Service Year</th>
+                      <th>${isMultipleServiceYears ? 'Month / Year' : 'Service Year'}</th>
                       <th>Shared in Ministry</th>
                       <th>Bible Studies</th>
                       <th>Auxiliary Pioneer</th>
@@ -596,26 +661,47 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                     </tr>
                   </thead>
                   <tbody>
-                    ${['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'].map(month => {
-                      const report = memberReport.reports.find((r: any) => {
-                        const reportDate = new Date(r.month + '-01')
-                        return reportDate.toLocaleDateString('en-US', { month: 'long' }) === month
-                      })
-                      return `
-                        <tr>
-                          <td>${month}</td>
-                          <td style="text-align: center;">
-                            <input type="checkbox" ${report ? 'checked' : ''} />
-                          </td>
-                          <td style="text-align: center;">${report?.bibleStudies || ''}</td>
-                          <td style="text-align: center;">
-                            <input type="checkbox" ${report?.auxiliaryPioneer ? 'checked' : ''} />
-                          </td>
-                          <td style="text-align: center;">${report?.hours || ''}</td>
-                          <td style="word-wrap: break-word; white-space: pre-wrap; font-size: 11px;">${report?.comments || ''}</td>
-                        </tr>
-                      `
-                    }).join('')}
+                    ${(() => {
+                      const monthsInRange = getMonthsInRange()
+                      return monthsInRange.map((monthData, idx) => {
+                        const report = memberReport.reports.find((r: any) => r.month === monthData.monthValue)
+                        
+                        let separatorRow = ''
+                        if (isMultipleServiceYears && idx > 0 && monthsInRange[idx - 1].serviceYear !== monthData.serviceYear) {
+                          separatorRow = `
+                            <tr style="background-color: #e5e5e5;">
+                              <td colspan="6" style="text-align: center; font-weight: bold; padding: 8px;">
+                                Service Year: ${monthData.serviceYear}
+                              </td>
+                            </tr>
+                          `
+                        } else if (isMultipleServiceYears && idx === 0) {
+                          separatorRow = `
+                            <tr style="background-color: #e5e5e5;">
+                              <td colspan="6" style="text-align: center; font-weight: bold; padding: 8px;">
+                                Service Year: ${monthData.serviceYear}
+                              </td>
+                            </tr>
+                          `
+                        }
+                        
+                        return `
+                          ${separatorRow}
+                          <tr>
+                            <td>${monthData.month}${isMultipleServiceYears ? ' ' + monthData.year : ''}</td>
+                            <td style="text-align: center;">
+                              <input type="checkbox" ${report ? 'checked' : ''} />
+                            </td>
+                            <td style="text-align: center;">${report?.bibleStudies || ''}</td>
+                            <td style="text-align: center;">
+                              <input type="checkbox" ${report?.auxiliaryPioneer ? 'checked' : ''} />
+                            </td>
+                            <td style="text-align: center;">${report?.hours || ''}</td>
+                            <td style="word-wrap: break-word; white-space: pre-wrap; font-size: 11px;">${report?.comments || ''}</td>
+                          </tr>
+                        `
+                      }).join('')
+                    })()}
                     <tr style="font-weight: bold;">
                       <td>Total</td>
                       <td></td>
@@ -657,11 +743,13 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
   }
 
   const generateSummaryHTML = () => {
+    const serviceYearsLabel = getServiceYearsLabel()
     return `
       <div class="page">
         <div class="summary-container">
           <div class="header">
             <h1>FIELD SERVICE REPORT SUMMARY</h1>
+            <p><strong>Service Year${isMultipleServiceYears ? 's' : ''}: ${serviceYearsLabel}</strong></p>
             <p>Report Period: ${reportData.filters.startMonth} to ${reportData.filters.endMonth}</p>
             <p>Filter: ${reportData.filters.filterType === 'all' ? 'All Members' : reportData.filters.filterType}</p>
             <p>Generated: ${new Date(reportData.generatedAt).toLocaleDateString()}</p>
@@ -1020,10 +1108,16 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
               <div>
                 <h3 className="text-lg font-semibold mb-4">Individual Publisher Records (S-21)</h3>
                 <div className="space-y-8">
-                  {reportData.memberReports.map((memberReport: any) => (
+                  {reportData.memberReports.map((memberReport: any) => {
+                    const monthsInRange = getMonthsInRange()
+                    const serviceYearsLabel = getServiceYearsLabel()
+                    const serviceYearsInRange = [...new Set(monthsInRange.map(m => m.serviceYear))]
+                    
+                    return (
                     <div key={memberReport.member._id} className="bg-white border-2 border-black p-6 break-inside-avoid">
                       <div className="text-center mb-6">
                         <h2 className="text-xl font-bold">CONGREGATION'S PUBLISHER RECORD</h2>
+                        <p className="text-sm mt-1"><strong>Service Year{serviceYearsInRange.length > 1 ? 's' : ''}: {serviceYearsLabel}</strong></p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-8 mb-6">
@@ -1091,7 +1185,9 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                         <table className="w-full border-collapse border-2 border-black table-fixed">
                           <thead>
                             <tr>
-                              <th className="border border-black p-2 bg-gray-100 font-bold w-[90px]">Service Year</th>
+                              <th className={`border border-black p-2 bg-gray-100 font-bold ${isMultipleServiceYears ? 'w-[130px]' : 'w-[90px]'}`}>
+                                {isMultipleServiceYears ? 'Month / Year' : 'Service Year'}
+                              </th>
                               <th className="border border-black p-2 bg-gray-100 font-bold w-[80px] text-center">Shared in Ministry</th>
                               <th className="border border-black p-2 bg-gray-100 font-bold w-[70px] text-center">Bible Studies</th>
                               <th className="border border-black p-2 bg-gray-100 font-bold w-[80px] text-center">Auxiliary Pioneer</th>
@@ -1103,24 +1199,34 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                             </tr>
                           </thead>
                           <tbody>
-                            {['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'].map((month) => {
-                              const report = memberReport.reports.find((r: any) => {
-                                const reportDate = new Date(r.month + '-01')
-                                return reportDate.toLocaleDateString('en-US', { month: 'long' }) === month
-                              })
+                            {monthsInRange.map((monthData, idx) => {
+                              const report = memberReport.reports.find((r: any) => r.month === monthData.monthValue)
+                              const showSeparator = isMultipleServiceYears && (idx === 0 || monthsInRange[idx - 1].serviceYear !== monthData.serviceYear)
+                              
                               return (
-                                <tr key={month}>
-                                  <td className="border border-black p-2">{month}</td>
-                                  <td className="border border-black p-2 text-center">
-                                    <input type="checkbox" checked={!!report} readOnly />
-                                  </td>
-                                  <td className="border border-black p-2 text-center">{report?.bibleStudies || ''}</td>
-                                  <td className="border border-black p-2 text-center">
-                                    <input type="checkbox" checked={report?.auxiliaryPioneer || false} readOnly />
-                                  </td>
-                                  <td className="border border-black p-2 text-center">{report?.hours || ''}</td>
-                                  <td className="border border-black p-2 text-sm break-words whitespace-pre-wrap">{report?.comments || ''}</td>
-                                </tr>
+                                <React.Fragment key={monthData.monthValue}>
+                                  {showSeparator && (
+                                    <tr className="bg-gray-200">
+                                      <td colSpan={6} className="border border-black p-2 text-center font-bold">
+                                        Service Year: {monthData.serviceYear}
+                                      </td>
+                                    </tr>
+                                  )}
+                                  <tr>
+                                    <td className="border border-black p-2">
+                                      {monthData.month}{isMultipleServiceYears ? ` ${monthData.year}` : ''}
+                                    </td>
+                                    <td className="border border-black p-2 text-center">
+                                      <input type="checkbox" checked={!!report} readOnly />
+                                    </td>
+                                    <td className="border border-black p-2 text-center">{report?.bibleStudies || ''}</td>
+                                    <td className="border border-black p-2 text-center">
+                                      <input type="checkbox" checked={report?.auxiliaryPioneer || false} readOnly />
+                                    </td>
+                                    <td className="border border-black p-2 text-center">{report?.hours || ''}</td>
+                                    <td className="border border-black p-2 text-sm break-words whitespace-pre-wrap">{report?.comments || ''}</td>
+                                  </tr>
+                                </React.Fragment>
                               )
                             })}
                             <tr className="font-bold">
@@ -1191,7 +1297,7 @@ export function ReportGenerator({ roles, groups, privileges, members }: ReportGe
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
 
