@@ -86,7 +86,7 @@ export function MeetingAttendanceTracker({ initialData, currentYear }: MeetingAt
     const monthlyAverage = Math.round(records.reduce((sum, record) => sum + record.averageAttendance, 0) / records.length)
 
     if (showExport) {
-        return <MeetingAttendanceExportView records={records} onClose={() => setShowExport(false)} />
+        return <MeetingAttendanceExportView records={records} onClose={() => setShowExport(false)} initialServiceYear={selectedYear} />
     }
 
     return (
