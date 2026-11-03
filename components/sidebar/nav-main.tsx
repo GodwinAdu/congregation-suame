@@ -268,7 +268,7 @@ export function NavMain({ role, user }: NavMainProps) {
           roleField: "manageAllReport"
         },
         {
-          title: "Pioneer Summary",
+          title: "Pioneer & Publisher Summary",
           url: `/dashboard/field-service/pioneer-summary`,
           roleField: "manageAllReport"
         },

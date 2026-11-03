@@ -314,7 +314,7 @@ export function PioneerSummaryGenerator() {
                 <h3 className="text-xl font-bold mb-6 text-center">Pioneer Activity Summary</h3>
                 <p className="text-center text-primary font-semibold mb-2">Service Year{isMultipleServiceYears ? 's' : ''}: {getServiceYearsLabel()}</p>
                 <p className="text-center text-muted-foreground mb-4">{getSelectedRangeDescription()}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
                     <h4 className="font-semibold text-green-700 mb-4">Regular Pioneers</h4>
                     <div className="grid grid-cols-3 gap-4 text-center">
@@ -350,6 +350,20 @@ export function PioneerSummaryGenerator() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="bg-amber-50 p-6 rounded-lg border-l-4 border-amber-500">
+                    <h4 className="font-semibold text-amber-700 mb-4">Publishers</h4>
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <p className="text-2xl font-bold text-amber-600">{reportData.totals.publishers?.averageCount?.toFixed(1) ?? '0.0'}</p>
+                        <p className="text-xs text-gray-500">Avg Count</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-amber-600">{reportData.totals.publishers?.totalBibleStudies ?? 0}</p>
+                        <p className="text-xs text-gray-500">Bible Studies</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -366,6 +380,7 @@ export function PioneerSummaryGenerator() {
                         </th>
                         <th className="border border-black p-3 font-bold" colSpan={3}>Regular Pioneers</th>
                         <th className="border border-black p-3 font-bold" colSpan={3}>Auxiliary Pioneers</th>
+                        <th className="border border-black p-3 font-bold" colSpan={2}>Publishers</th>
                       </tr>
                       <tr className="bg-gray-50">
                         <th className="border border-black p-2"></th>
@@ -374,6 +389,8 @@ export function PioneerSummaryGenerator() {
                         <th className="border border-black p-2 text-sm">Bible Studies</th>
                         <th className="border border-black p-2 text-sm">Count</th>
                         <th className="border border-black p-2 text-sm">Hours</th>
+                        <th className="border border-black p-2 text-sm">Bible Studies</th>
+                        <th className="border border-black p-2 text-sm">Count</th>
                         <th className="border border-black p-2 text-sm">Bible Studies</th>
                       </tr>
                     </thead>
@@ -389,7 +406,7 @@ export function PioneerSummaryGenerator() {
                             <React.Fragment key={monthData.monthValue}>
                               {showSeparator && (
                                 <tr className="bg-gray-200">
-                                  <td colSpan={7} className="border border-black p-2 text-center font-bold">
+                                  <td colSpan={9} className="border border-black p-2 text-center font-bold">
                                     Service Year: {monthData.serviceYear}
                                   </td>
                                 </tr>
@@ -404,6 +421,8 @@ export function PioneerSummaryGenerator() {
                                 <td className="border border-black p-3 text-center">{monthReport?.auxiliaryPioneers?.count || 0}</td>
                                 <td className="border border-black p-3 text-center">{monthReport?.auxiliaryPioneers?.totalHours || 0}</td>
                                 <td className="border border-black p-3 text-center">{monthReport?.auxiliaryPioneers?.totalBibleStudies || 0}</td>
+                                <td className="border border-black p-3 text-center">{monthReport?.publishers?.count || 0}</td>
+                                <td className="border border-black p-3 text-center">{monthReport?.publishers?.totalBibleStudies || 0}</td>
                               </tr>
                             </React.Fragment>
                           )
@@ -417,6 +436,8 @@ export function PioneerSummaryGenerator() {
                         <td className="border border-black p-3 text-center">-</td>
                         <td className="border border-black p-3 text-center">{reportData.totals.auxiliaryPioneers.totalHours}</td>
                         <td className="border border-black p-3 text-center">{reportData.totals.auxiliaryPioneers.totalBibleStudies}</td>
+                        <td className="border border-black p-3 text-center">-</td>
+                        <td className="border border-black p-3 text-center">{reportData.totals.publishers?.totalBibleStudies ?? 0}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -439,10 +460,10 @@ export function PioneerSummaryGenerator() {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Pioneer Summary S-21 Records</CardTitle>
+              <CardTitle>Summary S-21 Records (Pioneers &amp; Publishers)</CardTitle>
               <Button onClick={() => exportSummaryS21s()}>
                 <Download className="h-4 w-4 mr-2" />
-                Export Pioneer Summary S-21s
+                Export Summary S-21s
               </Button>
             </div>
           </CardHeader>
@@ -460,6 +481,12 @@ export function PioneerSummaryGenerator() {
                 totals={reportData.totals.auxiliaryPioneers}
                 reportData={reportData}
               />
+              <SummaryS21Record 
+                pioneerType="Publisher" 
+                months={reportData.months} 
+                totals={reportData.totals.publishers}
+                reportData={reportData}
+              />
             </div>
           </CardContent>
         </Card>
@@ -467,7 +494,17 @@ export function PioneerSummaryGenerator() {
     </div>
   )
 
-  function SummaryS21Record({ pioneerType, months, totals, reportData }: { pioneerType: string, months: any[], totals: any, reportData: any }) {
+  // Pick the monthly stats bucket for a given summary record type
+  function getStatsForType(monthData: any, pioneerType: string) {
+    if (pioneerType === 'Regular Pioneer') return monthData?.regularPioneers
+    if (pioneerType === 'Auxiliary Pioneer') return monthData?.auxiliaryPioneers
+    return monthData?.publishers
+  }
+
+  function SummaryS21Record({ pioneerType, months, totals: rawTotals, reportData }: { pioneerType: string, months: any[], totals: any, reportData: any }) {
+    const totals = rawTotals || { totalHours: 0, totalBibleStudies: 0, averageCount: 0 }
+    // Publishers don't report hours on the S-21
+    const showHours = pioneerType !== 'Publisher'
     return (
       <div className="bg-white border-2 border-black p-6 break-inside-avoid">
         <div className="text-center mb-6">
@@ -551,9 +588,7 @@ export function PioneerSummaryGenerator() {
                 const monthsInRange = getMonthsInRange()
                 return monthsInRange.map((monthInfo, idx) => {
                   const monthData = months.find(m => m.month === monthInfo.monthValue)
-                  const monthStats = pioneerType === 'Regular Pioneer' 
-                    ? monthData?.regularPioneers 
-                    : monthData?.auxiliaryPioneers
+                  const monthStats = getStatsForType(monthData, pioneerType)
                   const showSeparator = isMultipleServiceYears && (idx === 0 || monthsInRange[idx - 1].serviceYear !== monthInfo.serviceYear)
                   
                   return (
@@ -576,7 +611,7 @@ export function PioneerSummaryGenerator() {
                         <td className="border border-black p-2 text-center">
                           <input type="checkbox" checked={pioneerType === 'Auxiliary Pioneer' && monthStats?.count > 0} readOnly />
                         </td>
-                        <td className="border border-black p-2 text-center">{monthStats?.totalHours || ''}</td>
+                        <td className="border border-black p-2 text-center">{showHours ? (monthStats?.totalHours || '') : ''}</td>
                         <td className="border border-black p-2 text-sm break-words whitespace-pre-wrap">{monthStats?.count > 0 ? `${monthStats.count} individuals` : ''}</td>
                       </tr>
                     </React.Fragment>
@@ -588,7 +623,7 @@ export function PioneerSummaryGenerator() {
                 <td className="border border-black p-2"></td>
                 <td className="border border-black p-2 text-center">{totals.totalBibleStudies}</td>
                 <td className="border border-black p-2"></td>
-                <td className="border border-black p-2 text-center">{totals.totalHours}</td>
+                <td className="border border-black p-2 text-center">{showHours ? totals.totalHours : ''}</td>
                 <td className="border border-black p-2 text-center">Avg: {totals.averageCount.toFixed(1)}</td>
               </tr>
             </tbody>
@@ -629,6 +664,9 @@ export function PioneerSummaryGenerator() {
       
       // Auxiliary Pioneer S-21
       allContent += generateSummaryS21HTML('Auxiliary Pioneer', reportData.months, reportData.totals.auxiliaryPioneers)
+
+      // Publisher S-21
+      allContent += generateSummaryS21HTML('Publisher', reportData.months, reportData.totals.publishers)
       
       allContent += `
             <script>
@@ -647,7 +685,9 @@ export function PioneerSummaryGenerator() {
     }
   }
 
-  function generateSummaryS21HTML(pioneerType: string, months: any[], totals: any) {
+  function generateSummaryS21HTML(pioneerType: string, months: any[], rawTotals: any) {
+    const totals = rawTotals || { totalHours: 0, totalBibleStudies: 0, averageCount: 0 }
+    const showHours = pioneerType !== 'Publisher'
     return `
       <div class="page">
         <div class="header">
@@ -736,9 +776,7 @@ export function PioneerSummaryGenerator() {
               const monthsInRange = getMonthsInRange()
               return monthsInRange.map((monthInfo, idx) => {
                 const monthData = months.find(m => m.month === monthInfo.monthValue)
-                const monthStats = pioneerType === 'Regular Pioneer' 
-                  ? monthData?.regularPioneers 
-                  : monthData?.auxiliaryPioneers
+                const monthStats = getStatsForType(monthData, pioneerType)
                 const showSeparator = isMultipleServiceYears && (idx === 0 || monthsInRange[idx - 1].serviceYear !== monthInfo.serviceYear)
                 
                 let separatorRow = ''
@@ -763,7 +801,7 @@ export function PioneerSummaryGenerator() {
                     <td style="text-align: center;">
                       <input type="checkbox" ${pioneerType === 'Auxiliary Pioneer' && monthStats?.count > 0 ? 'checked' : ''} />
                     </td>
-                    <td style="text-align: center;">${monthStats?.totalHours || ''}</td>
+                    <td style="text-align: center;">${showHours ? (monthStats?.totalHours || '') : ''}</td>
                     <td class="remarks-col" style="word-wrap: break-word; white-space: pre-wrap; font-size: 11px;">${monthStats?.count > 0 ? `${monthStats.count} Pub.` : ''}</td>
                   </tr>
                 `
@@ -774,7 +812,7 @@ export function PioneerSummaryGenerator() {
               <td></td>
               <td style="text-align: center;">${totals.totalBibleStudies}</td>
               <td></td>
-              <td style="text-align: center;">${totals.totalHours}</td>
+              <td style="text-align: center;">${showHours ? totals.totalHours : ''}</td>
               <td></td>
             </tr>
           </tbody>

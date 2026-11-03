@@ -214,6 +214,13 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
       );
       
       const auxiliaryPioneerReports = monthReports.filter(r => r.auxiliaryPioneer === true);
+
+      // Publishers: everyone who reported and is neither a regular pioneer nor an auxiliary pioneer that month
+      const publisherReports = monthReports.filter(r =>
+        r.publisher &&
+        r.auxiliaryPioneer !== true &&
+        !r.publisher.privileges?.some((p: any) => p && p.name && p.name.toLowerCase().includes('regular pioneer'))
+      );
       
       months.push({
         month: monthKey,
@@ -227,6 +234,11 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
           count: auxiliaryPioneerReports.length,
           totalHours: auxiliaryPioneerReports.reduce((sum, r) => sum + (r.hours || 0), 0),
           totalBibleStudies: auxiliaryPioneerReports.reduce((sum, r) => sum + (r.bibleStudents || 0), 0)
+        },
+        publishers: {
+          count: publisherReports.length,
+          totalHours: publisherReports.reduce((sum, r) => sum + (r.hours || 0), 0),
+          totalBibleStudies: publisherReports.reduce((sum, r) => sum + (r.bibleStudents || 0), 0)
         }
       });
     }
@@ -242,6 +254,11 @@ const _generatePioneerSummaryReport = async (user: User, filters: { startMonth: 
         totalHours: months.reduce((sum, m) => sum + m.auxiliaryPioneers.totalHours, 0),
         totalBibleStudies: months.reduce((sum, m) => sum + m.auxiliaryPioneers.totalBibleStudies, 0),
         averageCount: months.reduce((sum, m) => sum + m.auxiliaryPioneers.count, 0) / months.length
+      },
+      publishers: {
+        totalHours: months.reduce((sum, m) => sum + m.publishers.totalHours, 0),
+        totalBibleStudies: months.reduce((sum, m) => sum + m.publishers.totalBibleStudies, 0),
+        averageCount: months.reduce((sum, m) => sum + m.publishers.count, 0) / months.length
       }
     };
 

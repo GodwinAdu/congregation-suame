@@ -16,7 +16,7 @@ export default async function PioneerSummaryPage() {
             Back to Reports
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold">Pioneer Summary Report</h1>
+        <h1 className="text-2xl font-bold">Pioneer &amp; Publisher Summary Report</h1>
       </div>
       
       <PioneerSummaryGenerator />
