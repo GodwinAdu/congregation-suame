@@ -4,9 +4,21 @@ import { connectToDB } from '@/lib/mongoose';
 import Member from '@/lib/models/user.models';
 import FieldServiceReport from '@/lib/models/field-service.models';
 import { revalidatePath } from 'next/cache';
+import { currentUser } from '@/lib/helpers/session';
+import { currentUserRole } from '@/lib/helpers/get-user-role';
+
+// S-21 cards are visible to those who manage members or view the CO visit packet.
+export async function canViewPublisherRecords() {
+  const user = await currentUser();
+  if (!user) return false;
+  const role = await currentUserRole();
+  return !!(role?.permissions?.manageAllMembers || role?.permissions?.coVisitView);
+}
+
 
 export async function getPublisherRecordData(memberId: string) {
   try {
+    if (!(await canViewPublisherRecords())) throw new Error('Not authorized');
     await connectToDB();
 
     const member = await Member.findById(memberId)

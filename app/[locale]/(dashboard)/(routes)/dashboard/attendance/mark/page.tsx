@@ -4,7 +4,7 @@ import Heading from '@/components/commons/Header'
 import { MarkAttendanceClient } from './_components/MarkAttendanceClient'
 
 export default async function MarkAttendancePage() {
-    await requirePermission('attendance')
+    await requirePermission('/dashboard/attendance')
 
     const members = await fetchAllMembers()
 

@@ -100,6 +100,9 @@ const formSchema = z.object({
         coVisitView: z.boolean().default(false),
         coVisitManage: z.boolean().default(false),
         coVisitSchedule: z.boolean().default(false),
+        coVisitCoordinator: z.boolean().default(false),
+        coVisitSecretary: z.boolean().default(false),
+        coVisitServiceOverseer: z.boolean().default(false),
         
         // Shepherding & Ministry
         shepherdingView: z.boolean().default(false),
@@ -229,7 +232,10 @@ const permissionGroups = [
         permissions: [
             { key: "coVisitView", label: "View CO Visits", description: "View circuit overseer visit schedules and details" },
             { key: "coVisitManage", label: "Manage CO Visits", description: "Create and edit CO visit information" },
-            { key: "coVisitSchedule", label: "Schedule CO Visits", description: "Schedule meetings and activities for CO visits" }
+            { key: "coVisitSchedule", label: "Schedule CO Visits", description: "Schedule meetings and activities for CO visits" },
+            { key: "coVisitCoordinator", label: "CO Packet: Coordinator items", description: "Edit the coordinator's items and answer the page 2 questions" },
+            { key: "coVisitSecretary", label: "CO Packet: Secretary items", description: "Update the secretary's items (S-21, S-88, accounts, contacts)" },
+            { key: "coVisitServiceOverseer", label: "CO Packet: Service overseer items", description: "Update the service overseer's items (S-13, S-28, territories, field ministry)" }
         ]
     },
     {
@@ -304,7 +310,7 @@ const permissionGroups = [
     }
 ]
 
-const presetRoles = [
+const basePresetRoles = [
     {
         name: "Elder",
         description: "Full administrative access with all permissions",
@@ -355,6 +361,9 @@ const presetRoles = [
             coVisitView: true,
             coVisitManage: true,
             coVisitSchedule: true,
+            coVisitCoordinator: true,
+            coVisitSecretary: true,
+            coVisitServiceOverseer: true,
             shepherdingView: true,
             shepherdingManage: true,
             assignmentHistoryView: true,
@@ -611,6 +620,19 @@ const presetRoles = [
             history: false,
             trash: false,
             manageUser: false
+        }
+    }
+]
+
+// Read-only access for the visiting circuit overseer: Publisher basics plus the CO visit packet.
+const presetRoles = [
+    ...basePresetRoles,
+    {
+        name: "Circuit Overseer",
+        description: "Read-only access to CO visit packets and publisher records during a visit",
+        permissions: {
+            ...basePresetRoles.find((r) => r.name === "Publisher")!.permissions,
+            coVisitView: true,
         }
     }
 ]

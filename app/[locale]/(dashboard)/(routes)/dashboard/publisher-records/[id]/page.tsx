@@ -1,5 +1,6 @@
 import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
+import { canViewPublisherRecords } from '@/lib/actions/publisher-record.actions';
 import { getPublisherRecordData } from '@/lib/actions/publisher-record.actions';
 import { PublisherRecordClient } from './_components/PublisherRecordClient';
 
@@ -7,6 +8,7 @@ export default async function PublisherRecordPage({ params }: { params: Promise<
   const { id } = await params
   const user = await currentUser();
   if (!user) redirect('/sign-in');
+  if (!(await canViewPublisherRecords())) redirect('/dashboard/publisher');
 
   const recordRes = await getPublisherRecordData(id);
 

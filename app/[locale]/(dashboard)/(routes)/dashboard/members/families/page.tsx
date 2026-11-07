@@ -4,7 +4,7 @@ import FamilyGrid from './_components/FamilyGrid'
 import Heading from '@/components/commons/Header'
 
 export default async function FamiliesPage() {
-    await requirePermission('members')
+    await requirePermission('/dashboard/members')
 
     return (
         <div className="space-y-6">

@@ -95,6 +95,8 @@ export interface ICOVisit extends Document {
     notes?: string;
   }];
   
+  packet?: any;
+
   // General Notes and Observations
   generalNotes?: string;
   commendations?: string[];
@@ -207,6 +209,60 @@ const COVisitSchema = new Schema({
   generalNotes: { type: String },
   commendations: [{ type: String }],
   suggestions: [{ type: String }],
+
+  // S-61 "Information needed for visit of circuit overseer" packet
+  packet: {
+    checklist: [{
+      key: { type: String, required: true },
+      status: { type: String, enum: ['ready', 'not_ready', 'na'], default: 'not_ready' },
+      note: { type: String },
+      updatedAt: { type: Date },
+      updatedBy: { type: Schema.Types.ObjectId, ref: "Member" }
+    }],
+    questionnaire: [{
+      key: { type: String, required: true },
+      answer: { type: String, enum: ['Y', 'N', 'NA'] },
+      note: { type: String }
+    }],
+    host: {
+      name: { type: String },
+      phone: { type: String },
+      address: { type: String },
+      notes: { type: String }
+    },
+    meals: [{
+      date: { type: Date },
+      hostName: { type: String, required: true },
+      phone: { type: String },
+      notes: { type: String }
+    }],
+    recommendations: [{
+      memberId: { type: Schema.Types.ObjectId, ref: "Member" },
+      memberName: { type: String, required: true },
+      action: {
+        type: String,
+        enum: ['appoint_elder', 'appoint_ms', 'delete_elder', 'delete_ms'],
+        required: true
+      },
+      notes: { type: String }
+    }],
+    s62SubmittedOn: { type: Date },
+    // Reminder milestones already sent, e.g. "42", "14", "3", "s62"
+    remindersSent: [{ type: String }],
+    agendaItems: [{ type: String }],
+    fieldMinistry: [{
+      date: { type: Date },
+      period: { type: String },
+      partnerName: { type: String, required: true },
+      memberId: { type: Schema.Types.ObjectId, ref: "Member" },
+      notes: { type: String }
+    }],
+    visitTerritories: [{
+      territoryId: { type: Schema.Types.ObjectId, ref: "Territory" },
+      number: { type: String },
+      name: { type: String }
+    }]
+  },
   
   createdBy: { type: Schema.Types.ObjectId, ref: "Member", required: true },
   lastUpdated: { type: Date, default: Date.now }

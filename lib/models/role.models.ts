@@ -48,6 +48,9 @@ export interface IRole {
         coVisitView: boolean;
         coVisitManage: boolean;
         coVisitSchedule: boolean;
+        coVisitCoordinator: boolean;
+        coVisitSecretary: boolean;
+        coVisitServiceOverseer: boolean;
         shepherdingView: boolean;
         shepherdingManage: boolean;
         assignmentHistoryView: boolean;
@@ -149,6 +152,9 @@ const RoleSchema = new Schema({
         coVisitView: { type: Boolean, default: false },
         coVisitManage: { type: Boolean, default: false },
         coVisitSchedule: { type: Boolean, default: false },
+        coVisitCoordinator: { type: Boolean, default: false },
+        coVisitSecretary: { type: Boolean, default: false },
+        coVisitServiceOverseer: { type: Boolean, default: false },
         
         // Shepherding
         shepherdingView: { type: Boolean, default: false },

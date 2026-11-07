@@ -1,26 +1,39 @@
 import { redirect } from 'next/navigation';
 import { currentUser } from './session';
 import { currentUserRole } from './get-user-role';
-import { routePermissions } from './permission-check';
+import { ruleForPath, satisfiesRule, type RouteRule } from './route-access';
 
-export async function requirePermission(pathname: string) {
+/**
+ * Server-side page guard. Call it at the top of a page or layout.
+ *
+ * `target` is either a dashboard route (e.g. '/dashboard/members', resolved through
+ * ROUTE_ACCESS) or a role permission key (e.g. 'coVisitManage').
+ *
+ * Signed-out users go to sign-in; users whose role lacks the permission are sent to
+ * their publisher dashboard (or the profile page when that is what is being guarded,
+ * so the redirect can never loop).
+ */
+export async function requirePermission(target: string) {
   const user = await currentUser();
-  
   if (!user) {
     redirect('/sign-in');
   }
 
-  const permissionKey = routePermissions[pathname as keyof typeof routePermissions];
-  
-  if (!permissionKey) {
-    return user; // No specific permission required
+  let rule: RouteRule | undefined;
+  if (target.startsWith('/')) {
+    rule = ruleForPath(target);
+    if (rule === undefined) {
+      console.warn(`requirePermission: no access rule covers ${target}`);
+      return user;
+    }
+  } else {
+    rule = target;
   }
 
   const userRole = await currentUserRole();
-  
-  if (!userRole || !userRole.permissions[permissionKey]) {
-    redirect('/dashboard/publisher');
+  if (!satisfiesRule(rule, userRole?.permissions)) {
+    const guardingHome = target === '/dashboard/publisher' || target.startsWith('/dashboard/publisher/');
+    redirect(guardingHome ? '/dashboard/profile' : '/dashboard/publisher');
   }
-
   return user;
 }

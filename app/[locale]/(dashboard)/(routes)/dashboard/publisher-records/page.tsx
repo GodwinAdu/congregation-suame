@@ -1,5 +1,6 @@
 import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
+import { canViewPublisherRecords } from '@/lib/actions/publisher-record.actions';
 import Link from 'next/link';
 import { fetchAllMembers } from '@/lib/actions/user.actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { FileText, Users, Eye } from 'lucide-react';
 export default async function PublisherRecordsPage() {
   const user = await currentUser();
   if (!user) redirect('/sign-in');
+  if (!(await canViewPublisherRecords())) redirect('/dashboard/publisher');
 
   const members = await fetchAllMembers();
 

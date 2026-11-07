@@ -3,7 +3,7 @@ import Heading from '@/components/commons/Header'
 import { ActivityLogClient } from './_components/ActivityLogClient'
 
 export default async function ActivityLogPage() {
-    await requirePermission('manageBackups')
+    await requirePermission('/dashboard/settings/activity-log')
 
     return (
         <div className="space-y-6">

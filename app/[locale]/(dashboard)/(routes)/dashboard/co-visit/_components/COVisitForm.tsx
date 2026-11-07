@@ -1,43 +1,61 @@
 "use client"
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createCOVisit } from '@/lib/actions/co-visit.actions'
 
 const coVisitSchema = z.object({
   coName: z.string().min(1, 'CO name is required'),
-  congregation: z.string().min(1, 'Congregation is required'),
+  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  visitNumber: z.number({ message: 'Visit number is required' }).min(1, 'Visit number must be at least 1'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
-  duration: z.number().min(1, 'Duration must be at least 1 day'),
-  purpose: z.string().optional(),
-  notes: z.string().optional(),
+  generalNotes: z.string().optional(),
+}).refine((d) => !d.startDate || !d.endDate || d.endDate >= d.startDate, {
+  message: 'End date must be on or after the start date',
+  path: ['endDate'],
 })
 
 type COVisitFormData = z.infer<typeof coVisitSchema>
 
 export function COVisitForm() {
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<COVisitFormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<COVisitFormData>({
     resolver: zodResolver(coVisitSchema)
   })
 
   const onSubmit = async (data: COVisitFormData) => {
     setIsSubmitting(true)
     try {
-      await createCOVisit(data)
-      // Reset form or redirect
+      const visit = await createCOVisit({
+        visitNumber: data.visitNumber,
+        circuitOverseer: {
+          name: data.coName,
+          email: data.email || undefined,
+          phone: data.phone || undefined,
+        },
+        visitDates: {
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
+        },
+        generalNotes: data.generalNotes,
+      })
+      toast.success('Visit scheduled')
+      router.push(`/dashboard/co-visit/${visit._id}`)
     } catch (error) {
       console.error('Error creating CO visit:', error)
+      toast.error('Could not schedule the visit')
     } finally {
       setIsSubmitting(false)
     }
@@ -50,49 +68,47 @@ export function COVisitForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="coName">Circuit Overseer Name</Label>
-              <Input {...register('coName')} />
+              <Input id="coName" {...register('coName')} />
               {errors.coName && <p className="text-red-500 text-sm">{errors.coName.message}</p>}
             </div>
             <div>
-              <Label htmlFor="congregation">Congregation</Label>
-              <Input {...register('congregation')} />
-              {errors.congregation && <p className="text-red-500 text-sm">{errors.congregation.message}</p>}
+              <Label htmlFor="visitNumber">Visit Number</Label>
+              <Input id="visitNumber" type="number" {...register('visitNumber', { valueAsNumber: true })} />
+              {errors.visitNumber && <p className="text-red-500 text-sm">{errors.visitNumber.message}</p>}
             </div>
           </div>
-          
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" {...register('email')} />
+              {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" {...register('phone')} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="startDate">Start Date</Label>
-              <Input type="date" {...register('startDate')} />
+              <Input id="startDate" type="date" {...register('startDate')} />
               {errors.startDate && <p className="text-red-500 text-sm">{errors.startDate.message}</p>}
             </div>
             <div>
               <Label htmlFor="endDate">End Date</Label>
-              <Input type="date" {...register('endDate')} />
+              <Input id="endDate" type="date" {...register('endDate')} />
               {errors.endDate && <p className="text-red-500 text-sm">{errors.endDate.message}</p>}
             </div>
-            <div>
-              <Label htmlFor="duration">Duration (days)</Label>
-              <Input type="number" {...register('duration', { valueAsNumber: true })} />
-              {errors.duration && <p className="text-red-500 text-sm">{errors.duration.message}</p>}
-            </div>
           </div>
-
           <div>
-            <Label htmlFor="purpose">Purpose</Label>
-            <Input {...register('purpose')} placeholder="Regular visit, special needs, etc." />
+            <Label htmlFor="generalNotes">Notes</Label>
+            <Textarea id="generalNotes" {...register('generalNotes')} placeholder="Additional notes..." />
           </div>
-
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea {...register('notes')} placeholder="Additional notes..." />
-          </div>
-
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating...' : 'Schedule Visit'}
+            {isSubmitting ? 'Scheduling...' : 'Schedule Visit'}
           </Button>
         </form>
       </CardContent>

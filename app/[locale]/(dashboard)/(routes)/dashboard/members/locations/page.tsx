@@ -3,7 +3,7 @@ import { requirePermission } from '@/lib/helpers/server-permission-check'
 import { MemberLocationsClient } from './_components/MemberLocationsClient'
 
 export default async function MemberLocationsPage() {
-    await requirePermission('members')
+    await requirePermission('/dashboard/members')
 
     const members = await getAllMemberLocations()
 

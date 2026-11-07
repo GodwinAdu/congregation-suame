@@ -1,3 +1,4 @@
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
 import { getAssignmentHistory, getAssignmentFrequency, getMembersWithoutRecentAssignments, getAssignmentStats } from '@/lib/actions/assignment-history.actions';
@@ -5,6 +6,7 @@ import { fetchAllMembers } from '@/lib/actions/user.actions';
 import { AssignmentHistoryClient } from './_components/AssignmentHistoryClient';
 
 export default async function AssignmentHistoryPage() {
+  await requirePermission('/dashboard/assignments/history')
   const user = await currentUser();
   if (!user) redirect('/sign-in');
 

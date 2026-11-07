@@ -1,9 +1,11 @@
+import { requirePermission } from '@/lib/helpers/server-permission-check'
 import { currentUser } from '@/lib/helpers/session';
 import { redirect } from 'next/navigation';
 import { getPublisherGoals, getGoalStats, updateGoalProgress, checkGoalMilestones } from '@/lib/actions/publisher-goal.actions';
 import { PublisherGoalsClient } from './_components/PublisherGoalsClient';
 
 export default async function PublisherGoalsPage() {
+  await requirePermission('/dashboard/publisher/goals')
   const user = await currentUser();
   if (!user) redirect('/sign-in');
 

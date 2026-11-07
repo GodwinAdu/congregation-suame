@@ -12,6 +12,11 @@
 **Schedule**: 1st of every month at midnight
 **Function**: Generates comprehensive monthly statistics report
 
+### 3. CO Visit Packet Reminders
+**Endpoint**: `/api/cron/co-visit-reminders`
+**Schedule**: Daily at 8:00 AM
+**Function**: For scheduled circuit overseer visits, reminds the owners of each packet section (coordinator, secretary, service overseer) about items still "Not ready" at 42, 14 and 3 days before the visit, and reminds the coordinator when recommendations exist but the S-62 has not been submitted within 35 days of the visit. Owners are users whose role has the matching "CO Packet" permission (falls back to roles with "Manage CO Visits"). Each milestone is sent once per visit, as an in-app notification and one combined SMS per person. Add `?dry=1` to the URL to preview who would be reminded without saving or sending anything.
+
 ## Setup Instructions
 
 ### Option 1: Vercel Deployment (Recommended)
